@@ -403,8 +403,9 @@ body.inGame{position:fixed;inset:0;width:100%;height:var(--appH,100dvh);overflow
   <div id="touchUI">
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="actBtns">
-      <button data-k="j">Đánh</button><button data-k="k">Kỹ</button>
-      <button data-k="space">Né</button><button data-k="e">Nói</button>
+      <!-- OV6: bỏ hẳn cụm Đánh/Kỹ/Né ngoài map (bản ô vuông không đánh real-time ngoài trận;
+           trong trận đã có hàng nút riêng #ovBBtns). Chỉ giữ "Nói" = nút tương tác E cho phone. -->
+      <button data-k="e">Nói</button>
     </div>
   </div>
 </section>
@@ -2112,6 +2113,13 @@ function drawDecor(d,sx,sy){
    case "rock": ctx.fillStyle="#6e6a63"; ctx.beginPath(); ctx.moveTo(-13*s,0); ctx.lineTo(-7*s,-14*s); ctx.lineTo(4*s,-18*s); ctx.lineTo(13*s,-4*s); ctx.lineTo(11*s,0); ctx.fill();
      ctx.fillStyle="#8a857c"; ctx.beginPath(); ctx.moveTo(-7*s,-14*s); ctx.lineTo(4*s,-18*s); ctx.lineTo(8*s,-8*s); ctx.lineTo(-2*s,-6*s); ctx.fill(); break;
    case "house": drawHouseB(d); break;
+   case "tent": ctx.fillStyle="rgba(24,16,6,.22)"; ctx.beginPath(); ctx.ellipse(1*s,1*s,17*s,4.4*s,0,0,6.29); ctx.fill(); // lều lữ khách (điểm nghỉ OV6)
+     ctx.fillStyle="#b08954"; ctx.beginPath(); ctx.moveTo(-15*s,0); ctx.lineTo(0,-19*s); ctx.lineTo(15*s,0); ctx.closePath(); ctx.fill();
+     ctx.fillStyle="#96703f"; ctx.beginPath(); ctx.moveTo(0,-19*s); ctx.lineTo(15*s,0); ctx.lineTo(3*s,0); ctx.closePath(); ctx.fill();
+     ctx.fillStyle="#4a2f18"; ctx.beginPath(); ctx.moveTo(-3.4*s,0); ctx.lineTo(0,-11*s); ctx.lineTo(3.4*s,0); ctx.closePath(); ctx.fill();
+     ctx.strokeStyle="#6e5232"; ctx.lineWidth=1.4*s; ctx.beginPath(); ctx.moveTo(0,-19*s); ctx.lineTo(0,-23.4*s); ctx.stroke();
+     ctx.fillStyle="#c23b2e"; ctx.fillRect(-0.8*s,-26.8*s,5.6*s,3.6*s);
+     if(d.fire){ ctx.fillStyle="#5d4326"; ctx.fillRect(-5.4*s,2.2*s,10.8*s,2.2*s); ctx.fillStyle="#f0763a"; ctx.beginPath(); ctx.arc(0,1.2*s,3.1*s,0,6.29); ctx.fill(); ctx.fillStyle="#ffd23e"; ctx.beginPath(); ctx.arc(0,0.8*s,1.7*s,0,6.29); ctx.fill(); } break;
    case "lamp": ctx.fillStyle="#3a2c1c"; ctx.fillRect(-2*s,-26*s,4*s,26*s); ctx.fillStyle="#e8573a";
      ctx.fillRect(-6*s,-32*s,12*s,10*s); ctx.fillStyle="#ffd98a"; ctx.fillRect(-3*s,-29*s,6*s,4*s); break;
    case "stall": ctx.fillStyle="rgba(24,16,6,.20)"; ctx.beginPath(); ctx.ellipse(2*s,1*s,20*s,4.6*s,0,0,6.29); ctx.fill();
@@ -4942,9 +4950,9 @@ $("achBtn").onclick=()=>window.__toggleAch();
    (1) di chuyển từng ô 40px (chạm ô = A* theo dữ liệu va chạm thật của bản chính,
        WASD/mũi tên/joystick đi từng ô, trượt ~110ms/ô, giữ bob/chạy của bản chính);
    (2) MỌI ô di chuyển tốn 1 "Bước chân"/Thể lực ngày = 40 + (Cấp-1)x2 + Khinh công x3,
-       kể cả trong thành/trấn/tổng đàn/điểm an toàn phía Nam (thể lực = thời gian); hết thể
-       lực khi đang Ở TRONG vùng an toàn vẫn đi lại được trong phạm vi vùng đó để tới chỗ
-       ngủ (chống kẹt), nhưng không rời khỏi vùng an toàn được;
+       kể cả trong thành/trấn/tổng đàn/điểm an toàn phía Nam (thể lực = thời gian); OV6 đã
+       BỎ hẳn ân hạn vùng an toàn: thể lực = 0 là KHÔNG di chuyển được bất cứ đâu (chặn tại
+       cổng ovCanStepTo), chống kẹt bằng nút ⛺ Ngủ/Cắm trại tại chỗ + nhà/lều nghỉ mỗi vùng;
        ngày mới = khi đồng hồ game qua 0h (cơ chế gốc) HOẶC ngủ/cắm trại (luôn +1 ngày, 7h sáng);
    (3) đụng quái/boss -> trận TURN-BASED tại chỗ (nền mờ = chính khung cảnh), lượt theo Tốc độ,
        dùng đúng sprite + ảnh hiệu ứng skill SKILL_FX + hào quang biến chiêu của bản chính;
@@ -5085,10 +5093,8 @@ function ovArriveCell() {
   OV.cell = { gx: a.gx, gy: a.gy };
   G.p.x = a.tx; G.p.y = a.ty;
   if (!ovInCave() && OV.stepsLeft > 0) { OV.stepsLeft = Math.max(0, OV.stepsLeft - 1); // MỌI ô = 1 thể lực, kể cả trong thành/trấn/tổng đàn (thể lực = thời gian); thể lực đã 0 thì không trừ thêm (đi lại trong vùng an toàn chống kẹt, ovCanStepTo chặn rời vùng)
-    if (OV.stepsLeft === 0) toast(ovSafeCell(a.gx, a.gy)
-      ? "⚡ Đã hết Thể lực hôm nay! Ngươi đang ở vùng an toàn — vẫn đi lại được trong vùng này để tới khách điếm/nhà mình mà ngủ (nút ⛺ Ngủ / Cắm trại), nhưng không rời khỏi vùng an toàn và không làm việc tốn thể lực khác được."
-      : "⚡ Đã hết Thể lực hôm nay (" + ovStepsMax() + ")! Hãy Ngủ / Cắm trại (nút ⛺ ở thanh hệ thống) để sang ngày mới, hoặc lui về vùng an toàn gần nhất.");
-    else if (OV.stepsLeft <= 5 && !OV.lowWarned) { OV.lowWarned = true; toast("⚠️ Chỉ còn " + OV.stepsLeft + " thể lực hôm nay — mọi ô đều tốn thể lực kể cả trong thành; cân nhắc về vùng an toàn hoặc Ngủ / Cắm trại (nút ⛺)!"); } }
+    if (OV.stepsLeft === 0) toast("⚡ Hết thể lực — hãy Ngủ/Cắm trại hoặc vào nhà/lều nghỉ gần nhất");
+    else if (OV.stepsLeft <= 5 && !OV.lowWarned) { OV.lowWarned = true; toast("⚠️ Chỉ còn " + OV.stepsLeft + " thể lực hôm nay — mọi ô đều tốn thể lực kể cả trong thành; cân nhắc Ngủ / Cắm trại (nút ⛺) hoặc tìm nhà/lều nghỉ gần nhất!"); } }
   ovUpdateStepsHud();
   if (OV.graceT <= 0 && !ovUiPaused()) { if (ovCheckEncounter()) return; }
   ovCheckNpcCell();
@@ -6274,7 +6280,7 @@ renderHelpPanel = function () { _ovHelp(); const b = document.getElementById("he
     "· Mở tiệm mua bán: <b>1</b> · Mở rương: <b>1</b> · Hái thuốc: <b>1</b><br>" +
     "· Học chiêu: <b>2</b> · Luyện công cùng NPC: <b>2</b> · Câu cá: <b>2</b>/lần<br>" +
     "· Vào trận theo lượt: <b>0</b> (thời gian trong trận là nén)</p>" +
-    "<p>Hết thể lực: không làm thêm việc tốn nhịp được — bấm <b>⛺ Ngủ / Cắm trại</b> để sang ngày mới, hồi đầy thể lực. Riêng khi hết thể lực mà đang ở <b>trong thành/trấn/vùng an toàn</b>: vẫn đi lại được trong phạm vi vùng đó (không trừ thêm) để tới khách điếm/nhà mình mà ngủ — nhưng không rời khỏi vùng an toàn được. Đang ở ngoài trời thì vẫn cắm trại tại chỗ bằng nút ⛺ như thường. NPC cũng có thể lực ngày riêng: hết là họ nghỉ, tối là họ về nhà ngủ.</p>";
+    "<p>Hết thể lực: <b>không di chuyển thêm được bất cứ đâu</b> (không còn ân hạn vùng an toàn) và không làm thêm việc tốn nhịp được — bấm <b>⛺ Ngủ / Cắm trại</b> tại chỗ để sang ngày mới, hồi đầy thể lực, hoặc nghỉ tại <b>nhà/lều nghỉ</b> nếu đang đứng kề. NPC cũng có thể lực ngày riêng: hết là họ nghỉ, tối là họ về nhà ngủ.</p>";
     b.appendChild(d); } };
 /* --- Save: thêm nhịp hôm nay + ô của từng NPC (save cũ tự migrate) --- */
 const _ovSaveTick = saveGame;
@@ -7580,6 +7586,333 @@ if (window.__OV) { window.__OV.s5 = {
     if(sys.scrollWidth>sys.clientWidth+8 && sys.scrollLeft===0){ hinted=true; clearInterval(iv);
       sys.scrollTo({left:52,behavior:"smooth"}); setTimeout(function(){ sys.scrollTo({left:0,behavior:"smooth"}); },650); } },1200);
 })();
+</script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   OV6 — 4 VIỆC (theo yêu cầu người chơi):
+   (1) BỎ HẲN ÂN HẠN THỂ LỰC: thể lực = 0 -> KHÔNG di chuyển được bất cứ đâu. Mọi đường
+       đi (phím giữ / joystick / D-pad cảm ứng / chạm ô + A*) đều qua cổng duy nhất
+       ovStartStep -> ovCanStepTo nên chỉ cần thay cổng này. Chống kẹt: nút ⛺ Ngủ/Cắm
+       trại dùng tại chỗ ở mọi nơi + nhà/lều nghỉ ở mọi vùng (việc 2). Trong hang di
+       chuyển không tốn thể lực nhưng cổng vẫn chặn khi thể lực = 0; chống kẹt bằng
+       cách cho ⛺ ngủ ngay trong hang (qua ngày, hồi đầy thể lực, +50% HP).
+   (2) NHÀ/LỀU NGHỈ MỌI VÙNG: mỗi vùng KHÔNG có trấn/khách điếm (decor village/city
+       hoặc danger 0) được đặt 1 điểm nghỉ gần tâm vùng/đường mòn, trên ô đất đi được,
+       tránh tổng đàn/hang/điểm phía Nam/rương/bí kíp. Vùng hoang (danger>=4 hoặc decor
+       sa mạc/thảo nguyên/tuyết/đầm/ruin/hẻm) = cụm 3 lều, còn lại = nhà nghỉ kiểu khách
+       điếm (vẽ bằng đúng drawHouseB/drawDecor của bản chính, chèn vào z.items). Nghỉ:
+       hồi ĐẦY HP + nội lực + qua ngày mới + hồi đầy thể lực; nhà miễn phí an toàn, lều
+       hồi đầy HP nhưng 30% bị quái lén trong đêm như cắm trại (báo trước trong hộp thoại).
+   (3) SƯƠNG MÙ (fog of war): lưới thô 80px (2x2 ô) toàn map 178x148 điểm, lưu dạng
+       bitset -> base64 trong save (tbFog ~4,4KB). Bán kính nhìn 6,5 ô: chưa khám phá =
+       phủ tối gần kín; đã thấy nhưng ngoài tầm nhìn = mờ tối dần theo khoảng cách;
+       minimap dùng canvas thô vẽ lại chỉ khi có ô mới/đổi ô nhìn (không quét toàn map
+       mỗi khung). NPC/boss trên minimap chỉ hiện khi trong tầm nhìn. Có công tắc trong
+       Trợ giúp (H), lưu tbFogOn vào save.
+   (4) PHONE: cụm Đánh/Kỹ/Né ở #actBtns đã bỏ khỏi HTML (chỉ giữ "Nói" = tương tác E);
+       hàng nút TRONG TRẬN (#ovBBtns + menu con #ovBSub) giữ nguyên và được gắn thêm
+       đường chạm touchend (chặn click ma, chống bấm 2 lần) để bấm ăn thật trên phone.
+   ===================================================================================== */
+const OV6_TOAST0 = "⚡ Hết thể lực — hãy Ngủ/Cắm trại hoặc vào nhà/lều nghỉ gần nhất";
+
+/* ---------- (1) CỔNG THỂ LỰC: 0 = ĐỨNG YÊN Ở MỌI NƠI ---------- */
+ovCanStepTo = function (gx, gy) {
+  if (OV.stepsLeft <= 0) return OV6_TOAST0; // chặn ở MỌI nơi, kể cả trong hang (cứu nguy: nút ⛺ dùng được cả trong hang — xem ovSleepCamp bọc dưới đây)
+  if (ovInCave()) return ovCaveBlocked(gx, gy) ? "🚧 Ô bị chặn trong hang (tường/cửa đá)." : null;
+  if (ovBlocked(gx, gy)) return "🚧 Ô đó không đi được (nước sâu / tường / thân điện) — hãy vòng qua cầu hoặc đường khác.";
+  return null;
+};
+const _ov6SleepCamp = ovSleepCamp;
+ovSleepCamp = function () { // trong hang: cho ngủ nghỉ tại chỗ (qua ngày mới, hồi đầy thể lực, +50% HP) để luật "0 thể lực = đứng yên" không gây kẹt trong hang
+  if (G && !OV.battle && ovInCave()) {
+    ovAdvanceDay();
+    G.p.hp = Math.min(G.p.maxhp, G.p.hp + Math.round(G.p.maxhp * 0.5)); G.p.mp = G.p.maxmp; G.p.dotT = 0;
+    toast("🌅 Nghỉ trong hang tới sáng — Ngày " + G.day + ", hồi 50% HP, thể lực hồi đầy (" + ovStepsMax() + "). Đã lưu game.");
+    saveGame(); updateHud(); return; }
+  _ov6SleepCamp();
+};
+const _ov6TapMove = ovTapMove;
+ovTapMove = function (gx, gy) {
+  if (!G || OV.battle) return;
+  if (OV.stepsLeft <= 0) { OV.path = [];
+    if (OV.toastCd <= 0) { toast(OV6_TOAST0); OV.toastCd = 2.2; } return; }
+  if (!ovInCave() && OV.cell) { // chạm ngay vào điểm nghỉ đang đứng kề -> mở hộp nghỉ luôn
+    for (const rp of OV_REST) {
+      if (Math.abs(rp.gx - gx) <= 1 && Math.abs(rp.gy - gy) <= 1 &&
+          Math.max(Math.abs(rp.gx - OV.cell.gx), Math.abs(rp.gy - OV.cell.gy)) <= 1) { ovOpenRest(rp); return; } } }
+  _ov6TapMove(gx, gy);
+};
+
+/* ---------- (2) ĐIỂM NGHỈ MỌI VÙNG ---------- */
+const OV_REST = [];
+const OV_REST_MISSING = []; // vùng không đặt nổi điểm nghỉ kể cả vòng nới (để báo cáo, kỳ vọng rỗng)
+function ovRestInit() {
+  if (OV_REST.length) return;
+  const hasInn = z => z.decor === "village" || z.decor === "city" || (z.danger || 0) === 0;
+  const wildDecor = ["desert", "steppe", "snow", "swamp", "ruin", "canyon"];
+  ZONES.forEach((z, zi) => {
+    if (hasInn(z)) return; // vùng đã có trấn/khách điếm: dùng luôn khách điếm, không thêm
+    const kind = ((z.danger || 0) >= 4 || wildDecor.includes(z.decor)) ? "tent" : "house";
+    const cc = ovCellOf(z.x + ZW / 2, z.y + ZW / 2);
+    const inWater = c => !!(z.water && c.x > z.water.x - 10 && c.x < z.water.x + z.water.w + 10 && c.y > z.water.y - 10 && c.y < z.water.y + z.water.h + 10);
+    const scan = strict => { // strict: đủ mọi ràng buộc tránh đè điểm quan trọng; nới: chỉ cần ô đất đi được ngoài mặt nước
+      for (let r = 3; r <= 40; r++) {
+        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const gx = cc.gx + dx, gy = cc.gy + dy, c = ovCenter(gx, gy);
+          if (c.x < z.x + 70 || c.x > z.x + z.w - 70 || c.y < z.y + 70 || c.y > z.y + z.h - 70) continue;
+          if (ovBlocked(gx, gy) || inWater(c)) continue;
+          if (strict) {
+            if (ovBlocked(gx + 1, gy) || ovBlocked(gx - 1, gy) || ovBlocked(gx, gy + 1) || ovBlocked(gx, gy - 1)) continue; // cần đất liền quanh (không kẹt giữa cầu/hẻm 1 ô)
+            let bad = false;
+            for (const nm in HALLS) { const h = HALLS[nm]; if (Math.hypot(c.x - h.cx, c.y - h.cy) < 310) { bad = true; break; } }
+            if (!bad) for (const cv of CAVES) if (Math.hypot(c.x - cv.x, c.y - cv.y) < 140) { bad = true; break; }
+            if (!bad && typeof SOUTH_POIS !== "undefined") for (const p of SOUTH_POIS) if (Math.hypot(c.x - p.x, c.y - p.y) < 150) { bad = true; break; }
+            if (!bad && typeof CHESTS !== "undefined") for (const ch of CHESTS) if (Math.hypot(c.x - ch.x, c.y - ch.y) < 100) { bad = true; break; }
+            if (!bad && typeof SECRET !== "undefined" && SECRET && Math.hypot(c.x - SECRET.x, c.y - SECRET.y) < 100) bad = true;
+            if (bad) continue;
+          }
+          return { gx, gy, x: c.x, y: c.y };
+        }
+      }
+      return null;
+    };
+    const found = scan(true) || scan(false); // không vùng nào bị bỏ trống lặng lẽ: nới ràng buộc nếu vòng chặt không tìm được ô
+    if (!found) { OV_REST_MISSING.push(z.name); return; }
+    const rp = { zi, kind, name: (kind === "house" ? "Nhà nghỉ " : "Lều nghỉ ") + z.name, x: found.x, y: found.y, gx: found.gx, gy: found.gy };
+    OV_REST.push(rp);
+    if (kind === "house") z.items.push({ k: "house", v: "diem", x: found.x, y: found.y + 16, s: 1.02 });
+    else { z.items.push({ k: "tent", x: found.x - 27, y: found.y + 13, s: 1.0 });
+           z.items.push({ k: "tent", x: found.x + 25, y: found.y + 17, s: 0.85, fire: true });
+           z.items.push({ k: "tent", x: found.x + 1, y: found.y + 32, s: 0.68 }); }
+  });
+}
+function ovRestNear() {
+  if (!G || ovInCave() || !OV.cell) return null;
+  for (const rp of OV_REST)
+    if (Math.max(Math.abs(rp.gx - OV.cell.gx), Math.abs(rp.gy - OV.cell.gy)) <= 1) return rp;
+  return null;
+}
+function ovOpenRest(rp) {
+  if (!G || OV.battle) return;
+  const b = document.getElementById("eventBox"); if (!b) return;
+  const isHouse = rp.kind === "house";
+  b.innerHTML = "<h3>" + (isHouse ? "🏠 " : "⛺ ") + rp.name + "</h3>"
+    + "<p>" + (isHouse
+      ? "Nhà nghỉ chân giữa <b>" + ZONES[rp.zi].name + "</b> — chủ nhà cho lữ khách tá túc <b>miễn phí</b> (điểm cứu nguy cho người hết thể lực). Nghỉ một đêm tại đây: <b>hồi đầy HP + nội lực</b>, sang <b>ngày mới</b> và hồi đầy Thể lực."
+      : "Cụm lều lữ khách dựng tạm giữa <b>" + ZONES[rp.zi].name + "</b>. Nghỉ tại lều: <b>hồi đầy HP + nội lực</b>, sang <b>ngày mới</b> và hồi đầy Thể lực — nhưng lều giữa đồng hoang vẫn có <b>nguy cơ bị quái lén tập kích trong đêm</b> như khi cắm trại, hãy cân nhắc.") + "</p>"
+    + "<div class=\"dBtns\"><button class=\"btn\" id=\"ovRestGo\">🌙 Nghỉ ngơi (qua ngày mới)</button>"
+    + "<button class=\"btn ghost\" data-close=\"eventBox\">Chưa nghỉ</button></div>";
+  b.classList.remove("hidden");
+  const go = document.getElementById("ovRestGo");
+  if (go) go.onclick = () => { b.classList.add("hidden"); ovDoRest(rp); };
+}
+function ovDoRest(rp) {
+  if (!G || OV.battle) return;
+  ovAdvanceDay();
+  G.p.hp = G.p.maxhp; G.p.mp = G.p.maxmp; G.p.dotT = 0;
+  toast((rp.kind === "house" ? "🏠" : "⛺") + " Nghỉ tại " + rp.name + " — Ngày " + G.day + ", hồi đầy HP/nội lực và " + ovStepsMax() + " Thể lực. Đã lưu game.");
+  saveGame(); updateHud();
+  if (rp.kind === "tent" && Math.random() < 0.30) { // lều giữa vùng hoang: rủi ro như cắm trại
+    const z = zoneAt(G.p.x, G.p.y), t = E_TYPES[(Math.random() * E_TYPES.length) | 0];
+    const mk = (elite) => ({ faux: true, elite: !!elite,
+      t: { n: t.n, c: t.c, kind: t.kind, spd: t.spd, xp: t.xp, gold: t.gold },
+      hp: Math.round(t.hp * (1 + (z.danger || 1) * 0.35) * (elite ? 3.2 : 1)),
+      maxhp: Math.round(t.hp * (1 + (z.danger || 1) * 0.35) * (elite ? 3.2 : 1)),
+      atk: Math.round(t.atk * (1 + (z.danger || 1) * 0.3)), x: G.p.x, y: G.p.y });
+    const foes = [mk(false)]; if (Math.random() < 0.5) foes.push(mk(false));
+    setTimeout(() => { if (G && !OV.battle) { toast("🌙 Quái đánh lén lúc nghỉ lều!"); ovOpenBattle({ mode: "ambush", foes }); } }, 650);
+  }
+}
+const _ov6Interact = doInteract;
+doInteract = function () {
+  const rp = ovRestNear();
+  if (rp && !OV.battle) { ovOpenRest(rp); return; }
+  _ov6Interact();
+};
+const _ov6Arrive = ovArriveCell;
+ovArriveCell = function () {
+  _ov6Arrive();
+  ovFogReveal();
+  const rp = ovRestNear();
+  if (rp && OV.toastCd <= 0) { toast((rp.kind === "house" ? "🏠 " : "⛺ ") + rp.name + " — bấm E (hoặc chạm vào điểm nghỉ) để nghỉ: hồi đầy HP/nội lực, qua ngày mới."); OV.toastCd = 4; }
+};
+
+/* ---------- (3) SƯƠNG MÙ (FOG OF WAR) ---------- */
+const OVF = { CS: 80, W: Math.ceil(14172 / 80), H: Math.ceil(11810 / 80), seen: null, on: true, mmCv: null, mmKey: "", mmDirty: true };
+const OV_VIEW_R = 260; // bán kính nhìn ~6,5 ô
+function ovFogReset() { OVF.seen = new Uint8Array(Math.ceil(OVF.W * OVF.H / 8)); OVF.mmDirty = true; OVF.mmKey = ""; }
+function ovFogSeen(cx, cy) { if (!OVF.seen || cx < 0 || cy < 0 || cx >= OVF.W || cy >= OVF.H) return 0;
+  const i = cy * OVF.W + cx; return (OVF.seen[i >> 3] >> (i & 7)) & 1; }
+function ovFogReveal() {
+  if (!G || !OVF.seen || ovInCave()) return;
+  const px = G.p.x, py = G.p.y, R = OV_VIEW_R + OVF.CS;
+  const x0 = Math.max(0, Math.floor((px - R) / OVF.CS)), x1 = Math.min(OVF.W - 1, Math.floor((px + R) / OVF.CS));
+  const y0 = Math.max(0, Math.floor((py - R) / OVF.CS)), y1 = Math.min(OVF.H - 1, Math.floor((py + R) / OVF.CS));
+  for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+    if (Math.hypot(cx * OVF.CS + OVF.CS / 2 - px, cy * OVF.CS + OVF.CS / 2 - py) > OV_VIEW_R + 24) continue;
+    const i = cy * OVF.W + cx, bit = 1 << (i & 7);
+    if (!(OVF.seen[i >> 3] & bit)) { OVF.seen[i >> 3] |= bit; OVF.mmDirty = true; } }
+}
+function ovDrawRestMarks() {
+  if (!G || ovInCave()) return;
+  const now = performance.now();
+  for (const rp of OV_REST) {
+    const sx = rp.x - cam.x, sy = rp.y - cam.y;
+    if (sx < -60 || sx > VW + 60 || sy < -100 || sy > VH + 60) continue;
+    const pl = 1 + Math.sin(now / 320) * 0.16;
+    ctx.save(); ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+    ctx.font = Math.round(17 * pl) + "px serif";
+    ctx.fillText(rp.kind === "house" ? "🏠" : "⛺", sx, sy - 50);
+    const d = Math.hypot(rp.x - G.p.x, rp.y - G.p.y);
+    if (d < 300) { ctx.font = "bold 11px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+      ctx.fillText(rp.name + (d < 84 ? " — [E] Nghỉ" : ""), sx, sy - 66); }
+    ctx.restore();
+  }
+}
+const _ov6Render = render;
+render = function (now) {
+  _ov6Render(now);
+  if (!G || typeof running === "undefined" || !running) return;
+  ovDrawRestMarks(); // vẽ TRƯỚC lớp sương: điểm nghỉ ở vùng chưa khám phá bị sương che như mọi thứ khác
+  if (!OVF.on || !OVF.seen || ovInCave()) return;
+  ctx.save();
+  const x0 = Math.max(0, Math.floor(cam.x / OVF.CS)), x1 = Math.min(OVF.W - 1, Math.floor((cam.x + VW) / OVF.CS));
+  const y0 = Math.max(0, Math.floor(cam.y / OVF.CS)), y1 = Math.min(OVF.H - 1, Math.floor((cam.y + VH) / OVF.CS));
+  const px = G.p.x, py = G.p.y;
+  for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+    const d = Math.hypot(cx * OVF.CS + OVF.CS / 2 - px, cy * OVF.CS + OVF.CS / 2 - py);
+    let a = 0;
+    if (!ovFogSeen(cx, cy)) a = 0.985; // chưa từng tới: tối gần kín
+    else if (d > OV_VIEW_R) a = Math.min(0.82, 0.45 + (d - OV_VIEW_R) / (OVF.CS * 5) * 0.37); // đã thấy, khuất tầm nhìn: mờ tối dần
+    if (a > 0) { ctx.fillStyle = "rgba(6,4,10," + a.toFixed(3) + ")";
+      ctx.fillRect(cx * OVF.CS - cam.x, cy * OVF.CS - cam.y, OVF.CS + 1, OVF.CS + 1); } }
+  ctx.restore();
+};
+function ovFogEnsureMM() {
+  const pcx = Math.floor(G.p.x / OVF.CS), pcy = Math.floor(G.p.y / OVF.CS);
+  const key = pcx + "," + pcy + "," + (OVF.on ? 1 : 0);
+  if (!OVF.mmDirty && OVF.mmKey === key && OVF.mmCv) return;
+  OVF.mmKey = key; OVF.mmDirty = false;
+  if (!OVF.mmCv) { OVF.mmCv = document.createElement("canvas"); OVF.mmCv.width = OVF.W; OVF.mmCv.height = OVF.H; }
+  const g = OVF.mmCv.getContext("2d");
+  g.clearRect(0, 0, OVF.W, OVF.H);
+  for (let cy = 0; cy < OVF.H; cy++) for (let cx = 0; cx < OVF.W; cx++) {
+    if (!ovFogSeen(cx, cy)) { g.fillStyle = "#050308"; g.fillRect(cx, cy, 1, 1); }
+    else if (Math.hypot(cx * OVF.CS + OVF.CS / 2 - G.p.x, cy * OVF.CS + OVF.CS / 2 - G.p.y) > OV_VIEW_R) {
+      g.fillStyle = "rgba(5,4,8,0.78)"; g.fillRect(cx, cy, 1, 1); } }
+}
+const _ov6MM = drawMinimap;
+drawMinimap = function () {
+  _ov6MM();
+  if (!G) return;
+  const m = document.getElementById("minimap"); if (!m || m.offsetParent === null) return;
+  const g = m.getContext("2d"), sx = m.width / WORLD_W, sy = m.height / WORLD_H;
+  // chấm điểm nghỉ RIÊNG (xanh lá = nhà, vàng = lều) — chỉ ở vùng đã khám phá khi sương bật
+  for (const rp of OV_REST) {
+    if (OVF.on && OVF.seen && !ovFogSeen(Math.floor(rp.x / OVF.CS), Math.floor(rp.y / OVF.CS))) continue;
+    g.fillStyle = rp.kind === "house" ? "#7ef0c1" : "#ffd23e";
+    g.fillRect(rp.x * sx - 2, rp.y * sy - 2, 4, 4);
+    g.strokeStyle = "rgba(0,0,0,.75)"; g.lineWidth = 1; g.strokeRect(rp.x * sx - 2.5, rp.y * sy - 2.5, 5, 5); }
+  if (!OVF.on || !OVF.seen) return;
+  ovFogEnsureMM();
+  g.save(); g.imageSmoothingEnabled = false;
+  g.drawImage(OVF.mmCv, 0, 0, m.width, m.height);
+  g.restore();
+  // vẽ lại NPC/boss CHỈ khi trong tầm nhìn hiện tại (ngoài tầm nhìn đã bị lớp sương che)
+  g.fillStyle = "#7fd1f2";
+  for (const n of NPCS) if (Math.hypot(n.x - G.p.x, n.y - G.p.y) <= OV_VIEW_R) g.fillRect(n.x * sx - 1, n.y * sy - 1, 2, 2);
+  if (typeof BOSS !== "undefined" && BOSS && !BOSS.dead && Math.hypot(BOSS.x - G.p.x, BOSS.y - G.p.y) <= OV_VIEW_R) {
+    g.fillStyle = "#ff4b33"; g.fillRect(BOSS.x * sx - 2, BOSS.y * sy - 2, 4, 4); }
+  g.fillStyle = "#fff"; g.beginPath(); g.arc(G.p.x * sx, G.p.y * sy, 3, 0, 6.29); g.fill();
+  g.strokeStyle = "#f5cf87"; g.strokeRect(G.p.x * sx - 1.5, G.p.y * sy - 1.5, 3, 3);
+};
+const _ov6MapPanel = renderMapPanel;
+renderMapPanel = function (selZi) {
+  _ov6MapPanel(selZi);
+  const b = document.getElementById("mapBox"); if (!b || !G || b.querySelector(".ovRestInfo")) return;
+  const curZi = ZONES.indexOf(zoneAt(G.p.x, G.p.y));
+  const sel = (selZi !== undefined && selZi !== null) ? selZi : curZi;
+  if (!(G.visited && G.visited[sel])) return; // vùng chưa khám phá: bản đồ giữ nguyên sương mù theo vùng
+  const rp = OV_REST.find(r => r.zi === sel);
+  const d = document.createElement("p"); d.className = "ovRestInfo";
+  d.innerHTML = rp
+    ? (rp.kind === "house" ? "🏠" : "⛺") + " <b>Điểm nghỉ của vùng:</b> " + rp.name + " — nghỉ miễn phí, hồi đầy HP/nội lực, qua ngày mới (chấm " + (rp.kind === "house" ? "xanh lá" : "vàng") + " trên minimap)."
+    : "🏨 Vùng này có trấn/khách điếm — bấm nút ⛺ Ngủ / Cắm trại trong vùng để nghỉ hồi đầy.";
+  const h4 = b.querySelector("h4");
+  if (h4 && h4.nextSibling) b.insertBefore(d, h4.nextSibling); else b.appendChild(d);
+};
+const _ov6Help = renderHelpPanel;
+renderHelpPanel = function () {
+  _ov6Help();
+  const b = document.getElementById("helpBox"); if (!b || b.querySelector(".ov6Help")) return;
+  const d = document.createElement("div"); d.className = "ov6Help";
+  d.innerHTML = "<h4>🏠 Điểm nghỉ · 🌫️ Sương mù · ⚡ Hết thể lực là đứng yên</h4>"
+    + "<p><b>Thể lực = 0:</b> không di chuyển được bất cứ đâu nữa (đã bỏ ân hạn vùng an toàn). Cứu nguy: bấm <b>⛺ Ngủ / Cắm trại</b> tại chỗ, hoặc bấm <b>E</b> tại <b>nhà/lều nghỉ</b> nếu đang đứng kề.</p>"
+    + "<p><b>Điểm nghỉ:</b> mọi vùng không có trấn/khách điếm đều có 1 <b>nhà nghỉ 🏠</b> hoặc <b>cụm lều ⛺</b> gần đường mòn (chấm xanh lá/vàng trên minimap). Tới ô kề rồi bấm <b>E</b>: nghỉ <b>miễn phí</b>, hồi đầy HP + nội lực, qua ngày mới. Riêng <b>lều</b> ở vùng hoang có nguy cơ bị quái lén trong đêm như cắm trại.</p>"
+    + "<p><b>Sương mù:</b> vùng chưa từng đặt chân tới bị che tối trên màn hình, minimap và bản đồ lớn; đi tới đâu mở sáng tới đó (bán kính nhìn ~6 ô), phần đã khám phá <b>lưu vào save</b>. Quái/NPC chỉ hiện trên minimap khi đang trong tầm nhìn.</p>"
+    + "<div class=\"row\"><button class=\"btn ghost\" id=\"ovFogTgl\">🌫️ Sương mù: " + (OVF.on ? "Đang BẬT" : "Đang TẮT") + "</button></div>";
+  b.appendChild(d);
+  const tg = d.querySelector("#ovFogTgl");
+  if (tg) tg.onclick = () => { OVF.on = !OVF.on; OVF.mmDirty = true; if (G) saveGame(); renderHelpPanel();
+    toast(OVF.on ? "🌫️ Đã BẬT sương mù." : "🌫️ Đã TẮT sương mù — toàn bản đồ hiện rõ."); };
+};
+
+/* ---------- LƯU / NẠP: sương mù vào save (tbFog bitset->base64, tbFogOn) ---------- */
+const _ov6Save = saveGame;
+saveGame = function () {
+  _ov6Save();
+  try { if (!G || !OVF.seen) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw);
+    let bin = ""; for (let i = 0; i < OVF.seen.length; i += 4096) bin += String.fromCharCode.apply(null, OVF.seen.subarray(i, i + 4096));
+    j.tbFog = btoa(bin); j.tbFogOn = OVF.on ? 1 : 0;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _ov6Start = startGame;
+startGame = function (ci, fs) {
+  _ov6Start(ci, fs);
+  ovRestInit();
+  ovFogReset();
+  if (fs) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+    if (j) { if (typeof j.tbFogOn === "number") OVF.on = !!j.tbFogOn;
+      if (j.tbFog) { const bin = atob(j.tbFog);
+        if (bin.length === OVF.seen.length) { for (let i = 0; i < bin.length; i++) OVF.seen[i] = bin.charCodeAt(i); OVF.mmDirty = true; } } } } catch (e) {} }
+  ovFogReveal();
+};
+setInterval(() => { // dịch chuyển tức thời (xa phu/thuyền/sự kiện) không qua ovArriveCell -> vẫn mở sương quanh vị trí mới
+  if (G && OV.started && !OV.battle) ovFogReveal();
+}, 600);
+
+/* ---------- (4) NÚT TRONG TRẬN: thêm đường chạm touchend ăn thật + chống bấm đúp ---------- */
+(function ov6BattleTouch() {
+  const st = document.createElement("style");
+  st.textContent = "#ovBBtns button,#ovBSub button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}";
+  document.head.appendChild(st);
+  const pairs = [["ovBAtk", "ovActBasic"], ["ovBSkill", "ovActSkillMenu"], ["ovBItem", "ovActItemMenu"], ["ovBDodge", "ovActDodge"], ["ovBFlee", "ovActFlee"]];
+  for (const [id, fnName] of pairs) {
+    const b = document.getElementById(id), fn = window[fnName];
+    if (!b || typeof fn !== "function") continue;
+    b.removeEventListener("click", fn); // bỏ listener click gốc, thay bằng cặp click+touchend có chống đúp 450ms
+    let last = 0;
+    const fire = () => { const t = performance.now(); if (t - last < 450) return; last = t; fn(); };
+    b.addEventListener("click", fire);
+    b.addEventListener("touchend", e => { e.preventDefault(); fire(); }, { passive: false });
+  }
+  const sub = document.getElementById("ovBSub"); // menu con (chiêu/vật phẩm) tạo nút động -> ủy quyền chạm ở container
+  if (sub) { let lastT = 0, lastB = null;
+    sub.addEventListener("touchend", e => { const btn = e.target && e.target.closest ? e.target.closest("button") : null;
+      if (!btn || btn.disabled) return;
+      e.preventDefault();
+      const t = performance.now(); if (lastB === btn && t - lastT < 450) return;
+      lastB = btn; lastT = t; btn.click(); }, { passive: false }); }
+})();
+
+ovRestInit();
+window.__OV6 = { rest: OV_REST, restMissing: OV_REST_MISSING, fog: OVF, fogSeen: (x, y) => ovFogSeen(Math.floor(x / OVF.CS), Math.floor(y / OVF.CS)),
+  setSteps: v => { OV.stepsLeft = Math.max(0, v | 0); ovUpdateStepsHud(); },
+  openRest: i => { if (OV_REST[i]) ovOpenRest(OV_REST[i]); },
+  version: "ov6-stamina-rest-fog-touch" };
 </script>
 </body>
 </html>
