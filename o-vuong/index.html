@@ -8020,5 +8020,461 @@ renderHelpPanel = function () {
 };
 window.__UIHIDE = { toggle: uihToggle, set: uihSet, isHidden: () => UIH_HIDDEN, version: "uihide-1" };
 </script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   OV7 — THU THẬP NGUYÊN LIỆU DỌC ĐƯỜNG HÀNH TẨU (chặt cây · đập đá · chặt tre ·
+   hái dược liệu · nhặt gỗ rụng · hái quả dại), phủ lên OV6 như các lớp trước.
+
+   BẢNG ĐIỂM TÀI NGUYÊN (sinh tất định theo seed từng vùng, trên ô đi được, tránh
+   tổng đàn ≥345px · điểm nghỉ/rương ≥120px · điểm phía Nam ≥170px · cửa hang ≥150px
+   · bia/vườn thuốc ≥250px · nhà mua được ≥150px · mặt nước +36px · cách nhau ≥125px):
+     🌲 Cây (rừng/đồi/thôn/hồ: nhiều)      3 lượt · 2⚡/lượt · Gỗ 1–2 (+1 nếu Cây Cổ Thụ)
+                                            · hiếm: Gỗ Quý (Cổ Thụ 35% / thường 7%)
+     🪨 Tảng đá (núi/đồi/hẻm/di tích: nhiều) 3 lượt · 2⚡/lượt · Đá 1–2 · Quặng Sắt 35%/lượt
+     🎋 Bụi tre (gần sông/thôn/trúc lâm)    2 lượt · 1⚡/lượt · Tre 1–2
+     🌿 Bụi dược liệu (đầm/đồi/thảo nguyên) 2 lượt · 1⚡/lượt · Dược Liệu 1–2 · hiếm: Dược Liệu Quý 12%
+     🪵 Khúc gỗ rụng (nhặt thẳng)           1 lượt · 1⚡/lượt · Gỗ 1–2
+     🍒 Bụi quả dại (nhặt thẳng)            2 lượt · 1⚡/lượt · Quả Dại 2–3 (ăn hồi 12% HP)
+   Phúc Duyên: mỗi điểm trên 5 cộng +3% tỉ lệ ra đồ quý / +4,5% tỉ lệ Quặng Sắt.
+   Thu hết -> để lại gốc cây / đá vụn / gốc tre / thân thưa / vụn gỗ / bụi trơ, và
+   HỒI SINH ĐẦY LẠI SAU 1 NGÀY game (trạng thái lưu trong save: tbRes {day, used}).
+   QUY TẮC VÙNG AN TOÀN (nhất quán): điểm trong vùng an toàn (danger ≤1, sân tổng đàn)
+   vẫn thu được nhưng sản lượng −1 (tối thiểu 1) và KHÔNG ra đồ quý; mật độ trong
+   thành (decor city) cũng thưa hẳn (5 điểm/vùng) so với rừng núi (15–20 điểm/vùng).
+
+   THU THẬP: đứng ô kề + bấm E, hoặc chạm vào điểm (tự đi tới ô kề rồi thu). Tốn thể
+   lực qua ovChargeTicks như mọi hành động -> thế giới tiến nhịp tương ứng. Diễn hoạt:
+   nhân vật vung tay (atkT + vệt chém), điểm tài nguyên rung 320ms, mảnh vụn bay
+   (spawnP), số nhặt bay lên (addDmg), âm thanh theo loại (gỗ/đá/thảo).
+   CÔNG CỤ (mua ở panel Thợ rèn, mua 1 lần dùng mãi, lưu tbTools):
+     🪓 Rìu Đồng 90v / ⛏️ Cuốc Đồng 90v: +1 sản lượng loại tương ứng (cây-tre-gỗ / đá).
+     🪓 Rìu Thép 260v / ⛏️ Cuốc Thép 260v: thêm +1 sản lượng VÀ việc nặng tốn 1⚡ thay vì 2⚡.
+
+   ĐẦU RA CỦA NGUYÊN LIỆU (không phải rác túi):
+   (a) BÁN ở mọi tiệm (mục Bán trong Túi đồ tự hiện theo ITEM_VALUE; giá bán lại =
+       50% giá mua tại tiệm như cơ chế sẵn có): Gỗ 8 · Gỗ Quý 45 · Đá 5 · Tre 6 ·
+       Dược Liệu 12 · Dược Liệu Quý 50 · Quả Dại 8 (giá gốc; Quặng Sắt 15 có sẵn).
+   (b) ỦY THÁC THU THẬP: bọc socGenErrand — Lang y nhờ Dược Liệu ×3 (hái 🌿),
+       Thợ rèn nhờ Quặng Sắt (như cũ) hoặc Đá ×4 (đập 🪨), dân/thợ săn/ngư dân nhờ
+       Gỗ ×3 / Tre ×3 / Quả Dại ×3. Trả việc dùng ĐÚNG đường sẵn có: trừ nguyên
+       liệu trong túi (socErrandReady đọc G.items, nút Trả việc trừ e.need).
+   (c) RÈN NÂNG CẤP ở panel Thợ rèn (mục ⬆️, tối đa +3, mỗi cấp +2 chỉ số chính
+       của món — vũ khí +công, giáp +thủ, giày +tốc — lưu thẳng vào món đồ g.up):
+       +1: Quặng Sắt ×2 + Gỗ ×2 + 50v · +2: Quặng Sắt ×3 + Đá ×4 + 120v ·
+       +3: Quặng Sắt ×5 + Gỗ Quý ×1 + 250v.
+   (d) CHẾ THUỐC ở Lang y (thêm vào CRAFTS.alchemy): Dược Liệu ×3 -> Kim Sang Dược;
+       Dược Liệu Quý ×2 + 10v -> Đan Tăng Lực (cần nghề Chế thuốc Lv2). Thêm 1 công
+       thức rèn dùng Gỗ: Thiết Mộc Giáp (Gỗ ×3 + Quặng Sắt ×1 + 70v).
+   LIÊN KẾT: NPC đi ngang điểm tài nguyên trong tầm nhìn thỉnh thoảng dừng tay thu
+   thập (bong bóng theo nghề: thợ rèn đập đá, lang y hái thuốc, nông dân chặt cây…)
+   và thật sự làm vơi điểm đó; tin đồn giang hồ có thể trỏ tới vùng giàu tài nguyên;
+   bản đồ lớn (M) hiện tài nguyên từng vùng + số lượt còn hôm nay; tổng số lượt thu
+   theo loại ghi ở panel Chỉ số (📊). Vườn Thuốc phía Nam (hái Thảo Dược) cũng tính
+   vào thống kê hái dược liệu.
+   ===================================================================================== */
+const OV7_DEFS = {
+  tree:   { icon: "🌲", name: "Cây",          verb: "Chặt", hits: 3, cost: 2, color: "#7fb069" },
+  rock:   { icon: "🪨", name: "Tảng Đá",      verb: "Đập",  hits: 3, cost: 2, color: "#b8b2a7" },
+  bamboo: { icon: "🎋", name: "Bụi Tre",      verb: "Chặt", hits: 2, cost: 1, color: "#57a84e" },
+  herb:   { icon: "🌿", name: "Bụi Dược Liệu", verb: "Hái",  hits: 2, cost: 1, color: "#8be04a" },
+  log:    { icon: "🪵", name: "Khúc Gỗ Rụng", verb: "Nhặt", hits: 1, cost: 1, color: "#b08954" },
+  berry:  { icon: "🍒", name: "Bụi Quả Dại",  verb: "Hái",  hits: 2, cost: 1, color: "#e8573a" }
+};
+const OV7_YIELD_TXT = { tree: "ra Gỗ · hiếm: Gỗ Quý", rock: "ra Đá · ~35% lẫn Quặng Sắt", bamboo: "ra Tre",
+  herb: "ra Dược Liệu · hiếm: Dược Liệu Quý", log: "ra Gỗ", berry: "ra Quả Dại (ăn hồi HP)" };
+const OV7_PLAN = { // số điểm theo loại trang trí của vùng (30 vùng đều có)
+  snow:   { rock: 8, tree: 5, herb: 2, log: 2 },
+  mount:  { rock: 11, tree: 5, herb: 3, bamboo: 1 },
+  temple: { tree: 7, herb: 5, bamboo: 3, rock: 2 },
+  peak:   { rock: 12, tree: 2, herb: 2 },
+  island: { tree: 8, log: 4, berry: 4, bamboo: 3, rock: 2 },
+  desert: { rock: 6, log: 3, berry: 2 },
+  village:{ tree: 6, bamboo: 3, herb: 3, berry: 3, log: 2 },
+  city:   { tree: 3, rock: 2, herb: 1 },
+  bamboo: { bamboo: 12, tree: 5, herb: 4, log: 2 },
+  lake:   { tree: 7, herb: 4, bamboo: 4, berry: 3, log: 2 },
+  steppe: { tree: 3, log: 3, berry: 4, rock: 3 },
+  swamp:  { herb: 10, bamboo: 4, tree: 3, log: 2 },
+  canyon: { rock: 11, tree: 3, herb: 2 },
+  port:   { log: 5, tree: 5, berry: 2, rock: 2 },
+  ruin:   { rock: 10, tree: 2, herb: 3, log: 2 },
+  grass:  { tree: 6, berry: 3, herb: 3 }
+};
+/* --- Giá trị bán + công thức chế/rèn bổ sung (chạy 1 lần lúc nạp trang) --- */
+Object.assign(ITEM_VALUE, { "Gỗ": 8, "Gỗ Quý": 45, "Đá": 5, "Tre": 6, "Dược Liệu": 12, "Dược Liệu Quý": 50, "Quả Dại": 8 });
+CRAFTS.alchemy.list.push({ out: "Kim Sang Dược", need: { "Dược Liệu": 3 }, gold: 0, xp: 8 });
+CRAFTS.alchemy.list.push({ out: "Đan Tăng Lực", need: { "Dược Liệu Quý": 2 }, gold: 10, xp: 14, minLv: 2 });
+CRAFTS.smith.list.push({ gear: { name: "Thiết Mộc Giáp", slot: "outfit", def: 5 }, need: { "Gỗ": 3, "Quặng Sắt": 1 }, gold: 70, xp: 12 });
+const OV7_UP_COST = [{ m: { "Quặng Sắt": 2, "Gỗ": 2 }, gold: 50 }, { m: { "Quặng Sắt": 3, "Đá": 4 }, gold: 120 }, { m: { "Quặng Sắt": 5, "Gỗ Quý": 1 }, gold: 250 }];
+
+/* --- Sinh điểm tài nguyên (tất định theo seed, giống hệt mọi lần nạp) --- */
+const OV7_NODES = [], OV7_BY_ID = {}, OV7_BY_CELL = {}, OV7_BY_ZONE = {};
+(function ov7Gen() {
+  ZONES.forEach((z, zi) => {
+    const plan = OV7_PLAN[z.decor] || OV7_PLAN.grass, rnd = seededRand(770000 + zi * 131), placed = [];
+    OV7_BY_ZONE[zi] = [];
+    const bad = (x, y) => {
+      const c = ovCellOf(x, y); if (ovBlocked(c.gx, c.gy)) return true;
+      if (z.water && x > z.water.x - 36 && x < z.water.x + z.water.w + 36 && y > z.water.y - 36 && y < z.water.y + z.water.h + 36) return true;
+      for (const o of placed) if (Math.hypot(o.x - x, o.y - y) < 125) return true;
+      for (const nm in HALLS) { const h = HALLS[nm]; if (Math.hypot(x - h.cx, y - h.cy) < 345) return true; }
+      if (typeof OV_REST !== "undefined") for (const rp of OV_REST) if (rp.zi === zi && Math.hypot(x - rp.x, y - rp.y) < 125) return true;
+      if (typeof CHESTS !== "undefined") for (const ch of CHESTS) if (Math.hypot(x - ch.x, y - ch.y) < 120) return true;
+      if (typeof SOUTH_POIS !== "undefined") for (const p of SOUTH_POIS) if (Math.hypot(x - p.x, y - p.y) < 170) return true;
+      if (typeof CAVES !== "undefined") for (const cv of CAVES) if (Math.hypot(x - cv.x, y - cv.y) < 150) return true;
+      if (typeof SECRET !== "undefined" && SECRET && Math.hypot(x - SECRET.x, y - SECRET.y) < 120) return true;
+      if (zi === 26 && typeof SP_HERB !== "undefined" && SP_HERB && Math.hypot(x - SP_HERB.x, y - SP_HERB.y) < 250) return true;
+      if ((zi === 6 || zi === 7) && typeof housePos === "function") { const hp = housePos(zi); if (Math.hypot(x - hp.x, y - hp.y) < 150) return true; }
+      if (Math.hypot(x - (z.x + ZW / 2), y - (z.y + ZW / 2)) < 80) return true;
+      return false;
+    };
+    for (const kind in plan) for (let i = 0; i < plan[kind]; i++) {
+      let spot = null;
+      for (let t = 0; t < 40 && !spot; t++) { const x = z.x + 90 + rnd() * (ZW - 180), y = z.y + 100 + rnd() * (ZW - 200); if (!bad(x, y)) spot = { x, y }; }
+      if (!spot) continue;
+      const cell = ovCellOf(spot.x, spot.y), ctr = ovCenter(cell.gx, cell.gy);
+      const rare = kind === "tree" && rnd() < 0.12;
+      const node = { id: "r" + zi + "_" + OV7_NODES.length, zi, kind, x: ctr.x, y: ctr.y, gx: cell.gx, gy: cell.gy,
+        hits: OV7_DEFS[kind].hits, rare, name: rare ? "Cây Cổ Thụ" : OV7_DEFS[kind].name, shakeUntil: 0 };
+      placed.push(node); OV7_NODES.push(node); OV7_BY_ID[node.id] = node; OV7_BY_CELL[node.gx + "," + node.gy] = node; OV7_BY_ZONE[zi].push(node);
+    }
+  });
+})();
+const OV7_RICH = []; // vùng giàu tài nguyên cho tin đồn: [ {zone, txt} ]
+ZONES.forEach((z, zi) => { const agg = {};
+  for (const n of (OV7_BY_ZONE[zi] || [])) agg[n.kind] = (agg[n.kind] || 0) + 1;
+  const T = { tree: "cây cao bóng cả 🌲", rock: "tảng đá lẫn quặng 🪨", herb: "bụi dược liệu 🌿", bamboo: "tre trúc rậm rạp 🎋", berry: "quả dại chín đỏ 🍒" };
+  for (const k in T) if ((agg[k] || 0) >= 7) OV7_RICH.push({ zone: z.name, txt: T[k] }); });
+
+/* --- Trạng thái lưu save: lượt đã thu theo ngày + công cụ + thống kê --- */
+const OV7 = { pending: null };
+function ov7State() { if (!G) return;
+  if (!G.resNodes || typeof G.resNodes !== "object") G.resNodes = { day: G.day, used: {} };
+  if (!G.tools) G.tools = { axe: 0, pick: 0 };
+  if (!G.gatherStats) G.gatherStats = { tree: 0, rock: 0, bamboo: 0, herb: 0, log: 0, berry: 0, total: 0 }; }
+function ov7Left(node) { if (!G || !G.resNodes || G.resNodes.day !== G.day) return node.hits;
+  return Math.max(0, node.hits - (G.resNodes.used[node.id] || 0)); }
+function ov7Consume(node) { ov7State(); if (G.resNodes.day !== G.day) G.resNodes = { day: G.day, used: {} };
+  G.resNodes.used[node.id] = (G.resNodes.used[node.id] || 0) + 1; }
+function ov7ToolLv(node) { if (!G || !G.tools) return 0;
+  if (node.kind === "rock") return G.tools.pick || 0;
+  if (node.kind === "tree" || node.kind === "bamboo" || node.kind === "log") return G.tools.axe || 0;
+  return 0; }
+function ov7Cost(node) { const base = OV7_DEFS[node.kind].cost;
+  if (base === 2 && ov7ToolLv(node) >= 2) return 1; // công cụ Thép: việc nặng nhẹ đi 1 thể lực
+  return base; }
+function ov7Luck() { return Math.max(0, (pStat("pd") - 5)) * 0.03; } // Phúc Duyên trên 5: +3%/điểm đồ quý
+function ov7OreChance() { return 0.35 + Math.max(0, (pStat("pd") - 5)) * 0.045; }
+function ov7Roll(node) { // sản lượng 1 lượt thu (đã tính công cụ + vùng an toàn + Phúc Duyên)
+  const R = Math.random, safe = ovSafeCell(node.gx, node.gy), tl = ov7ToolLv(node), luck = ov7Luck(), out = {};
+  const base = (p) => { let n = 1 + (R() < p ? 1 : 0); if (tl >= 1) n += 1; if (safe) n = Math.max(1, n - 1); return n; };
+  if (node.kind === "tree") { let n = base(0.5); if (node.rare) n += 1; out["Gỗ"] = n;
+    if (!safe && R() < (node.rare ? 0.35 : 0.07) + luck) out["Gỗ Quý"] = 1; }
+  else if (node.kind === "rock") { out["Đá"] = base(0.45); if (R() < ov7OreChance()) out["Quặng Sắt"] = 1; }
+  else if (node.kind === "bamboo") { out["Tre"] = base(0.55); }
+  else if (node.kind === "herb") { out["Dược Liệu"] = base(0.5);
+    if (!safe && R() < 0.12 + luck) out["Dược Liệu Quý"] = 1; }
+  else if (node.kind === "log") { let n = 1 + (R() < 0.5 ? 1 : 0); if (tl >= 1) n += 1; out["Gỗ"] = n; }
+  else if (node.kind === "berry") { let n = 2 + (R() < 0.4 ? 1 : 0); if (safe) n = Math.max(1, n - 1); out["Quả Dại"] = n;
+    if (R() < 0.15 + luck) out["Dược Liệu"] = 1; }
+  return out;
+}
+function ov7NearNode() { if (!G || !OV.cell) return null; let best = null, bd = 1e9;
+  for (const node of OV7_NODES) { const dx = Math.abs(node.gx - OV.cell.gx), dy = Math.abs(node.gy - OV.cell.gy);
+    if (dx <= 1 && dy <= 1) { const d = Math.hypot(node.x - G.p.x, node.y - G.p.y); if (d < bd) { bd = d; best = node; } } }
+  return best; }
+
+/* --- HÀNH ĐỘNG THU THẬP --- */
+function ov7Gather(node) {
+  if (!G || OV.battle || ovInCave() || !node) return false;
+  ov7State();
+  if (ov7Left(node) <= 0) { toast(OV7_DEFS[node.kind].icon + " " + node.name + " đã thu hết hôm nay — mai quay lại, tài nguyên mọc lại sau 1 ngày."); return false; }
+  if (OV.cell && Math.max(Math.abs(node.gx - OV.cell.gx), Math.abs(node.gy - OV.cell.gy)) > 1) { toast("Cần đứng ô kề " + node.name + " mới thu thập được."); return false; }
+  const def = OV7_DEFS[node.kind], cost = ov7Cost(node);
+  if (!ovChargeTicks(cost, def.verb + " " + node.name)) return false; // tốn thể lực + thế giới tiến nhịp
+  G.p.face = node.x >= G.p.x ? 1 : -1; G.p.atkT = 0.24; // vung tay về phía điểm tài nguyên
+  node.shakeUntil = performance.now() + 320;
+  const gains = ov7Roll(node);
+  ov7Consume(node);
+  G.gatherStats[node.kind]++; G.gatherStats.total++;
+  const parts = []; for (const k in gains) { addItem(k, gains[k]); parts.push(k + " +" + gains[k]); }
+  jobXP("hunt", 2, true);
+  spawnP(node.x, node.y - 14, def.color, 10, 130, 0.5, 3); // mảnh vụn bay
+  addSlash(G.p.x + G.p.face * 30, G.p.y - 24, 84, 0, G.p.face < 0, 0.14);
+  addDmg(node.x, node.y - 58, parts.join(" · "), "#ffe9bd", 0);
+  if (node.kind === "rock") { tone(200, 0.07, "square", 0.12, -80); sfxHit(); }
+  else if (node.kind === "tree" || node.kind === "bamboo" || node.kind === "log") { tone(130, 0.09, "square", 0.12, -50); sfxSwing(); }
+  else tone(520, 0.1, "sine", 0.08, 120);
+  const left = ov7Left(node);
+  toast(def.icon + " " + def.verb + " " + node.name + ": nhận " + parts.join(", ") + (left > 0 ? " · còn " + left + " lượt hôm nay" : " · đã thu hết — mai mọc lại"));
+  saveGame(); updateHud();
+  return true;
+}
+
+/* --- Bấm E: ưu tiên sau điểm nghỉ, trước thoại NPC ở xa --- */
+const _ov7Interact = doInteract;
+doInteract = function () {
+  if (G && !OV.battle && !ovInCave()) {
+    const rp = (typeof ovRestNear === "function") ? ovRestNear() : null;
+    if (!rp) { const node = ov7NearNode();
+      if (node) { const nn = (typeof nearestNPC === "function") ? nearestNPC() : null;
+        const npcNear = nn && Math.hypot(nn.x - G.p.x, nn.y - G.p.y) <= 58;
+        if (!npcNear) { ov7Gather(node); return; } } }
+  }
+  _ov7Interact();
+};
+/* --- Chạm vào điểm tài nguyên: kề thì thu ngay, xa thì đi tới ô kề rồi tự thu --- */
+const _ov7Tap = ovTapMove;
+ovTapMove = function (gx, gy) {
+  if (G && !OV.battle && !ovInCave() && OV.cell) { const node = OV7_BY_CELL[gx + "," + gy];
+    if (node && ov7Left(node) > 0) {
+      if (Math.max(Math.abs(node.gx - OV.cell.gx), Math.abs(node.gy - OV.cell.gy)) <= 1) { ov7Gather(node); return; }
+      let best = null, bd = 1e9;
+      for (const d of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const ax = node.gx + d[0], ay = node.gy + d[1]; if (ovBlocked(ax, ay)) continue;
+        const dd = Math.abs(ax - OV.cell.gx) + Math.abs(ay - OV.cell.gy); if (dd < bd) { bd = dd; best = [ax, ay]; } }
+      if (best) { OV7.pending = node.id; _ov7Tap(best[0], best[1]); return; } } }
+  _ov7Tap(gx, gy);
+};
+const _ov7Arrive = ovArriveCell;
+ovArriveCell = function () { _ov7Arrive();
+  if (OV7.pending && G && !OV.battle) { const node = OV7_BY_ID[OV7.pending];
+    if (!node) { OV7.pending = null; return; }
+    if (Math.max(Math.abs(node.gx - OV.cell.gx), Math.abs(node.gy - OV.cell.gy)) <= 1) { OV7.pending = null;
+      if (ov7Left(node) > 0) setTimeout(() => { if (G && !OV.battle && !ovUiPaused()) ov7Gather(node); }, 140); }
+    else if (!OV.path.length && !OV.anim) OV7.pending = null; } };
+
+/* --- VẼ ĐIỂM TÀI NGUYÊN (sau lớp sương của OV6: điểm chưa khám phá bị sương che thì bỏ qua) --- */
+function ov7DrawNode(node, sx, sy, left, now) {
+  const def = OV7_DEFS[node.kind];
+  ctx.save(); ctx.translate(sx, sy);
+  if (left <= 0) { // trạng thái đã thu hết: gốc / vụn / thân thưa
+    if (node.kind === "tree") { ctx.fillStyle = "#5d4326"; ctx.fillRect(-6, -8, 12, 8); ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.ellipse(0, -8, 6, 2.6, 0, 0, 6.29); ctx.fill(); ctx.strokeStyle = "#8a6a44"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, -8, 3.4, 1.4, 0, 0, 6.29); ctx.stroke(); }
+    else if (node.kind === "rock") { ctx.fillStyle = "#6e6a63"; ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(-6, -5); ctx.lineTo(-1, 0); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(5, -7); ctx.lineTo(10, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = "#8a857c"; ctx.fillRect(9, -2, 4, 2); }
+    else if (node.kind === "bamboo") { ctx.fillStyle = "#2e6b2e"; ctx.fillRect(-8, -7, 3.4, 7); ctx.fillRect(-1, -9, 3.4, 9); ctx.fillRect(6, -6, 3.4, 6); }
+    else if (node.kind === "herb") { ctx.strokeStyle = "#3f7a35"; ctx.lineWidth = 1.6; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 4, 0); ctx.lineTo(i * 4 + 1, -8); ctx.stroke(); } }
+    else if (node.kind === "log") { ctx.fillStyle = "#8a6a44"; ctx.fillRect(-9, -3, 6, 3); ctx.fillRect(1, -2, 7, 2.4); ctx.fillRect(-3, -4.4, 4, 2); }
+    else { ctx.fillStyle = "#4c6b34"; ctx.beginPath(); ctx.ellipse(0, -3, 11, 5, 0, 0, 6.29); ctx.fill(); ctx.strokeStyle = "#5d4326"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(-6, -11); ctx.moveTo(3, -5); ctx.lineTo(5, -12); ctx.stroke(); }
+    ctx.restore(); return;
+  }
+  if (node.kind === "tree") { drawDecor({ k: "tree", s: node.rare ? 1.55 : 1.15 }, 0, 0);
+    if (node.rare) { ctx.fillStyle = "#ffd23e"; const pu = 0.6 + 0.4 * Math.sin(now / 300);
+      ctx.globalAlpha = pu; ctx.beginPath(); ctx.arc(-9, -34, 2.2, 0, 6.29); ctx.arc(8, -26, 1.8, 0, 6.29); ctx.arc(1, -44, 1.6, 0, 6.29); ctx.fill(); ctx.globalAlpha = 1; } }
+  else if (node.kind === "rock") { drawDecor({ k: "rock", s: 1.35 }, 0, 0);
+    ctx.fillStyle = "#d8c98a"; ctx.fillRect(-5, -13, 2.6, 2.6); ctx.fillRect(4, -9, 2.2, 2.2); ctx.fillStyle = "#9aa4ac"; ctx.fillRect(-1, -16, 2.4, 2.4); }
+  else if (node.kind === "bamboo") { drawDecor({ k: "bamboo", s: 1.05 }, -7, 0); drawDecor({ k: "bamboo", s: 0.88 }, 8, 2); }
+  else if (node.kind === "herb") { ctx.fillStyle = "rgba(24,16,6,.20)"; ctx.beginPath(); ctx.ellipse(1, 1, 15, 4, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#2e6b2e"; ctx.beginPath(); ctx.ellipse(0, -6, 13, 8, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#3f7a35"; ctx.beginPath(); ctx.ellipse(-5, -9, 8, 6, 0, 0, 6.29); ctx.ellipse(6, -8, 7, 5, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#f4c3d4"; ctx.beginPath(); ctx.arc(-6, -11, 1.9, 0, 6.29); ctx.arc(3, -13, 1.7, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(7, -9, 1.6, 0, 6.29); ctx.arc(-1, -7, 1.5, 0, 6.29); ctx.fill(); }
+  else if (node.kind === "log") { ctx.fillStyle = "rgba(24,16,6,.22)"; ctx.beginPath(); ctx.ellipse(1, 1, 17, 4.2, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#7a5a34"; ctx.fillRect(-15, -8, 30, 8); ctx.fillStyle = "#96703f"; ctx.fillRect(-15, -8, 30, 3);
+    ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.ellipse(15, -4, 3.4, 4, 0, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "#8a6a44"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(15, -4, 1.8, 2.2, 0, 0, 6.29); ctx.stroke();
+    ctx.fillStyle = "#c23b2e"; ctx.beginPath(); ctx.arc(-8, -9.6, 2.4, 0, 6.29); ctx.fill(); ctx.fillStyle = "#e8e0cc"; ctx.fillRect(-8.8, -9.4, 1.6, 1.2); }
+  else if (node.kind === "berry") { ctx.fillStyle = "rgba(24,16,6,.20)"; ctx.beginPath(); ctx.ellipse(1, 1, 15, 4, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#35592c"; ctx.beginPath(); ctx.ellipse(0, -7, 14, 9, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#406b34"; ctx.beginPath(); ctx.ellipse(-5, -10, 9, 6, 0, 0, 6.29); ctx.ellipse(6, -9, 8, 5.4, 0, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#e23b2e"; const bp = [[-8, -8], [-2, -12], [4, -7], [8, -11], [0, -5], [-5, -3]];
+    for (const b of bp) { ctx.beginPath(); ctx.arc(b[0], b[1], 2.1, 0, 6.29); ctx.fill(); }
+    ctx.fillStyle = "#ff9d8a"; ctx.beginPath(); ctx.arc(-8.6, -8.6, 0.8, 0, 6.29); ctx.arc(3.4, -7.6, 0.8, 0, 6.29); ctx.fill(); }
+  ctx.restore();
+}
+function ov7Draw(now) {
+  if (!G || typeof running === "undefined" || !running || ovInCave()) return;
+  const x0 = cam.x - 70, x1 = cam.x + VW + 70, y0 = cam.y - 120, y1 = cam.y + VH + 70;
+  let labelNode = null, labelD = 1e9;
+  for (const node of OV7_NODES) {
+    if (node.x < x0 || node.x > x1 || node.y < y0 || node.y > y1) continue;
+    if (typeof OVF !== "undefined" && OVF.on && OVF.seen && !ovFogSeen(Math.floor(node.x / OVF.CS), Math.floor(node.y / OVF.CS))) continue; // chưa khám phá: sương che
+    const left = ov7Left(node);
+    let sx = node.x - cam.x; const sy = node.y - cam.y;
+    if (node.shakeUntil > now) sx += Math.sin(now / 16) * 3 * ((node.shakeUntil - now) / 320); // rung khi bị chặt/đập
+    ctx.save();
+    if (typeof OVF !== "undefined" && OVF.on && OVF.seen && Math.hypot(node.x - G.p.x, node.y - G.p.y) > OV_VIEW_R) ctx.globalAlpha = 0.72; // đã thấy nhưng ngoài tầm nhìn: mờ như lớp sương
+    ov7DrawNode(node, sx, sy, left, now);
+    ctx.restore();
+    const d = Math.hypot(node.x - G.p.x, node.y - G.p.y);
+    if (left > 0 && d >= 135 && d < 300) { // mốc nhỏ khi ở gần
+      ctx.save(); ctx.globalAlpha = 0.92; ctx.font = "13px serif"; ctx.textAlign = "center";
+      ctx.shadowColor = "#000"; ctx.shadowBlur = 3; ctx.fillText(OV7_DEFS[node.kind].icon, sx, sy - 48); ctx.restore(); }
+    if (left > 0 && d < 135 && d < labelD) { labelD = d; labelNode = node; }
+  }
+  if (labelNode) { const node = labelNode, def = OV7_DEFS[node.kind], left = ov7Left(node);
+    const sx = node.x - cam.x, sy = node.y - cam.y;
+    ctx.save(); ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+    ctx.font = "bold 11.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+    ctx.fillText(def.icon + " " + node.name + " · còn " + left + "/" + node.hits + " lượt", sx, sy - 66);
+    ctx.fillStyle = "#bfe3f2"; ctx.font = "11px 'Be Vietnam Pro'";
+    ctx.fillText("[E] " + def.verb + " — tốn " + ov7Cost(node) + "⚡ · " + OV7_YIELD_TXT[node.kind], sx, sy - 52);
+    ctx.restore(); }
+}
+const _ov7Render = render;
+render = function (now) { _ov7Render(now); ov7Draw(now || performance.now()); };
+
+/* --- NPC cũng thu thập khi đi ngang (diễn thật trong tầm nhìn) --- */
+function ov7NpcGather() {
+  if (!OV.cell || !G) return;
+  const zi = ZONES.indexOf(zoneAt(G.p.x, G.p.y));
+  for (const npc of NPCS) {
+    if (npc.act === "Ngủ" || ovNpcBusy(npc)) continue;
+    const s = OV.tickNpc.get(npc); if (!s) continue;
+    if (Math.hypot(s.px - G.p.x, s.py - G.p.y) > 520) continue;
+    const list = OV7_BY_ZONE[zi] || [];
+    for (const node of list) {
+      if (Math.abs(node.x - s.px) > 110 || Math.abs(node.y - s.py) > 110) continue;
+      if (ov7Left(node) <= 0) continue;
+      if (Math.random() < 0.085) { const def = OV7_DEFS[node.kind];
+        npc.bubble = npc.job === "Thợ rèn" && node.kind === "rock" ? "⛏️ Đập đá tìm quặng rèn đồ…"
+          : npc.job === "Lang y" && node.kind === "herb" ? "🌿 Hái ít dược liệu về chế thuốc…"
+          : npc.job === "Nông dân" ? "🪓 Thu thập ven đường, gom củi về nhà…"
+          : def.icon + " Đang " + def.verb.toLowerCase() + " " + node.name.toLowerCase() + " ven đường…";
+        npc.bubbleT = 3;
+        if (Math.random() < 0.45) { ov7Consume(node); node.shakeUntil = performance.now() + 300;
+          spawnP(node.x, node.y - 14, def.color, 7, 110, 0.45, 3); } }
+      break;
+    }
+  }
+}
+const _ov7WT = ovWorldTick;
+ovWorldTick = function (n) { _ov7WT(n); if (!G || OV.battle || ovInCave()) return; ov7NpcGather(); };
+/* --- Hái thuốc Vườn Thuốc phía Nam cũng tính vào thống kê hái dược liệu --- */
+const _ov7Herb = pickHerb;
+pickHerb = function (hp) { const before = (G && G.items) ? (G.items["Thảo Dược"] || 0) : 0; _ov7Herb(hp);
+  if (G && G.items && (G.items["Thảo Dược"] || 0) > before) { ov7State(); G.gatherStats.herb++; G.gatherStats.total++; } };
+
+/* --- ỦY THÁC THU THẬP: nối vào nguyên liệu ven đường (trả việc trừ túi như cũ) --- */
+const _ov7Gen = socGenErrand;
+socGenErrand = function (giver) { const e = _ov7Gen(giver);
+  if (!e || e.type !== "gather" || !giver) return e;
+  const job = giver.job, R = Math.random;
+  const set = (item, need, src) => { e.item = item; e.need = need; e.gold = 12 * need + 10 + ((Math.random() * 8) | 0);
+    e.desc = "Thu thập " + need + " " + item + " mang về cho " + giver.name;
+    e.flavor = "Ta đang cần gấp " + need + " phần " + item + ". " + src + " — hành tẩu tiện đường kiếm giúp ta nhé, ta hậu tạ."; };
+  if (job === "Lang y" && R() < 0.75) set("Dược Liệu", 3, "Ngoài đường có 🌿 Bụi dược liệu — đứng ô kề bấm E là hái được");
+  else if (job === "Thợ rèn" && R() < 0.35) set("Đá", 4, "Lên vùng núi có 🪨 Tảng đá — đập là ra Đá (lẫn cả Quặng Sắt)");
+  else if ((job === "Nông dân" || job === "Thợ săn" || job === "Ngư dân") && R() < 0.6) {
+    const pool = [["Gỗ", 3, "Gặp 🌲 Cây thì chặt, thấy 🪵 khúc gỗ rụng thì nhặt thẳng"], ["Tre", 3, "Bụi tre 🎋 gần sông/thôn, chặt nhẹ tay lắm"], ["Quả Dại", 3, "Bụi quả dại 🍒 quả chín đỏ — hái về, ăn cũng hồi máu đấy"]];
+    const p = pool[(Math.random() * pool.length) | 0]; set(p[0], p[1], p[2]); }
+  else if (job !== "Đầu bếp" && job !== "Lang y" && job !== "Thợ rèn" && R() < 0.4) {
+    const pool = [["Gỗ", 3, "Chặt 🌲 cây ven đường là có"], ["Tre", 3, "Chặt 🎋 bụi tre ven đường là có"], ["Dược Liệu", 3, "Hái 🌿 bụi dược liệu ven đường là có"]];
+    const p = pool[(Math.random() * pool.length) | 0]; set(p[0], p[1], p[2]); }
+  return e; };
+/* --- Tin đồn trỏ tới vùng giàu tài nguyên --- */
+const _ov7Rumor = socRumorText;
+socRumorText = function (npc) { if (OV7_RICH.length && Math.random() < 0.3) { const c = OV7_RICH[(Math.random() * OV7_RICH.length) | 0];
+    return "Nghe nói vùng " + c.zone + " dạo này nhiều " + c.txt + " lắm — ai cần nguyên liệu thì qua đó, đứng ô kề bấm E mà thu thập; đầy túi đem bán cũng kha khá vàng."; }
+  return _ov7Rumor(npc); };
+
+/* --- Panel Thợ rèn: mua công cụ + nâng cấp trang bị bằng nguyên liệu --- */
+const _ov7Craft = renderCraft;
+renderCraft = function (kind) { _ov7Craft(kind);
+  if (kind !== "smith" || !G) return;
+  const b = $("shopBox"); if (!b || b.querySelector(".ov7Smith")) return;
+  ov7State();
+  const d = document.createElement("div"); d.className = "ov7Smith";
+  let h = "<h4>🪓 Dụng cụ thu thập — mua 1 lần, dùng mãi (nguyên liệu ven đường: đứng ô kề điểm 🌲🪨🎋🌿🪵🍒 bấm E)</h4>";
+  const toolRow = (k, icon, n1, n2, desc) => { const lv = G.tools[k] || 0;
+    if (lv >= 2) return "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + icon + " " + n2 + "</span> <span class=\"dim\">" + desc + " · Đã có cấp cao nhất</span></div></div>";
+    const pr = lv === 0 ? 90 : 260, nm = lv === 0 ? n1 : n2;
+    return "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + icon + " " + nm + "</span> <span class=\"dim\">" + desc + (lv === 0 ? " (+1 sản lượng)" : " (+1 sản lượng, việc nặng −1 thể lực)") + "</span></div><button class=\"btn\" data-ov7tool=\"" + k + "\" " + (G.gold < pr ? "disabled style=opacity:.55" : "") + ">Mua · " + pr + " vàng</button></div>"; };
+  h += toolRow("axe", "🪓", "Rìu Đồng", "Rìu Thép", "Chặt cây / tre / gỗ rụng");
+  h += toolRow("pick", "⛏️", "Cuốc Đồng", "Cuốc Thép", "Đập đá lấy Đá & Quặng Sắt");
+  h += "<h4>⬆️ Nâng cấp trang bị — nguyên liệu + vàng (tối đa +3, mỗi cấp +2 chỉ số chính của món)</h4>";
+  if (!G.gear.length) h += "<p class=\"dim\">Chưa có trang bị nào — rèn/mua một món trước đã.</p>";
+  else h += G.gear.map(g => { const up = g.up || 0, stat = g.slot === "weapon" ? "⚔️ công" : g.slot === "outfit" ? "🛡️ thủ" : "👟 tốc";
+    if (up >= 3) return "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + g.name + " ⬆️+3</span> <span class=\"dim\">" + gearStatTxt(g) + " · ĐÃ TỐI ĐA</span></div></div>";
+    const c = OV7_UP_COST[up], needTxt = Object.entries(c.m).map(([n, cn]) => n + " ×" + cn + " (có " + (G.items[n] || 0) + ")").join(", ") + " + " + c.gold + " vàng";
+    const lack = Object.entries(c.m).some(([n, cn]) => (G.items[n] || 0) < cn) || G.gold < c.gold;
+    return "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + g.name + (up ? " ⬆️+" + up : "") + "</span> <span class=\"dim\">" + gearStatTxt(g) + " · Lên +" + (up + 1) + ": +2 " + stat + "<br>Cần: " + needTxt + "</span></div><button class=\"btn\" data-ov7up=\"" + g.id + "\" " + (lack ? "disabled style=opacity:.55" : "") + ">⬆️ Nâng cấp</button></div>"; }).join("");
+  d.innerHTML = h;
+  const closeRow = b.querySelector(".row"); if (closeRow) b.insertBefore(d, closeRow); else b.appendChild(d);
+  d.querySelectorAll("[data-ov7tool]").forEach(btn => btn.onclick = () => { const k = btn.dataset.ov7tool, lv = G.tools[k] || 0, pr = lv === 0 ? 90 : 260;
+    if (G.gold < pr) { toast("Không đủ vàng!"); return; }
+    G.gold -= pr; G.tools[k] = lv + 1;
+    toast((k === "axe" ? "🪓" : "⛏️") + " Đã mua " + (k === "axe" ? (lv === 0 ? "Rìu Đồng" : "Rìu Thép") : (lv === 0 ? "Cuốc Đồng" : "Cuốc Thép")) + " — thu thập loại tương ứng +1 sản lượng" + (lv >= 1 ? ", việc nặng −1 thể lực" : "") + ".");
+    sfxCoin(); renderCraft("smith"); updateHud(); saveGame(); });
+  d.querySelectorAll("[data-ov7up]").forEach(btn => btn.onclick = () => { const g = G.gear.find(x => x.id === btn.dataset.ov7up); if (!g) return;
+    const up = g.up || 0; if (up >= 3) return; const c = OV7_UP_COST[up];
+    if (Object.entries(c.m).some(([n, cn]) => (G.items[n] || 0) < cn) || G.gold < c.gold) { toast("Chưa đủ nguyên liệu/vàng!"); return; }
+    Object.entries(c.m).forEach(([n, cn]) => G.items[n] -= cn); G.gold -= c.gold;
+    const stat = g.slot === "weapon" ? "atk" : g.slot === "outfit" ? "def" : "spd";
+    g[stat] = (g[stat] || 0) + 2; g.up = up + 1; jobXP("smith", 10, true);
+    toast("⬆️ Nâng cấp " + g.name + " lên +" + g.up + " (" + gearStatTxt(g) + ") — chỉ số tăng thật, xem trong Túi đồ (B).");
+    sfxCoin(); renderCraft("smith"); updateHud(); saveGame(); });
+};
+/* --- Túi đồ: ăn Quả Dại hồi 12% HP --- */
+const _ov7Bag = toggleBag;
+toggleBag = function () { _ov7Bag();
+  const b = $("bagBox"); if (!b || b.classList.contains("hidden") || !G) return;
+  if ((G.items["Quả Dại"] || 0) > 0 && !b.querySelector("#ov7Eat")) {
+    const btn = document.createElement("button"); btn.className = "btn"; btn.id = "ov7Eat";
+    btn.textContent = "🍒 Ăn Quả Dại (+12% HP) ×" + G.items["Quả Dại"];
+    const closeBtn = b.querySelector("[data-close]"); if (closeBtn) closeBtn.parentNode.insertBefore(btn, closeBtn); else b.appendChild(btn);
+    btn.onclick = () => { if ((G.items["Quả Dại"] || 0) <= 0) return; G.items["Quả Dại"]--;
+      const heal = Math.max(6, Math.round(G.p.maxhp * 0.12)); G.p.hp = Math.min(G.p.maxhp, G.p.hp + heal);
+      toast("🍒 Ăn Quả Dại chua ngọt: hồi " + heal + " HP"); _ov7Bag(); _ov7Bag(); updateHud(); saveGame(); }; } };
+/* --- Panel Chỉ số: thống kê thu thập + công cụ --- */
+const _ov7Stat = renderStatPanel;
+renderStatPanel = function () { _ov7Stat();
+  const b = $("statBox"); if (!b || !G || b.querySelector(".ov7Stats")) return;
+  ov7State(); const s = G.gatherStats;
+  const d = document.createElement("div"); d.className = "ov7Stats";
+  d.innerHTML = "<h4>🎒 Thu thập nguyên liệu (tổng số lượt đã thu)</h4><p>🌲 Chặt cây: <b>" + s.tree + "</b> · 🪨 Đập đá: <b>" + s.rock + "</b> · 🎋 Chặt tre: <b>" + s.bamboo + "</b> · 🌿 Hái dược liệu: <b>" + s.herb + "</b> · 🪵 Nhặt gỗ rụng: <b>" + s.log + "</b> · 🍒 Hái quả dại: <b>" + s.berry + "</b><br>Tổng cộng: <b>" + s.total + "</b> lượt · Dụng cụ: 🪓 Rìu " + (["chưa có", "Đồng", "Thép"][G.tools.axe] || "chưa có") + " · ⛏️ Cuốc " + (["chưa có", "Đồng", "Thép"][G.tools.pick] || "chưa có") + " (mua ở Thợ rèn)</p>";
+  b.appendChild(d); };
+/* --- Bản đồ lớn: tài nguyên từng vùng --- */
+const _ov7Map = renderMapPanel;
+renderMapPanel = function (selZi) { _ov7Map(selZi);
+  const b = document.getElementById("mapBox"); if (!b || !G || b.querySelector(".ov7ResInfo")) return;
+  const curZi = ZONES.indexOf(zoneAt(G.p.x, G.p.y));
+  const sel = (selZi !== undefined && selZi !== null) ? selZi : curZi;
+  if (!(G.visited && G.visited[sel])) return;
+  const list = OV7_BY_ZONE[sel] || []; if (!list.length) return;
+  const agg = {}; for (const n of list) { agg[n.kind] = agg[n.kind] || [0, 0]; agg[n.kind][0]++; agg[n.kind][1] += ov7Left(n); }
+  const txt = Object.keys(agg).map(k => OV7_DEFS[k].icon + " " + OV7_DEFS[k].name + " ×" + agg[k][0] + " (còn " + agg[k][1] + " lượt hôm nay)").join(" · ");
+  const d = document.createElement("p"); d.className = "ov7ResInfo";
+  d.innerHTML = "🎒 <b>Tài nguyên vùng này:</b> " + txt + "<br><span class=\"dim\">Đứng ô kề điểm tài nguyên rồi bấm E (hoặc chạm vào điểm) để thu thập — thu hết thì hồi sinh sau 1 ngày.</span>";
+  const h4 = b.querySelector("h4"); if (h4 && h4.nextSibling) b.insertBefore(d, h4.nextSibling); else b.appendChild(d); };
+/* --- Trợ giúp: bảng thu thập đầy đủ --- */
+const _ov7Help = renderHelpPanel;
+renderHelpPanel = function () { _ov7Help();
+  const b = document.getElementById("helpBox"); if (!b || b.querySelector(".ov7Help")) return;
+  const d = document.createElement("div"); d.className = "ov7Help";
+  d.innerHTML = "<h4>🎒 Thu thập nguyên liệu dọc đường (chặt cây · đập đá · hái thuốc…)</h4>"
+    + "<p>Trên đường hành tẩu có <b>điểm tài nguyên</b> theo địa hình từng vùng — đứng <b>ô kề</b> rồi bấm <b>E</b> (hoặc <b>chạm vào điểm</b>: nhân vật tự đi tới ô kề rồi thu). Thu thập <b>tốn Thể lực và thế giới tiến nhịp</b> như mọi hành động; thu hết thì điểm chỉ còn gốc/vụn và <b>mọc lại sau 1 ngày</b>.</p>"
+    + "<p>🌲 <b>Cây</b> (3 lượt · 2⚡): Gỗ 1–2 · hiếm ra <b>Gỗ Quý</b> (cây cổ thụ 🌟 tỉ lệ cao hơn)<br>🪨 <b>Tảng đá</b> (3 lượt · 2⚡): Đá 1–2 · ~35% lẫn <b>Quặng Sắt</b><br>🎋 <b>Bụi tre</b> (2 lượt · 1⚡): Tre 1–2 · 🌿 <b>Bụi dược liệu</b> (2 lượt · 1⚡): Dược Liệu 1–2 · hiếm ra <b>Dược Liệu Quý</b><br>🪵 <b>Khúc gỗ rụng</b> (1 lượt · 1⚡): Gỗ 1–2 · 🍒 <b>Bụi quả dại</b> (2 lượt · 1⚡): Quả Dại 2–3 — ăn trong Túi đồ hồi 12% HP<br><b>Phúc Duyên</b> càng cao càng dễ ra đồ quý/quặng. <b>Vùng an toàn</b> (thôn/thành/tổng đàn): vẫn thu được nhưng sản lượng −1 và không ra đồ quý.</p>"
+    + "<p><b>Công cụ</b> (mua ở Thợ rèn): 🪓 Rìu Đồng / ⛏️ Cuốc Đồng 90v: +1 sản lượng loại tương ứng · Rìu Thép / Cuốc Thép 260v: thêm −1⚡ cho việc nặng.<br><b>Đầu ra:</b> bán ở mọi tiệm (Gỗ 8 · Gỗ Quý 45 · Đá 5 · Tre 6 · Dược Liệu 12 · Dược Liệu Quý 50 · Quả Dại 8 — giá gốc, bán lại 50% giá tiệm) · trả <b>ủy thác thu thập</b> của lang y/thợ rèn/dân làng · <b>nâng cấp trang bị</b> ở Thợ rèn (+1: Quặng ×2 + Gỗ ×2 + 50v · +2: Quặng ×3 + Đá ×4 + 120v · +3: Quặng ×5 + Gỗ Quý ×1 + 250v; mỗi cấp +2 chỉ số chính, tối đa +3) · <b>chế thuốc</b> ở Lang y: Dược Liệu ×3 → Kim Sang Dược, Dược Liệu Quý ×2 → Đan Tăng Lực.</p>";
+  b.appendChild(d); };
+
+/* --- Lưu / nạp: tbRes (lượt thu theo ngày) + tbTools + tbGather --- */
+const _ov7Save = saveGame;
+saveGame = function () { _ov7Save();
+  try { if (!G) return; ov7State(); const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw); j.tbRes = G.resNodes; j.tbTools = G.tools; j.tbGather = G.gatherStats;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _ov7Start = startGame;
+startGame = function (ci, fs) { _ov7Start(ci, fs);
+  if (!G) return; ov7State();
+  if (fs) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+    if (j) { if (j.tbRes) G.resNodes = (j.tbRes.day === G.day) ? j.tbRes : { day: G.day, used: {} };
+      if (j.tbTools) G.tools = j.tbTools;
+      if (j.tbGather) G.gatherStats = j.tbGather; } } catch (e) {} } };
+
+window.__OV7 = { nodes: OV7_NODES, byId: id => OV7_BY_ID[id] || null, byZone: OV7_BY_ZONE,
+  left: id => { const n = OV7_BY_ID[id]; return n ? ov7Left(n) : 0; },
+  gather: id => { const n = OV7_BY_ID[id]; return n ? ov7Gather(n) : false; },
+  nearNode: () => ov7NearNode(),
+  roll: (kind, rare) => ov7Roll({ kind, rare: !!rare, gx: OV.cell ? OV.cell.gx : 0, gy: OV.cell ? OV.cell.gy : 0 }),
+  oreChance: () => ov7OreChance(),
+  simOre: n => { let c = 0; const ch = ov7OreChance(); for (let i = 0; i < n; i++) if (Math.random() < ch) c++; return c; },
+  cost: kind => { const fake = { kind, gx: 0, gy: 0 }; return ov7Cost(fake); },
+  counts: () => { const out = {}; ZONES.forEach((z, zi) => { const a = {}; for (const n of (OV7_BY_ZONE[zi] || [])) a[n.kind] = (a[n.kind] || 0) + 1; out[z.name] = a; }); return out; },
+  tools: () => G ? G.tools : null, stats: () => G ? G.gatherStats : null,
+  setTools: (a, p) => { if (!G) return; ov7State(); G.tools.axe = a | 0; G.tools.pick = p | 0; },
+  upCost: OV7_UP_COST, version: "ov7-gather-1" };
+</script>
 </body>
 </html>
