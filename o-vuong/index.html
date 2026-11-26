@@ -8476,5 +8476,311 @@ window.__OV7 = { nodes: OV7_NODES, byId: id => OV7_BY_ID[id] || null, byZone: OV
   setTools: (a, p) => { if (!G) return; ov7State(); G.tools.axe = a | 0; G.tools.pick = p | 0; },
   upCost: OV7_UP_COST, version: "ov7-gather-1" };
 </script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   OV8 — PANEL NHIỆM VỤ RIÊNG + AUTO CHẠY TỚI ĐIỂM NHIỆM VỤ (🚶 Tới nơi)
+   (1) Panel Nhiệm vụ riêng: nút menu đổi thành "📜 Nhiệm vụ (Q)", phím Q giữ nguyên mở
+       đúng panel này (questBox). renderQuestPanel được thay bằng BẢN GỘP DUY NHẤT —
+       một nguồn dữ liệu: nhiệm vụ chính Ch.1 + Ch.2, Ủy thác giang hồ (SOC), bounty,
+       nhập môn, tri kỷ, NV phái hằng ngày, hộ tống — mỗi mục có tên / người giao /
+       mô tả / đích đến / tiến độ / hạn ngày. Phần ghi chép thuần (bạn đời, nhà, tri kỷ
+       kết nghĩa, tiếng đồn, đồng hành) chuyển xuống mục "📓 Nhật ký" CUỐI panel —
+       không còn 2 nơi hiển thị việc đang theo dõi lệch nhau.
+   (2) Auto: mỗi mục có nút 🚶 Tới nơi (khi suy được đích từ dữ liệu thật). Nhân vật đi
+       TỪNG Ô bằng chính OV.path của engine: tốn thể lực từng ô, thế giới tiến nhịp,
+       đụng quái mở trận như đi tay. Định tuyến: A* thẳng trên lưới va chạm thật
+       (ovAStar + ovBlocked — qua cầu, không lội nước/xuyên tường); đích không tới được
+       (đảo bị nước bao) -> BFS toàn lưới tìm ô TỚI ĐƯỢC gần đích nhất, dừng ở đó +
+       toast hướng dẫn thuyền/bến. Đích là NPC đang di chuyển: bám vị trí sống
+       (OV.tickNpc), lệch >= 6 ô thì tính lại đường. Dừng + báo rõ khi: tới đích (ô kề),
+       vào vùng đích (NV theo vùng), gặp trận (KHÔNG tự đi tiếp sau trận), hết thể lực,
+       không có đường, hoặc người chơi can thiệp (phím đi / D-pad / joystick / chạm ô
+       khác / nút ⏹️ Dừng). Dòng trạng thái #ovAutoBar luôn hiện — kể cả khi ẩn giao
+       diện bằng nút 👁️ (không nằm trong danh sách bị ẩn). Tới nơi vẫn phải tự bấm E
+       tương tác như bình thường.
+   ===================================================================================== */
+
+/* ---------- ĐÍCH ĐẾN: suy từ dữ liệu nhiệm vụ thật ---------- */
+function ovNpcLivePos(npc) { const s = (typeof OV !== "undefined" && OV.tickNpc) ? OV.tickNpc.get(npc) : null;
+  return s ? { x: s.px, y: s.py } : { x: npc.x, y: npc.y }; }
+function ovDestNpc(name, label) { return { kind: "npc", name, label: label || name,
+  cell() { const n = (typeof socNpcByName === "function") ? socNpcByName(name) : null; if (!n) return null;
+    const p = ovNpcLivePos(n); return ovCellOf(p.x, p.y); },
+  zoneName() { const n = (typeof socNpcByName === "function") ? socNpcByName(name) : null;
+    if (!n) return ""; const p = ovNpcLivePos(n); const z = zoneAt(p.x, p.y); return z ? z.name : ""; } }; }
+function ovDestNpcCi(ci, label) { const n = NPCS.find(x => x.ci === ci); return n ? ovDestNpc(n.name, label || n.name) : null; }
+function ovDestPoint(x, y, label) { return { kind: "point", label, cell() { return ovCellOf(x, y); } }; }
+function ovDestDyn(getXY, label) { return { kind: "dyn", label, cell() { const p = getXY(); return p ? ovCellOf(p.x, p.y) : null; } }; }
+function ovDestZone(zi, label) { return { kind: "zone", zi, label: label || (ZONES[zi] ? ZONES[zi].name : "vùng đích"),
+  cell() { const z = ZONES[zi]; if (!z) return null; const c = ovCellOf(z.x + z.w / 2, z.y + z.h / 2);
+    return ovNearestWalkable(c.gx, c.gy, false); } }; }
+
+/* ---------- DANH SÁCH VIỆC ĐANG THEO DÕI (nguồn duy nhất cho panel) ---------- */
+function ovQuestEntries() {
+  const out = []; if (!G) return out;
+  const pc = OV.cell || ovCellOf(G.p.x, G.p.y);
+  const npcDist = n => { const p = ovNpcLivePos(n); return Math.hypot(p.x - G.p.x, p.y - G.p.y); };
+  // --- Nhiệm vụ chính Chương 1 ---
+  const mq = G.mq, q = MAIN_Q[mq.step];
+  if (q) { const e = { group: "🎯 Nhiệm vụ chính — Chương 1", title: (mq.step + 1) + "/5 · " + q.t, desc: q.d,
+      prog: mq.prog + "/" + q.need, dest: null, destText: "" };
+    if (mq.step === 0) { let bn = null, bd = 1e18; for (const n of NPCS) { const d = npcDist(n); if (d < bd) { bd = d; bn = n; } }
+      if (bn) { e.dest = ovDestNpc(bn.name, bn.name); e.destText = "NPC gần nhất: " + bn.name; } }
+    else if (mq.step === 1) { let bz = -1, bd = 1e18; ZONES.forEach((z, zi) => { if ((z.danger || 0) >= 2) {
+        const d = Math.hypot(z.x + z.w / 2 - G.p.x, z.y + z.h / 2 - G.p.y); if (d < bd) { bd = d; bz = zi; } } });
+      if (bz >= 0) { e.dest = ovDestZone(bz); e.destText = "Vùng nguy hiểm gần nhất: " + ZONES[bz].name; } }
+    else if (mq.step === 2) { e.dest = ovDestPoint(SECRET.x, SECRET.y, "Điểm sáng trên cầu — Hồ Tây"); e.destText = "Điểm bí kíp ở Hồ Tây"; }
+    else if (mq.step === 3) { let be = null, bd = 1e18; for (const en of ENEMIES) { if (en.dead || en.foe || !en.elite) continue;
+        const d = Math.hypot(en.x - G.p.x, en.y - G.p.y); if (d < bd) { bd = d; be = en; } }
+      if (be) { const ref = be; e.dest = ovDestDyn(() => (ref.dead ? null : { x: ref.x, y: ref.y }), "Quái tinh anh gần nhất"); e.destText = "Quái tinh anh gần nhất"; }
+      else e.destText = "Chưa thấy quái tinh anh nào sống — chúng rải rác ở vùng nguy hiểm"; }
+    else if (mq.step === 4) { if (typeof BOSS !== "undefined" && BOSS && !BOSS.dead) { e.dest = ovDestDyn(() => (BOSS && !BOSS.dead ? { x: BOSS.x, y: BOSS.y } : null), "Đông Phương Bất Bại"); e.destText = "Đông Phương Bất Bại — Quang Minh Đỉnh"; } }
+    out.push(e); }
+  else out.push({ group: "🎯 Nhiệm vụ chính — Chương 1", title: "🏆 Đã hoàn thành cả 5 nhiệm vụ chính", desc: "", prog: "", dest: null, destText: "" });
+  // --- Chương 2 ---
+  const s2 = G.story2;
+  if (s2 && !s2.done) { const st = STORY2[s2.step];
+    if (st) { const e = { group: "📜 Nhiệm vụ chính — Chương 2", title: st.t, desc: st.desc,
+        prog: (typeof storyProgText === "function") ? storyProgText().replace(st.t + " — ", "") : "", dest: null, destText: "" };
+      const pd = s2.pending;
+      if (pd && (pd.type === "kill" || pd.type === "witness" || pd.type === "clue")) { const zi = (pd.zone != null ? pd.zone : st.zone);
+        e.dest = ovDestZone(zi); e.destText = "Vùng làm việc: " + ZONES[zi].name; }
+      else if (s2.step === 5 && s2.flags && s2.flags.armed && typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead) {
+        e.dest = ovDestDyn(() => (BOSSX && !BOSSX.dead ? { x: BOSSX.x, y: BOSSX.y } : null), "Nhậm Ngã Hành"); e.destText = "Quyết chiến tại Quang Minh Đỉnh"; }
+      else { const d = ovDestNpcCi(st.giver); if (d) { e.dest = d; e.destText = "Gặp " + d.label + " tại " + ZONES[st.zone].name; } }
+      out.push(e); } }
+  else if (s2 && s2.done) out.push({ group: "📜 Nhiệm vụ chính — Chương 2", title: "🏆 Chương 2 đã hoàn thành!", desc: "", prog: "", dest: null, destText: "" });
+  // --- Ủy thác giang hồ (SOC) ---
+  if (typeof SOC !== "undefined" && SOC.errands) for (const er of SOC.errands) {
+    const e = { group: "🧾 Ủy thác giang hồ", title: er.desc, giver: er.giver,
+      desc: (typeof socErrandStatus === "function") ? socErrandStatus(er) : er.desc,
+      prog: (er.need ? (er.prog || 0) + "/" + er.need : ""), deadline: er.deadline,
+      reward: er.gold + " vàng · thiện cảm +" + er.affR + (er.fameR ? " · danh tiếng +" + er.fameR : "") + (er.itemR ? " · " + er.itemR : ""),
+      dest: null, destText: "" };
+    const ready = (typeof socErrandReady === "function") && socErrandReady(er);
+    if (er.type === "deliver") { e.dest = ovDestNpc(er.targetName); e.destText = "Người nhận: " + er.targetName + " (" + ZONES[er.targetZone].name + ")"; }
+    else if (er.type === "find") { if (er.found) { e.dest = ovDestNpc(er.giver); e.destText = "Quay về báo tin cho " + er.giver; }
+      else { e.dest = ovDestNpc(er.targetName); e.destText = "Người cần tìm: " + er.targetName; } }
+    else if (er.type === "kill") { if (er.state === "ready" || ready) { e.dest = ovDestNpc(er.giver); e.destText = "Quay lại gặp " + er.giver + " nhận thưởng"; }
+      else { e.dest = ovDestZone(er.targetZone); e.destText = "Vùng diệt quái: " + ZONES[er.targetZone].name; } }
+    else if (er.type === "gather" || er.type === "buy") { if (ready) { e.dest = ovDestNpc(er.giver); e.destText = "Mang về cho " + er.giver + " (" + ZONES[er.giverZone].name + ")"; }
+      else if (er.type === "gather" && er.item === "Quặng Sắt" && typeof OV7_NODES !== "undefined") {
+        let bn = null, bd = 1e18; for (const nd of OV7_NODES) { if (nd.kind !== "rock" || ov7Left(nd) <= 0) continue;
+          const d = Math.abs(nd.gx - pc.gx) + Math.abs(nd.gy - pc.gy); if (d < bd) { bd = d; bn = nd; } }
+        if (bn) { e.dest = ovDestPoint(bn.x, bn.y, "Tảng đá gần nhất"); e.destText = "Tảng đá gần nhất (đập lấy Quặng Sắt)"; }
+        else e.destText = "Hôm nay các tảng đá quanh đây đã đập hết — mai quay lại"; }
+      else e.destText = (er.type === "buy" ? "Mua ở tiệm bất kỳ rồi mang về cho " : "Kiếm đủ ") + er.item + " rồi quay lại gặp " + er.giver; }
+    else if (er.type === "escort") { e.dest = ovDestZone(er.destZone); e.destText = "Đích hộ tống: " + ZONES[er.destZone].name; }
+    out.push(e); }
+  // --- Bounty ---
+  if (G.bounty && !G.bounty.done) { const zi = ZONES.findIndex(z => z.name === G.bounty.zone);
+    out.push({ group: "📌 Việc đang theo dõi", title: "🎯 Bounty: hạ " + G.bounty.n + (G.bounty.elite ? " quái tinh anh" : " quái") + " tại " + G.bounty.zone,
+      desc: "Thưởng " + G.bounty.reward + " vàng + " + G.bounty.xp + " EXP", prog: G.bounty.prog + "/" + G.bounty.n,
+      dest: zi >= 0 ? ovDestZone(zi) : null, destText: zi >= 0 ? "Vùng: " + G.bounty.zone : "" }); }
+  // --- Nhập môn ---
+  if (G.joinQuest) out.push({ group: "📌 Việc đang theo dõi", title: "🏯 Nhập môn " + G.joinQuest.sect + ": hạ địch tại " + ZONES[G.joinQuest.zone].name,
+    desc: "Xong rồi quay lại gặp chưởng môn báo cáo", prog: G.joinQuest.prog + "/" + G.joinQuest.need,
+    dest: ovDestZone(G.joinQuest.zone), destText: "Vùng: " + ZONES[G.joinQuest.zone].name });
+  // --- Tri kỷ ---
+  for (const nm in (G.npcQuest || {})) { const qq = G.npcQuest[nm]; if (!qq || qq.done) continue;
+    out.push({ group: "📌 Việc đang theo dõi", title: "📜 Nhiệm vụ tri kỷ — " + nm + ": hạ địch tại " + ZONES[qq.zone].name,
+      desc: "", prog: qq.prog + "/" + qq.need, dest: ovDestZone(qq.zone), destText: "Vùng: " + ZONES[qq.zone].name }); }
+  // --- NV phái hằng ngày ---
+  if (G.sectQuests && G.sect) { const sd = SECTS[G.sect];
+    G.sectQuests.list.forEach((qq, i) => { if (qq.done) return;
+      const e = { group: "📌 Việc đang theo dõi", title: "🏯 NV phái: " + qq.label, desc: "", prog: qq.prog + "/" + qq.need, dest: null, destText: "" };
+      if (qq.type === "kill") { e.dest = ovDestZone(sd.zone); e.destText = "Vùng: " + ZONES[sd.zone].name; }
+      else if (qq.type === "gather") { const pt = (typeof GATHER !== "undefined") ? GATHER.find(p => !p.got) : null;
+        if (pt) { e.dest = ovDestPoint(pt.x, pt.y, "Điểm linh thảo"); e.destText = "Điểm linh thảo chưa hái gần nhất"; } }
+      else if (qq.type === "patrol") { const pt = (typeof PATROLS !== "undefined") ? PATROLS.find(p => !p.got) : null;
+        if (pt) { e.dest = ovDestPoint(pt.x, pt.y, "Điểm tuần tra"); e.destText = "Điểm tuần tra chưa qua"; } }
+      out.push(e); }); }
+  // --- Hộ tống thương đội (kỳ ngộ) ---
+  if (G.escort) out.push({ group: "📌 Việc đang theo dõi", title: "🚚 Hộ tống thương đội: đánh lui sơn tặc đang cướp xe",
+    desc: "Sơn tặc xuất hiện quanh ngươi — không có điểm đến cố định", prog: G.escort.prog + "/" + G.escort.need, dest: null, destText: "" });
+  return out;
+}
+
+/* ---------- PANEL NHIỆM VỤ (thay renderQuestPanel — nguồn duy nhất) ---------- */
+let OV8_DESTS = [];
+renderQuestPanel = function () { const b = document.getElementById("questBox"); if (!b || !G) return;
+  OV8_DESTS = [];
+  const entries = ovQuestEntries();
+  let h = "<h3>📜 Nhiệm Vụ</h3>";
+  if (OV.auto) h += "<p>🚶 Đang auto tới: <b>" + OV.auto.label + "</b> <button class=\"btn red\" id=\"ov8StopBtn\">⏹️ Dừng</button></p>";
+  let lastGroup = "";
+  for (const e of entries) { if (e.group !== lastGroup) { h += "<h4>" + e.group + "</h4>"; lastGroup = e.group; }
+    let btn = "";
+    if (e.dest) { const di = OV8_DESTS.length; OV8_DESTS.push(e.dest);
+      btn = "<br><button class=\"btn\" data-ovdest=\"" + di + "\">🚶 Tới nơi</button>"; }
+    h += "<div class=\"qRow\"><b>" + e.title + "</b>"
+      + (e.giver ? "<br><span class=\"dim\">Người giao: " + e.giver + "</span>" : "")
+      + (e.desc ? "<br><span class=\"dim\">" + e.desc + "</span>" : "")
+      + (e.destText ? "<br>📍 " + e.destText : "")
+      + (e.prog ? " · Tiến độ: <b>" + e.prog + "</b>" : "")
+      + (e.deadline ? "<br>⏳ Hạn: hết ngày " + e.deadline : "")
+      + (e.reward ? "<br>🎁 " + e.reward : "")
+      + btn + "</div>"; }
+  if (!entries.length) h += "<p class=\"dim\">Chưa có việc nào đang theo dõi.</p>";
+  // --- Nhật ký: ghi chép thuần, KHÔNG trùng việc đang theo dõi ---
+  h += "<h4>📓 Nhật ký</h4>";
+  if (typeof SOC !== "undefined" && SOC.mem) { const done = Object.values(SOC.mem).reduce((a, m) => a + (m.helped || 0), 0);
+    if (done) h += "<p class=\"dim\">🤝 Đã giúp giang hồ " + done + " việc (ủy thác) — các NPC vẫn nhớ và nhắc lại khi gặp.</p>"; }
+  if (typeof S5 !== "undefined") { if (S5.comp) h += "<p>🧭 Đang đồng hành: <b>" + S5.comp.name + "</b> (tới hết ngày " + S5.comp.day + ")</p>";
+    const tris = Object.keys(S5.triki || {});
+    if (tris.length) for (const nm of tris) h += "<p>🤝 <b>Chứng nhận kết nghĩa:</b> ngươi và " + nm + " — tri kỷ từ ngày " + S5.triki[nm].day + (S5.triki[nm].gift === "bro" ? " (kết nghĩa kim lan: khi họ đồng hành, công lực +8%)" : " (đã truyền thụ biến chiêu/chỉ điểm)") + "</p>";
+    if (S5.deeds && S5.deeds.length) { h += "<p><b>🗞️ Tiếng đồn về ngươi:</b></p>";
+      for (const d of S5.deeds) h += "<p class=\"dim\">· [" + (d.zone || "khắp nơi") + " — ngày " + d.day + "] " + d.txt + "</p>"; } }
+  if (G.spouse) h += "<p>💑 Bạn đời: <b>" + G.spouse + "</b> — " + (G.spouseFollow ? "đang đi theo hỗ trợ chiến đấu" : "đang ở nhà chờ") + "</p>";
+  if (G.house !== null && G.house !== undefined) h += "<p>🏠 Nhà tại " + ZONES[G.house].name + " — giường ngủ, rương đồ, bàn luyện công.</p>";
+  h += "<div class=\"row\"><button class=\"btn ghost\" data-close=\"questBox\">Đóng (Q)</button></div>";
+  b.innerHTML = h;
+  b.querySelectorAll("[data-ovdest]").forEach(btn => { btn.onclick = () => { const d = OV8_DESTS[parseInt(btn.dataset.ovdest, 10)];
+    if (d) ovAutoStart(d); }; });
+  const sb = document.getElementById("ov8StopBtn"); if (sb) sb.onclick = () => ovAutoStop("⏹️ Đã dừng auto theo lệnh của ngươi.");
+};
+
+/* ---------- ĐỊNH TUYẾN ---------- */
+function ovAutoBFS(sx, sy, tx, ty) { // BFS toàn lưới: ô TỚI ĐƯỢC gần đích nhất (đích bị nước/vách bao)
+  const W = OV.GW, H = OV.GH, N = W * H;
+  const came = new Int32Array(N).fill(-2), q = new Int32Array(N);
+  let qh = 0, qt = 0; const si = sy * W + sx; came[si] = -1; q[qt++] = si;
+  let best = si, bestD = (sx - tx) * (sx - tx) + (sy - ty) * (sy - ty);
+  while (qh < qt) { const cur = q[qh++], cx = cur % W, cy = (cur / W) | 0;
+    const d = (cx - tx) * (cx - tx) + (cy - ty) * (cy - ty); if (d < bestD) { bestD = d; best = cur; }
+    for (const dd of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dd[0], ny = cy + dd[1];
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const ni = ny * W + nx;
+      if (came[ni] !== -2) continue;
+      if (ovBlocked(nx, ny)) { came[ni] = -3; continue; }
+      came[ni] = cur; q[qt++] = ni; } }
+  if (best === si) return null;
+  const path = []; let k = best;
+  while (k !== si && k >= 0) { path.unshift([k % W, (k / W) | 0]); k = came[k]; }
+  return path.length ? path : null; }
+function ovAutoRoute(from, targetCell) {
+  const tw = ovNearestWalkable(targetCell.gx, targetCell.gy, false);
+  if (from.gx === tw.gx && from.gy === tw.gy) return { path: [], partial: false, end: tw };
+  let p = null;
+  try { p = ovAStar(from.gx, from.gy, tw.gx, tw.gy, OV.GW, OV.GH, ovBlocked, 100000); } catch (e) { p = null; }
+  if (p) return { path: p, partial: false, end: tw };
+  p = ovAutoBFS(from.gx, from.gy, tw.gx, tw.gy);
+  if (p && p.length) { const end = p[p.length - 1];
+    return { path: p, partial: !(end[0] === tw.gx && end[1] === tw.gy), end: { gx: end[0], gy: end[1] } }; }
+  return null; }
+function ovAutoHere() { if (OV.anim) return { gx: OV.anim.gx, gy: OV.anim.gy };
+  return OV.cell || ovCellOf(G.p.x, G.p.y); }
+
+/* ---------- AUTO: bắt đầu / dừng / nhịp ---------- */
+OV.auto = null;
+function ovAutoStart(dest) {
+  if (!G || OV.battle) return;
+  if (ovInCave()) { toast("🕳️ Đang ở trong hang — ra khỏi hang rồi mới dùng 🚶 Tới nơi được."); return; }
+  if (OV.stepsLeft <= 0) { toast("⚡ Hết thể lực — hãy Ngủ/Cắm trại hoặc vào nhà/lều nghỉ gần nhất, mai đi tiếp."); return; }
+  const tc = dest.cell(); if (!tc) { toast("🚧 Chưa xác định được vị trí đích của việc này."); return; }
+  if (dest.kind === "zone") { const pz = zoneAt(G.p.x, G.p.y);
+    if (pz && ZONES.indexOf(pz) === dest.zi) { toast("📍 Ngươi đang ở " + ZONES[dest.zi].name + " rồi — hãy làm việc tại đây."); return; } }
+  else { const here = ovAutoHere();
+    if (Math.max(Math.abs(here.gx - tc.gx), Math.abs(here.gy - tc.gy)) <= 1) { toast("📍 Đã ở ngay điểm đích (" + dest.label + ") — bấm E / mở thoại để tương tác."); return; } }
+  const r = ovAutoRoute(ovAutoHere(), tc);
+  if (!r || !r.path.length) { toast("🚧 Không tìm được đường tới " + dest.label + " (bị nước/tường chặn hẳn) — thử đi thuyền/xa phu ở Bản đồ (M) tới vùng gần hơn."); return; }
+  OV.auto = { dest, label: dest.label, partial: r.partial, routed: { gx: tc.gx, gy: tc.gy },
+    stallCell: null, stallT: 0, reroutes: 0, checkT: 0 };
+  OV.path = r.path;
+  try { closePanels(); } catch (e) {}
+  try { closePanels2(); } catch (e) {}
+  const qb = document.getElementById("questBox"); if (qb) qb.classList.add("hidden");
+  ovAutoBarShow(true);
+  toast("🚶 Đang tới: " + dest.label + " — còn ~" + r.path.length + " ô. Bấm phím đi / chạm ô khác / ⏹️ Dừng để hủy bất cứ lúc nào.");
+  ovAutoBarUpdate(); }
+function ovAutoStop(msg) { if (!OV.auto) { ovAutoBarShow(false); return; }
+  OV.auto = null; OV.path = []; ovAutoBarShow(false); if (msg) toast(msg); }
+function ovAutoArrived() { const a = OV.auto; if (!a) return; const partial = a.partial, label = a.label, kind = a.dest.kind;
+  OV.auto = null; OV.path = []; ovAutoBarShow(false);
+  if (partial) toast("🚶 Đã tới bờ/điểm gần đích nhất — " + label + " bị nước hoặc vách bao quanh, không đi bộ tới được. Hãy dùng thuyền ở bến gần đây, hoặc mở Bản đồ (M) chọn vùng đích để đi xa phu/thuyền.");
+  else if (kind === "zone") toast("📍 Đã tới vùng đích: " + label + " — hãy làm việc tại đây.");
+  else toast("📍 Đã tới: " + label + " — bấm E / mở thoại để tương tác tiếp."); }
+function ovAutoTick(dt) {
+  const a = OV.auto; if (!a || !G) return;
+  if (OV.inputDir) { ovAutoStop("✋ Đã dừng auto — ngươi tự điều khiển."); return; }
+  if (OV.battle) { ovAutoStop("⚔️ Đụng quái — auto đã dừng. Đánh xong bấm 🚶 Tới nơi lại nếu muốn đi tiếp."); return; }
+  const here = OV.cell || ovCellOf(G.p.x, G.p.y);
+  // tới đích?
+  if (a.dest.kind === "zone") { const pz = zoneAt(G.p.x, G.p.y);
+    if (pz && ZONES.indexOf(pz) === a.dest.zi) { ovAutoArrived(); return; } }
+  else { const tc = a.dest.cell();
+    if (tc && Math.max(Math.abs(here.gx - tc.gx), Math.abs(here.gy - tc.gy)) <= 1) { ovAutoArrived(); return; }
+    if (a.partial && !OV.path.length && !OV.anim) { ovAutoArrived(); return; } }
+  if (OV.stepsLeft <= 0) { ovAutoStop("⚡ Hết thể lực — auto dừng. Hãy Ngủ/Cắm trại (nút ⛺) hoặc tới nhà/lều nghỉ gần nhất; mai bấm 🚶 Tới nơi để đi tiếp."); return; }
+  if (ovUiPaused()) { a.stallT = 0; return; } // đang mở panel/hộp thoại: chờ, không tính kẹt
+  a.checkT -= dt;
+  if (a.checkT <= 0) { a.checkT = 0.4; ovAutoBarUpdate();
+    // đích di chuyển (NPC/quái/boss): lệch >= 6 ô -> tính lại đường
+    if (a.dest.kind !== "zone") { const tc = a.dest.cell();
+      if (tc && Math.abs(tc.gx - a.routed.gx) + Math.abs(tc.gy - a.routed.gy) >= 6 && !OV.anim) {
+        const r = ovAutoRoute(here, tc);
+        if (r && r.path.length) { OV.path = r.path; a.partial = r.partial; a.routed = { gx: tc.gx, gy: tc.gy }; a.reroutes++; } } }
+    // đường lệch khỏi chân (dịch chuyển tức thời / bị đẩy): tính lại
+    if (OV.path.length && !OV.anim && Math.abs(OV.path[0][0] - here.gx) + Math.abs(OV.path[0][1] - here.gy) > 3) {
+      const tc = a.dest.cell(); if (tc) { const r = ovAutoRoute(here, tc);
+        if (r && r.path.length) { OV.path = r.path; a.partial = r.partial; a.routed = { gx: tc.gx, gy: tc.gy }; } } } }
+  // hết đường mà chưa tới đích -> tính lại 1 lần, không được nữa thì dừng
+  if (!OV.path.length && !OV.anim) { const tc = a.dest.cell();
+    if (tc) { if (a.reroutes > 8) { ovAutoStop("🚧 Đường tới " + a.label + " liên tục bị lệch — auto dừng, hãy đi tay một đoạn rồi bấm lại."); return; }
+      const r = ovAutoRoute(here, tc);
+      if (r && r.path.length) { OV.path = r.path; a.partial = r.partial; a.routed = { gx: tc.gx, gy: tc.gy }; a.reroutes++; }
+      else { ovAutoStop("🚧 Không tìm được đường tới " + a.label + " — đích có thể bị chặn hẳn; thử dùng thuyền/xa phu ở Bản đồ (M)."); return; } }
+    else { ovAutoStop("🚧 Đích của việc này không còn xác định được (người/việc đã thay đổi)."); return; } }
+  // kẹt: đứng yên quá lâu dù còn đường
+  if (OV.path.length && !OV.anim) { const key = here.gx + "," + here.gy;
+    if (a.stallCell === key) { a.stallT += dt;
+      if (a.stallT > 2.5) { const tc = a.dest.cell();
+        if (tc && a.reroutes < 3) { const r = ovAutoRoute(here, tc);
+          if (r && r.path.length) { OV.path = r.path; a.reroutes++; a.stallT = 0; } }
+        else { ovAutoStop("🚧 Đường tới " + a.label + " bị chặn — auto dừng, hãy đi vòng bằng tay một đoạn rồi bấm lại."); return; } } }
+    else { a.stallCell = key; a.stallT = 0; } }
+  else a.stallT = 0; }
+
+/* ---------- Dòng trạng thái auto (luôn hiện, kể cả khi ẩn giao diện 👁️) ---------- */
+function ovAutoBarShow(on) { const bar = document.getElementById("ovAutoBar"); if (bar) bar.style.display = on ? "flex" : "none"; }
+function ovAutoBarUpdate() { const t = document.getElementById("ovAutoTxt"); if (!t || !OV.auto) return;
+  t.textContent = "🚶 Đang tới: " + OV.auto.label + " — còn ~" + (OV.path.length + (OV.anim ? 1 : 0)) + " ô"; }
+(function ov8InitChrome() {
+  if (!document.getElementById("ovAutoBarStyle")) { const st = document.createElement("style"); st.id = "ovAutoBarStyle";
+    st.textContent = "#ovAutoBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 118px);z-index:950;display:none;align-items:center;gap:8px;background:rgba(24,15,7,.88);border:1.5px solid var(--gold);border-radius:999px;padding:5px 6px 5px 12px;color:var(--gold2);font-size:12.5px;font-weight:700;max-width:92vw;box-shadow:0 3px 10px rgba(0,0,0,.45)}"
+      + "#ovAutoBar button{min-height:30px;padding:2px 10px;border-radius:999px}"
+      + ".qRow{border:1px solid #6b4c22;border-radius:10px;padding:8px 10px;margin:6px 0;background:rgba(255,220,150,.05)}"
+      + "@media(max-width:820px){#ovAutoBar{bottom:calc(env(safe-area-inset-bottom,0px) + 132px);font-size:11.5px}}";
+    document.head.appendChild(st); }
+  if (!document.getElementById("ovAutoBar")) { const bar = document.createElement("div"); bar.id = "ovAutoBar";
+    bar.innerHTML = "<span id=\"ovAutoTxt\">🚶 Đang tới…</span><button class=\"btn red\" id=\"ovAutoStopBtn\" type=\"button\">⏹️ Dừng</button>";
+    document.body.appendChild(bar);
+    const stop = e => { e.stopPropagation(); };
+    bar.addEventListener("touchstart", stop, true); bar.addEventListener("pointerdown", stop, true);
+    document.getElementById("ovAutoStopBtn").addEventListener("click", () => ovAutoStop("⏹️ Đã dừng auto theo lệnh của ngươi.")); }
+  const qb = document.getElementById("questBtn"); if (qb) qb.textContent = "📜 Nhiệm vụ (Q)";
+})();
+
+/* ---------- Bọc các điểm vào: nhịp / chạm ô / ngủ / game mới ---------- */
+const _ov8Post = ovPostUpdate;
+ovPostUpdate = function (dt) { _ov8Post(dt); ovAutoTick(dt); };
+const _ov8Tap = ovTapMove;
+ovTapMove = function (gx, gy) { if (OV.auto) ovAutoStop("✋ Đã dừng auto — ngươi tự điều khiển."); _ov8Tap(gx, gy); };
+const _ov8Sleep = ovSleepCamp;
+ovSleepCamp = function () { if (OV.auto) ovAutoStop(null); _ov8Sleep(); };
+const _ov8Start = startGame;
+startGame = function (ci, fs) { OV.auto = null; OV.path = []; ovAutoBarShow(false); _ov8Start(ci, fs); };
+
+/* ---------- API kiểm chứng cho probe ---------- */
+if (window.__OV) { window.__OV.autoStart = d => ovAutoStart(d);
+  window.__OV.autoStop = () => ovAutoStop(null);
+  window.__OV.autoState = () => OV.auto ? { label: OV.auto.label, partial: OV.auto.partial, left: OV.path.length, reroutes: OV.auto.reroutes } : null;
+  window.__OV.questEntries = () => ovQuestEntries().map(e => ({ group: e.group, title: e.title, prog: e.prog || "",
+    deadline: e.deadline || null, destText: e.destText || "", hasDest: !!e.dest,
+    destKind: e.dest ? e.dest.kind : null, destLabel: e.dest ? e.dest.label : null }));
+  window.__OV.autoTo = i => { const es = ovQuestEntries(); const e = es[i]; if (!e || !e.dest) return false; ovAutoStart(e.dest); return true; };
+  window.__OV.version8 = "ov8-quests-auto-1"; }
+</script>
 </body>
 </html>
