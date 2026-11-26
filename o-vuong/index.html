@@ -4749,7 +4749,10 @@ $("achBtn").onclick=()=>window.__toggleAch();
    liên chiêu/nhiệm vụ/NPC/quái/hang động của bản chính; CHỈ đổi cách chơi:
    (1) di chuyển từng ô 40px (chạm ô = A* theo dữ liệu va chạm thật của bản chính,
        WASD/mũi tên/joystick đi từng ô, trượt ~110ms/ô, giữ bob/chạy của bản chính);
-   (2) mỗi ô ngoài vùng an toàn tốn 1 "Bước chân" ngày = 40 + (Cấp-1)x2 + Khinh công x3;
+   (2) MỌI ô di chuyển tốn 1 "Bước chân"/Thể lực ngày = 40 + (Cấp-1)x2 + Khinh công x3,
+       kể cả trong thành/trấn/tổng đàn/điểm an toàn phía Nam (thể lực = thời gian); hết thể
+       lực khi đang Ở TRONG vùng an toàn vẫn đi lại được trong phạm vi vùng đó để tới chỗ
+       ngủ (chống kẹt), nhưng không rời khỏi vùng an toàn được;
        ngày mới = khi đồng hồ game qua 0h (cơ chế gốc) HOẶC ngủ/cắm trại (luôn +1 ngày, 7h sáng);
    (3) đụng quái/boss -> trận TURN-BASED tại chỗ (nền mờ = chính khung cảnh), lượt theo Tốc độ,
        dùng đúng sprite + ảnh hiệu ứng skill SKILL_FX + hào quang biến chiêu của bản chính;
@@ -4873,7 +4876,7 @@ function ovCanStepTo(gx, gy) {
   if (ovInCave()) return ovCaveBlocked(gx, gy) ? "🚧 Ô bị chặn trong hang (tường/cửa đá)." : null;
   if (ovBlocked(gx, gy)) return "🚧 Ô đó không đi được (nước sâu / tường / thân điện) — hãy vòng qua cầu hoặc đường khác.";
   if (!ovSafeCell(gx, gy) && OV.stepsLeft <= 0)
-    return "👣 Đã hết Bước chân hôm nay (" + ovStepsMax() + " ô)! Hãy Ngủ / Cắm trại (nút ⛺ ở thanh hệ thống) để sang ngày mới, hoặc lui về vùng an toàn.";
+    return "⚡ Đã hết Thể lực hôm nay! Ô đó nằm ngoài vùng an toàn nên không tới được — trong vùng an toàn ngươi vẫn đi lại được để tới khách điếm/nhà mình mà ngủ; đang ở ngoài trời thì hãy lui vào vùng an toàn gần nhất hoặc bấm ⛺ Ngủ / Cắm trại để sang ngày mới.";
   return null;
 }
 function ovStartStep(gx, gy) {
@@ -4889,9 +4892,11 @@ function ovArriveCell() {
   const a = OV.anim; OV.anim = null;
   OV.cell = { gx: a.gx, gy: a.gy };
   G.p.x = a.tx; G.p.y = a.ty;
-  if (!ovInCave() && !ovSafeCell(a.gx, a.gy)) { OV.stepsLeft = Math.max(0, OV.stepsLeft - 1); // 1 ô ngoài an toàn = 1 bước
-    if (OV.stepsLeft === 0) toast("👣 Đã hết Bước chân hôm nay (" + ovStepsMax() + " ô)! Hãy Ngủ / Cắm trại (nút ⛺ ở thanh hệ thống) để sang ngày mới, hoặc lui về vùng an toàn.");
-    else if (OV.stepsLeft <= 5 && !OV.lowWarned) { OV.lowWarned = true; toast("⚠️ Chỉ còn " + OV.stepsLeft + " Bước chân hôm nay — cân nhắc quay về vùng an toàn hoặc Ngủ / Cắm trại (nút ⛺)!"); } }
+  if (!ovInCave() && OV.stepsLeft > 0) { OV.stepsLeft = Math.max(0, OV.stepsLeft - 1); // MỌI ô = 1 thể lực, kể cả trong thành/trấn/tổng đàn (thể lực = thời gian); thể lực đã 0 thì không trừ thêm (đi lại trong vùng an toàn chống kẹt, ovCanStepTo chặn rời vùng)
+    if (OV.stepsLeft === 0) toast(ovSafeCell(a.gx, a.gy)
+      ? "⚡ Đã hết Thể lực hôm nay! Ngươi đang ở vùng an toàn — vẫn đi lại được trong vùng này để tới khách điếm/nhà mình mà ngủ (nút ⛺ Ngủ / Cắm trại), nhưng không rời khỏi vùng an toàn và không làm việc tốn thể lực khác được."
+      : "⚡ Đã hết Thể lực hôm nay (" + ovStepsMax() + ")! Hãy Ngủ / Cắm trại (nút ⛺ ở thanh hệ thống) để sang ngày mới, hoặc lui về vùng an toàn gần nhất.");
+    else if (OV.stepsLeft <= 5 && !OV.lowWarned) { OV.lowWarned = true; toast("⚠️ Chỉ còn " + OV.stepsLeft + " thể lực hôm nay — mọi ô đều tốn thể lực kể cả trong thành; cân nhắc về vùng an toàn hoặc Ngủ / Cắm trại (nút ⛺)!"); } }
   ovUpdateStepsHud();
   if (OV.graceT <= 0 && !ovUiPaused()) { if (ovCheckEncounter()) return; }
   ovCheckNpcCell();
@@ -4965,7 +4970,7 @@ function ovOnNewDay(announce) {
   OV.lowWarned = false;
   OV.npcState.forEach(s => { s.left = 56; });
   ovUpdateStepsHud();
-  if (announce && OV.started && G) toast("🌅 Ngày mới — Ngày " + G.day + ": Bước chân đã hồi đầy (" + ovStepsMax() + " ô)! (1 ngày game = 240 giây — bước chỉ trừ khi đi ô ngoài vùng an toàn)");
+  if (announce && OV.started && G) toast("🌅 Ngày mới — Ngày " + G.day + ": Thể lực đã hồi đầy (" + ovStepsMax() + ")! Mọi ô di chuyển đều tốn 1 thể lực — kể cả trong thành.");
 }
 function ovAdvanceDay() {
   G.day++; dayHour = 7;
@@ -5022,7 +5027,7 @@ function ovInjectChrome() {
   if (sel && !document.getElementById("ovBanner")) {
     const d = document.createElement("p"); d.id = "ovBanner";
     d.style.cssText = "margin-top:6px;background:rgba(245,207,135,.14);border:1.5px solid var(--gold);border-radius:10px;padding:7px 10px";
-    d.innerHTML = "♟️ <b>BẢN Ô VUÔNG TURN-BASED:</b> dùng <b>nguyên bản đồ, tổng đàn 12 phái, 120 nhân vật và toàn bộ võ học + ảnh hiệu ứng của bản chính</b> — chỉ đổi cách chơi: đi <b>từng ô</b> (mỗi ô ngoài vùng an toàn tốn 1 Bước chân/ngày), đụng quái là <b>đánh theo lượt tại chỗ</b>, NPC cũng đi từng ô như bạn.";
+    d.innerHTML = "♟️ <b>BẢN Ô VUÔNG TURN-BASED:</b> dùng <b>nguyên bản đồ, tổng đàn 12 phái, 120 nhân vật và toàn bộ võ học + ảnh hiệu ứng của bản chính</b> — chỉ đổi cách chơi: đi <b>từng ô</b> (mỗi ô tốn 1 Thể lực/ngày — kể cả trong thành), đụng quái là <b>đánh theo lượt tại chỗ</b>, NPC cũng đi từng ô như bạn.";
     sel.appendChild(d); }
   document.title = "Võ Lâm Ô Vuông — Turn-Based";
 }
@@ -5127,7 +5132,7 @@ startGame = function (charIdx, fromSave) {
   if (fromSave) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
     if (j && typeof j.tbSteps === "number" && j.day === G.day) OV.stepsLeft = Math.max(0, Math.min(ovStepsMax(), j.tbSteps)); } catch (e) {} }
   ovInjectChrome(); ovUpdateStepsHud();
-  setTimeout(() => { if (G && !OV.battle) toast("♟️ Bản Ô Vuông: đi từng ô (chạm ô / WASD), mỗi ô ngoài vùng an toàn tốn 1 Bước chân — đụng quái là vào trận theo lượt!"); }, 3600);
+  setTimeout(() => { if (G && !OV.battle) toast("♟️ Bản Ô Vuông: đi từng ô (chạm ô / WASD), mỗi ô di chuyển tốn 1 Thể lực kể cả trong thành — đụng quái là vào trận theo lượt!"); }, 3600);
 };
 saveGame = function () {
   _ovSaveGame();
@@ -6058,12 +6063,12 @@ renderHelpPanel = function () { _ovHelp(); const b = document.getElementById("he
     d.innerHTML = "<h4>♟️ Thể lực = Thời gian (bản Ô Vuông)</h4>" +
     "<p>Mỗi hành động của ngươi là <b>1 NHỊP</b> của cả giang hồ: ngươi bước 1 ô thì <b>mọi NPC và quái trên toàn bản đồ cũng bước 1 ô</b> theo việc của họ, trời cũng tối dần theo nhịp (1 ngày = hết ngân sách thể lực). Đứng nói chuyện lâu là NPC xung quanh vẫn sống, vẫn đi lại.</p>" +
     "<p>💰 <b>Bảng giá nhịp</b> (trừ vào ⚡ Thể lực ngày, chung ngân sách với bước đi):<br>" +
-    "· Đi 1 ô ngoài vùng an toàn: <b>1</b> (trong vùng an toàn: miễn phí, vẫn tính 1 nhịp)<br>" +
+    "· Di chuyển: <b>1</b> thể lực/ô ở mọi nơi, kể cả trong thành (mỗi ô vẫn là 1 nhịp)<br>" +
     "· Nói chuyện / trò chuyện với NPC: <b>1</b> (nhận &amp; trả nhiệm vụ tính trong nhịp nói chuyện)<br>" +
     "· Mở tiệm mua bán: <b>1</b> · Mở rương: <b>1</b> · Hái thuốc: <b>1</b><br>" +
     "· Học chiêu: <b>2</b> · Luyện công cùng NPC: <b>2</b> · Câu cá: <b>2</b>/lần<br>" +
     "· Vào trận theo lượt: <b>0</b> (thời gian trong trận là nén)</p>" +
-    "<p>Hết thể lực: không đi ô thường, không làm thêm việc tốn nhịp được — bấm <b>⛺ Ngủ / Cắm trại</b> để sang ngày mới, hồi đầy thể lực. NPC cũng có thể lực ngày riêng: hết là họ nghỉ, tối là họ về nhà ngủ.</p>";
+    "<p>Hết thể lực: không làm thêm việc tốn nhịp được — bấm <b>⛺ Ngủ / Cắm trại</b> để sang ngày mới, hồi đầy thể lực. Riêng khi hết thể lực mà đang ở <b>trong thành/trấn/vùng an toàn</b>: vẫn đi lại được trong phạm vi vùng đó (không trừ thêm) để tới khách điếm/nhà mình mà ngủ — nhưng không rời khỏi vùng an toàn được. Đang ở ngoài trời thì vẫn cắm trại tại chỗ bằng nút ⛺ như thường. NPC cũng có thể lực ngày riêng: hết là họ nghỉ, tối là họ về nhà ngủ.</p>";
     b.appendChild(d); } };
 /* --- Save: thêm nhịp hôm nay + ô của từng NPC (save cũ tự migrate) --- */
 const _ovSaveTick = saveGame;
