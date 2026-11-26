@@ -260,6 +260,12 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
 #questToggle::after{content:"";position:absolute;inset:-8px}
 @media(max-width:820px){#sysBtns .btn{min-height:40px}}
 @media(orientation:landscape) and (max-height:540px){#sysBtns .btn{min-height:40px}}
+/* ===== VÁ CUỘN CHẠM TOÀN DIỆN (bản nhịp thế giới): MỌI panel/hộp/menu dài cuộn nội bộ bằng chạm,
+   kể cả khi pointer không phải coarse; nền game ngoài panel vẫn khóa cuộn như cũ ===== */
+.panelBox,#eventBox,#bagBox,#dialog{touch-action:pan-y !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#eventBox,#bagBox,#dialog{max-height:88dvh;overflow-y:auto}
+#ovBSub,#ovBLog,#questHud.open{touch-action:pan-y !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#ovTickFx{position:absolute;top:120px;left:16px;z-index:15;font-weight:800;color:#ffd98a;font-size:15px;text-shadow:0 2px 3px #000;opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
@@ -4688,7 +4694,11 @@ $("achBtn").onclick=()=>window.__toggleAch();
   /* --- Khóa cuộn trang khi đang chơi: chạm/vuốt ngoài panel không làm trôi trang, chặn pull-to-refresh --- */
   document.addEventListener("touchmove",e=>{ if(!document.body.classList.contains("inGame")) return;
     const t=e.target;
-    if(t && t.closest && t.closest(".panelBox,#eventBox,#bagBox,#dialog,#sysBtns,#questHud.open,input,textarea,select")) return;
+    if(t && t.closest && t.closest(".panelBox,#eventBox,#bagBox,#dialog,#sysBtns,#questHud.open,#ovBattle,input,textarea,select")) return;
+    // VÁ CUỘN CHẠM: chạm bắt đầu trên BẤT KỲ vùng nào tự cuộn dọc được và nội dung đang tràn
+    // (panel con, menu chiêu trong trận, danh sách dài nằm sâu trong panel...) -> không chặn, để trình duyệt cuộn.
+    let el=t; while(el && el!==document.body){ try{ const cs=getComputedStyle(el);
+      if((cs.overflowY==="auto"||cs.overflowY==="scroll") && el.scrollHeight>el.clientHeight+2) return; }catch(err){} el=el.parentElement; }
     e.preventDefault(); },{passive:false});
   document.addEventListener("gesturestart",e=>{ if(document.body.classList.contains("inGame")) e.preventDefault(); });
   /* --- Bàn phím ảo mở (đặt tên con / lập phái): ô nhập tự cuộn vào giữa panel, không bị bàn phím che --- */
@@ -5849,6 +5859,221 @@ document.getElementById("ovBField").addEventListener("click", () => { if (OV.bat
 window.__OV = { get steps() { return OV.stepsLeft; }, get stepsMax() { return ovStepsMax(); },
   get cell() { return OV.cell; }, get battle() { return OV.battle; },
   moveTo: ovTapMove, sleepCamp: ovSleepCamp, openBattle: ovOpenBattle, version: "ov2-full-base" };
+</script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   OV3 — NHỊP THẾ GIỚI ĐỒNG BỘ · THỂ LỰC = THỜI GIAN · AI NPC SỐNG NHƯ NGƯỜI THẬT
+   (1) Mỗi hành động của người chơi = 1 NHỊP (tick): TOÀN BẢN ĐỒ cùng bước 1 ô —
+       NPC gần (trong ~1100px) bước ô thật trên lưới (né ô chặn), NPC xa bước logic
+       40px theo tuyến tới điểm lịch trình (O(1)/NPC, không A* cho toàn map);
+       quái cũng bước 1 ô (lang thang / rượt người chơi trong 5 ô; bước vào ô người
+       chơi cũng khơi trận). Đồng hồ game chạy THEO NHỊP (ghim dayHour mỗi frame,
+       tắt đồng hồ real-time của bản chính): 1 ngày = ngân sách thể lực nhịp, 7h -> 24h.
+   (2) Mọi hành động tốn Thể lực ngày (chung ngân sách với bước đi, HUD đã đổi nhãn):
+       nói chuyện/trò chuyện 1 · mở tiệm 1 · mở rương 1 · hái thuốc 1 · học chiêu 2 ·
+       luyện công cùng NPC 2 · câu cá 2. Hết thể lực -> chặn + báo, phải ngủ/cắm trại.
+       Trong trận turn-based: không tốn nhịp (thời gian nén).
+   (3) AI NPC: lịch trình bản chính (làm việc/ăn/luyện/ ngủ theo giờ-nhịp), tự hồi HP,
+       hết thể lực ngày thì nghỉ, cao thủ thỉnh thoảng rời vùng đi giang hồ sang vùng
+       khác, cao thủ ở xa tự xử quái kề bên (tính tự động, không cho EXP/đồ như bản
+       chính), NPC kề bên chủ động chào hỏi/bình luận theo ngữ cảnh (danh tiếng, ác
+       danh, đồng môn, thiện cảm, giờ giấc, tin đồn) và thỉnh thoảng rủ tỉ thí; lời
+       chào theo ngữ cảnh cũng hiện ở đầu mỗi cuộc hội thoại.
+   Save: thêm tbTicks (nhịp hôm nay) + tbNpc (ô của từng NPC) vào save ô vuông;
+   save cũ thiếu trường -> NPC khởi tạo theo lịch trình như trước (tự migrate).
+   ===================================================================================== */
+OV.tick = { today: 0, total: 0 };
+OV.lastTickMs = 0;
+OV.tickNpc = new Map();
+const OV_NPC_BUDGET = 56;
+function ovTickHourF() { const m = Math.max(1, ovStepsMax()); return 7 + 17 * Math.min(1, OV.tick.today / m); }
+function ovNpcState2(n) { let s = OV.tickNpc.get(n);
+  if (!s) { const c = ovCellOf(n.x, n.y);
+    s = { gx: c.gx, gy: c.gy, px: n.x, py: n.y, rx: n.x, ry: n.y, left: OV_NPC_BUDGET, roam: null, greetTick: -99, sparTick: -99 };
+    OV.tickNpc.set(n, s); }
+  return s; }
+function ovNpcBusy(n) { return !!(n.fight || (G && G.spar && G.spar.npc === n) || (typeof dlgNPC !== "undefined" && dlgNPC === n)); }
+function ovNpcAnchor(n) { const sch = npcSchedule(dayHour); n.act = sch[0]; const dest = sch[1];
+  if (G.spouse === n.name) { if (G.spouseFollow) return [G.p.x - 34, G.p.y + 12];
+    if (G.house !== null && G.house !== undefined) { const hp = housePos(G.house); return [hp.x + 26, hp.y + 16]; } }
+  const s = ovNpcState2(n); if (s.roam) return s.roam;
+  return dest === "home" ? [n.hx, n.hy] : dest === "work" ? [n.wx, n.wy] : dest === "tavern" ? [n.tavx, n.tavy] : [n.trx, n.try_]; }
+function ovTickNpc(n) { const s = ovNpcState2(n);
+  if (ovNpcBusy(n)) { const c = ovCellOf(n.x, n.y); s.gx = c.gx; s.gy = c.gy; s.px = n.x; s.py = n.y; return; }
+  if (n.hp < n.maxhp) n.hp = Math.min(n.maxhp, n.hp + 2); // hồi phục dần theo nhịp
+  const anchor = ovNpcAnchor(n);
+  if (!s.roam && npcIsMaster(n) && Math.random() < 0.012) { // cao thủ lên đường đi giang hồ sang vùng khác
+    const nz = ZONES[(Math.random() * ZONES.length) | 0];
+    if (nz) { s.roam = [nz.x + ZW / 2 + (Math.random() * 300 - 150), nz.y + ZW / 2 + (Math.random() * 300 - 150)]; } }
+  if (s.roam && Math.hypot(anchor[0] - s.px, anchor[1] - s.py) < 60) s.roam = null;
+  if (s.left <= 0) { if (npcSchedule(dayHour)[0] !== "Ngủ") n.act = "Nghỉ (hết thể lực)"; return; }
+  const near = Math.hypot(s.px - G.p.x, s.py - G.p.y) < 1100;
+  if (near) { const dest = ovCellOf(anchor[0], anchor[1]);
+    if (dest.gx === s.gx && dest.gy === s.gy) return; // đã tới nơi: ở yên làm việc của mình
+    const dx = Math.sign(dest.gx - s.gx), dy = Math.sign(dest.gy - s.gy);
+    const tries = Math.abs(dest.gx - s.gx) >= Math.abs(dest.gy - s.gy) ? [[dx, 0], [0, dy]] : [[0, dy], [dx, 0]];
+    for (const t of tries) { if (!t[0] && !t[1]) continue;
+      if (!ovBlocked(s.gx + t[0], s.gy + t[1])) { s.gx += t[0]; s.gy += t[1]; s.left--;
+        const c = ovCenter(s.gx, s.gy); s.px = c.x; s.py = c.y; break; } }
+  } else { const dx = anchor[0] - s.px, dy = anchor[1] - s.py, d = Math.hypot(dx, dy);
+    if (d > 4) { const st = Math.min(40, d); s.px += dx / d * st; s.py += dy / d * st; s.left--;
+      const c = ovCellOf(s.px, s.py); s.gx = c.gx; s.gy = c.gy;
+      if (npcIsMaster(n)) for (const e of ENEMIES) { if (e.dead || e.foe) continue; // xa: cao thủ tự xử quái kề bên, tính tự động
+        if (Math.hypot(e.x - s.px, e.y - s.py) < 60) { e.hp -= n.atk * 2;
+          if (e.hp <= 0) { e.dead = true; e.respawn = 40; e.killedByNpc = true; } break; } } } }
+}
+function ovTickEnemy(e) { if (e.dead || e.foe || !OV.cell) return;
+  if (!e.__ovCell) e.__ovCell = ovCellOf(e.x, e.y);
+  const c = e.__ovCell, pc = OV.cell;
+  const cheb = Math.max(Math.abs(c.gx - pc.gx), Math.abs(c.gy - pc.gy));
+  let mx = 0, my = 0;
+  if (cheb <= 5 && cheb > 0) { mx = Math.sign(pc.gx - c.gx); my = Math.sign(pc.gy - c.gy);
+    if (mx && my) { if (Math.random() < 0.5) my = 0; else mx = 0; } } // rượt theo người chơi
+  else if (Math.random() < 0.35) { const d = [[1, 0], [-1, 0], [0, 1], [0, -1]][(Math.random() * 4) | 0]; mx = d[0]; my = d[1]; } // lang thang
+  if (!mx && !my) return;
+  const nx = c.gx + mx, ny = c.gy + my;
+  if (ovBlocked(nx, ny)) return;
+  e.__ovCell = { gx: nx, gy: ny }; const ctr = ovCenter(nx, ny); e.x = ctr.x; e.y = ctr.y;
+}
+function ovGreetLine(n) { const aff = G.aff[n.name] || 0;
+  if (G.infamy >= 30 && n.atk < 16) return "Ngươi… ngươi là kẻ ác danh đồn xa đó sao? Đừng lại gần ta!";
+  if (typeof BOSS !== "undefined" && BOSS && BOSS.dead) return "Nghe tin Đông Phương Bất Bại đã bại dưới tay ngươi — cả giang hồ chấn động!";
+  if (G.fame >= 50) return "Danh tiếng của ngươi vang xa lắm rồi — hân hạnh được gặp mặt!";
+  if (G.sect && typeof npcSectOf === "function" && npcSectOf(n) === G.sect) return "Đồng môn! Hôm nay luyện công tới đâu rồi?";
+  if (aff >= 60) return "Tri kỷ tới rồi! Có tin mới này: " + NPC_LINES[hash(n.name + OV.tick.total) % NPC_LINES.length];
+  if (aff >= 30) return "Lại gặp ngươi rồi! " + (PERS_LINES[n.pers] ? PERS_LINES[n.pers][(Math.random() * 3) | 0] : "Dạo này khỏe chứ?");
+  if (dayHour >= 19 || dayHour < 5) return "Trời tối rồi, đường núi nguy hiểm — nghỉ lại trong trấn cho an toàn.";
+  if (n.job === "Thương nhân") return "Hàng mới về đấy, ghé xem đi — giá hữu duyên cho ngươi!";
+  const pool = PERS_LINES[n.pers] || NPC_LINES;
+  return pool[(Math.random() * pool.length) | 0]; }
+function ovTickGreetings() { if (!OV.cell) return;
+  for (const n of NPCS) { const s = OV.tickNpc.get(n); if (!s || ovNpcBusy(n)) continue;
+    if (Math.max(Math.abs(s.gx - OV.cell.gx), Math.abs(s.gy - OV.cell.gy)) > 2) continue;
+    if (OV.tick.total - s.greetTick < 14 || Math.random() > 0.4) continue;
+    s.greetTick = OV.tick.total;
+    if (npcIsMaster(n) && (G.aff[n.name] || 0) >= 10 && OV.tick.total - s.sparTick > 60 && Math.random() < 0.25) {
+      s.sparTick = OV.tick.total; n.bubble = "⚔️ Tỉ thí một trận giao hữu chứ?"; n.bubbleT = 3;
+      toast("⚔️ " + n.name + " rủ tỉ thí — lại gần bấm E, chọn ⚔️ Xin tỉ thí!"); continue; }
+    n.bubble = ovGreetLine(n); n.bubbleT = 3;
+    if (Math.random() < 0.3) toast("💬 " + n.name + ": “" + n.bubble + "”"); }
+}
+function ovTickOnce() { for (const n of NPCS) ovTickNpc(n);
+  for (const e of ENEMIES) ovTickEnemy(e);
+  ovTickGreetings();
+  if (!OV.battle && OV.graceT <= 0 && !ovUiPaused()) ovCheckEncounter(); // quái bước vào ô/kề người chơi cũng khơi trận
+}
+function ovWorldTick(n) { if (!G || OV.battle || ovInCave()) return;
+  const t0 = performance.now();
+  for (let i = 0; i < n; i++) { OV.tick.today++; OV.tick.total++; ovTickOnce(); if (OV.battle) break; }
+  OV.lastTickMs = Math.round((performance.now() - t0) * 10) / 10; }
+/* --- Ghim vị trí NPC theo NHỊP (thay bản dt cũ): NPC chỉ nhúc nhích khi thế giới tiến nhịp;
+       mỗi frame chỉ trượt hình về ô đích của nhịp gần nhất --- */
+ovNpcGridStep = function (dt) { if (ovInCave() || !G) return;
+  for (const n of NPCS) { const s = ovNpcState2(n);
+    if (ovNpcBusy(n)) { const c = ovCellOf(n.x, n.y); s.gx = c.gx; s.gy = c.gy; s.px = n.x; s.py = n.y; s.rx = n.x; s.ry = n.y; continue; }
+    const far = Math.hypot(s.px - G.p.x, s.py - G.p.y) >= 1100;
+    const tx = far ? s.px : ovCenter(s.gx, s.gy).x, ty = far ? s.py : ovCenter(s.gx, s.gy).y;
+    const k = Math.min(1, dt * 6 + 0.001);
+    s.rx += (tx - s.rx) * k; s.ry += (ty - s.ry) * k;
+    if (Math.abs(tx - s.rx) < 1) s.rx = tx; if (Math.abs(ty - s.ry) < 1) s.ry = ty;
+    n.x = s.rx; n.y = s.ry; }
+};
+/* --- Mỗi bước chân của người chơi = 1 nhịp thế giới --- */
+const _ovArriveCell = ovArriveCell;
+ovArriveCell = function () { _ovArriveCell(); ovWorldTick(1); };
+/* --- Đồng hồ theo nhịp: ghim dayHour sau mỗi update (tắt trôi real-time của bản chính) --- */
+const _ovUpdateTick = update;
+update = function (dt, now) { _ovUpdateTick(dt, now);
+  if (G && !ovInCave()) dayHour = Math.min(23.6, ovTickHourF()); };
+/* --- Ngày mới: reset nhịp hôm nay + ngân sách thể lực của NPC --- */
+const _ovOnNewDayTick = ovOnNewDay;
+ovOnNewDay = function (a) { _ovOnNewDayTick(a); OV.tick.today = 0;
+  OV.tickNpc.forEach(s => { s.left = OV_NPC_BUDGET; s.roam = null; }); };
+/* --- HUD: đổi nhãn thành Thể lực ngày + giờ theo nhịp --- */
+ovUpdateStepsHud = function () { const el = document.getElementById("ovSteps");
+  if (el && G) { const hn = HOUR_NAMES[Math.floor((ovTickHourF() % 24) / 2) % 12];
+    el.textContent = "⚡ Thể lực: " + OV.stepsLeft + "/" + ovStepsMax() + " · 🕐 " + hn + " · Ngày " + G.day + (OV.cell && ovSafeCell(OV.cell.gx, OV.cell.gy) ? " · 🛡️ Vùng an toàn" : "");
+    el.style.color = OV.stepsLeft <= 5 ? "#ff9d8a" : ""; } };
+/* --- Trừ thể lực cho hành động + tiến nhịp --- */
+function ovTickFx(txt) { let el = document.getElementById("ovTickFx");
+  if (!el) { el = document.createElement("div"); el.id = "ovTickFx";
+    const gs = document.getElementById("gameScreen"); if (gs) gs.appendChild(el); }
+  if (!el) return; el.textContent = txt;
+  if (el.animate) el.animate([{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(-20px)" }], { duration: 1000, easing: "ease-out" });
+  else { el.style.opacity = 1; setTimeout(() => { el.style.opacity = 0; }, 800); } }
+function ovChargeTicks(n, label) { if (!G || OV.battle || ovInCave()) return true;
+  if (OV.stepsLeft < n) { toast("⚡ Hết Thể lực ngày! " + label + " cần " + n + " thể lực — hãy Ngủ / Cắm trại (nút ⛺) để sang ngày mới."); return false; }
+  OV.stepsLeft -= n; ovWorldTick(n); ovTickFx("-" + n + " ⚡ " + label); ovUpdateStepsHud(); return true; }
+/* --- Gắn giá nhịp vào các hành động chính --- */
+const _ovOpenDialog = openDialog;
+openDialog = function (npc) { if (!npc) return _ovOpenDialog(npc);
+  const dlg = document.getElementById("dialog");
+  const sameSession = (typeof dlgNPC !== "undefined" && dlgNPC === npc) && dlg && !dlg.classList.contains("hidden");
+  if (!sameSession && !ovChargeTicks(1, "Nói chuyện")) return; // mở cuộc trò chuyện mới = 1 nhịp
+  _ovOpenDialog(npc);
+  if (dlg && !dlg.classList.contains("hidden")) { const dt = dlg.querySelector(".dt");
+    if (dt && !dt.querySelector(".ovGreet")) { const sp = document.createElement("div");
+      sp.className = "ovGreet"; sp.style.cssText = "color:var(--gold2);margin-bottom:4px";
+      sp.textContent = "💬 " + ovGreetLine(npc); dt.parentNode.insertBefore(sp, dt); } }
+  const tb = document.getElementById("dTalk"); // mỗi lần bấm 💬 Trò chuyện = 1 nhịp riêng
+  if (tb && tb.onclick && !tb.__ovWrapped) { const o = tb.onclick; tb.__ovWrapped = 1;
+    tb.onclick = function () { if (!ovChargeTicks(1, "Trò chuyện")) return; o(); }; } };
+const _ovTeach = teachNextSkill;
+teachNextSkill = function (npc, s) { if (!ovChargeTicks(2, "Học chiêu")) return; _ovTeach(npc, s); };
+const _ovTrain = trainTogether;
+trainTogether = function (npc) { if (G.trainDay && G.trainDay[npc.name] === G.day) { _ovTrain(npc); return; }
+  if (!ovChargeTicks(2, "Luyện công")) return; _ovTrain(npc); };
+const _ovFish = startFishing;
+startFishing = function () { if (typeof fishTimer !== "undefined" && fishTimer) { _ovFish(); return; }
+  if (!ovChargeTicks(2, "Câu cá")) return; _ovFish(); };
+const _ovShop = openShop;
+openShop = function (zi) { if (!ovChargeTicks(1, "Mua bán")) return; _ovShop(zi); };
+const _ovChest = openChest;
+openChest = function (ch) { if (ch && ch.id && typeof chestOpened === "function" && chestOpened(ch)) { _ovChest(ch); return; }
+  if (ch && ch.camp && G.south && G.south.campDay !== G.day) { _ovChest(ch); return; }
+  if (!ovChargeTicks(1, "Mở rương")) return; _ovChest(ch); };
+const _ovHerb = pickHerb;
+pickHerb = function (hp) { if (G.south && G.south.herbDay === G.day && (G.south.herbs || []).includes(hp.id)) { _ovHerb(hp); return; }
+  if (!ovChargeTicks(1, "Hái thuốc")) return; _ovHerb(hp); };
+/* --- Trợ giúp (H): bảng giá nhịp --- */
+const _ovHelp = renderHelpPanel;
+renderHelpPanel = function () { _ovHelp(); const b = document.getElementById("helpBox");
+  if (b && !b.querySelector(".ovTickHelp")) { const d = document.createElement("div"); d.className = "ovTickHelp";
+    d.innerHTML = "<h4>♟️ Thể lực = Thời gian (bản Ô Vuông)</h4>" +
+    "<p>Mỗi hành động của ngươi là <b>1 NHỊP</b> của cả giang hồ: ngươi bước 1 ô thì <b>mọi NPC và quái trên toàn bản đồ cũng bước 1 ô</b> theo việc của họ, trời cũng tối dần theo nhịp (1 ngày = hết ngân sách thể lực). Đứng nói chuyện lâu là NPC xung quanh vẫn sống, vẫn đi lại.</p>" +
+    "<p>💰 <b>Bảng giá nhịp</b> (trừ vào ⚡ Thể lực ngày, chung ngân sách với bước đi):<br>" +
+    "· Đi 1 ô ngoài vùng an toàn: <b>1</b> (trong vùng an toàn: miễn phí, vẫn tính 1 nhịp)<br>" +
+    "· Nói chuyện / trò chuyện với NPC: <b>1</b> (nhận &amp; trả nhiệm vụ tính trong nhịp nói chuyện)<br>" +
+    "· Mở tiệm mua bán: <b>1</b> · Mở rương: <b>1</b> · Hái thuốc: <b>1</b><br>" +
+    "· Học chiêu: <b>2</b> · Luyện công cùng NPC: <b>2</b> · Câu cá: <b>2</b>/lần<br>" +
+    "· Vào trận theo lượt: <b>0</b> (thời gian trong trận là nén)</p>" +
+    "<p>Hết thể lực: không đi ô thường, không làm thêm việc tốn nhịp được — bấm <b>⛺ Ngủ / Cắm trại</b> để sang ngày mới, hồi đầy thể lực. NPC cũng có thể lực ngày riêng: hết là họ nghỉ, tối là họ về nhà ngủ.</p>";
+    b.appendChild(d); } };
+/* --- Save: thêm nhịp hôm nay + ô của từng NPC (save cũ tự migrate) --- */
+const _ovSaveTick = saveGame;
+saveGame = function () { _ovSaveTick();
+  try { if (!G) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw); j.tbTicks = OV.tick.today;
+    j.tbNpc = NPCS.map(n => { const s = ovNpcState2(n); return [s.gx, s.gy]; });
+    localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _ovStartTick = startGame;
+startGame = function (ci, fs) { OV.tickNpc.clear(); OV.tick.today = 0; OV.tick.total = 0; _ovStartTick(ci, fs);
+  if (fs && G) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+    if (j && j.day === G.day) { if (typeof j.tbTicks === "number") OV.tick.today = Math.max(0, Math.min(ovStepsMax(), j.tbTicks));
+      if (Array.isArray(j.tbNpc)) NPCS.forEach((n, i) => { const p = j.tbNpc[i]; if (!p) return;
+        const s = ovNpcState2(n); s.gx = p[0]; s.gy = p[1];
+        const c = ovCenter(p[0], p[1]); s.px = c.x; s.py = c.y; s.rx = c.x; s.ry = c.y; n.x = c.x; n.y = c.y; }); } }
+    catch (e) {} }
+  ovUpdateStepsHud(); };
+/* --- API kiểm chứng cho probe --- */
+if (window.__OV) { window.__OV.tickToday = () => OV.tick.today; window.__OV.tickTotal = () => OV.tick.total;
+  window.__OV.worldTick = ovWorldTick; window.__OV.charge = ovChargeTicks;
+  window.__OV.lastTickMs = () => OV.lastTickMs;
+  window.__OV.npcPos = (name) => { const n = NPCS.find(x => x.name === name); if (!n) return null;
+    const s = ovNpcState2(n); return { gx: s.gx, gy: s.gy, x: Math.round(n.x), y: Math.round(n.y), left: s.left, act: n.act }; };
+  window.__OV.version = "ov3-tick-world"; }
 </script>
 
 </body>
