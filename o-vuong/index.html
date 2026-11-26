@@ -295,6 +295,24 @@ body.inGame{position:fixed;inset:0;width:100%;height:var(--appH,100dvh);overflow
 #dialog .dlgPort{width:60px;height:60px;flex:none;border-radius:10px;border:2px solid var(--gold);background-color:#4a3319;background-repeat:no-repeat;image-rendering:pixelated;box-shadow:0 2px 8px rgba(0,0,0,.45)}
 #dialog .dHeadTx{flex:1;min-width:0}
 @media(max-width:820px) and (orientation:portrait){#dialog{max-height:64dvh}}
+/* ===== NÚT ẨN/HIỆN GIAO DIỆN (👁️): màn hình sạch để đi ô =====
+   Nút là con trực tiếp của body (position:fixed, z-index 1200 — trên cả lớp trận #ovBattle z 999),
+   JS ở cuối file tự hiện khi vào game / ẩn ở màn chọn nhân vật. Bán trong suốt, luôn thấy, không tự ẩn. */
+#uiHideBtn{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:1200;display:none;align-items:center;gap:6px;min-height:46px;padding:8px 12px;border-radius:999px;border:2px solid rgba(224,170,78,.75);background:rgba(24,15,7,.55);color:#ffe9bd;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#uiHideBtn #uiHideLbl{font-size:11.5px;white-space:nowrap}
+#uiHideBtn.mini{padding:8px 11px}
+#uiHideBtn.mini #uiHideLbl{display:none}
+#uiHideBtn[aria-pressed="true"]{background:rgba(24,15,7,.35);border-color:rgba(245,207,135,.95)}
+@media(max-width:820px){#uiHideBtn{right:8px}}
+/* Lớp ẩn: fade 180ms bằng opacity/visibility + pointer-events:none — KHÔNG đổi kích thước khung game/canvas.
+   #toast KHÔNG bị ẩn theo CSS: toast quan trọng (hết thể lực, đánh lén, ngày mới...) vẫn hiện kể cả khi đang ẩn
+   (JS lọc toast thường ở cuối file); toast tự mờ sau ~3 giây như cũ. */
+#playerHud,#questHud,#minimap,#sysBtns,#bossBar,#zoneToast,#testBanner,#ovTickFx{transition:opacity .18s ease,visibility .18s ease}
+body.uiHidden #playerHud,body.uiHidden #questHud,body.uiHidden #minimap,body.uiHidden #sysBtns,body.uiHidden #bossBar,body.uiHidden #zoneToast,body.uiHidden #testBanner,body.uiHidden #ovTickFx{opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
+/* Trong trận: chỉ ẩn thanh thông tin phụ (#ovBTop) + nhật ký trận (#ovBLog); GIỮ hàng nút hành động,
+   menu con chiêu/vật phẩm và thanh máu các đơn vị trong #ovBField */
+#ovBLog,#ovBTop{transition:opacity .18s ease,visibility .18s ease}
+body.uiHidden #ovBLog,body.uiHidden #ovBTop{opacity:0;visibility:hidden;pointer-events:none}
 </style>
 </head>
 <body>
@@ -409,6 +427,10 @@ body.inGame{position:fixed;inset:0;width:100%;height:var(--appH,100dvh);overflow
     </div>
   </div>
 </section>
+
+<!-- Nút 👁️ Ẩn/Hiện toàn bộ giao diện: ngoài #gameScreen để luôn nổi trên mọi lớp (kể cả màn trận);
+     JS cuối file đồng bộ hiển thị theo màn game, nhãn "Ẩn giao diện" chỉ hiện tới lần bấm đầu tiên -->
+<button id="uiHideBtn" type="button" style="display:none" aria-label="Ẩn giao diện" aria-pressed="false" title="Ẩn/Hiện giao diện (Tab)">👁️<span id="uiHideLbl">Ẩn giao diện</span></button>
 
 <script>
 "use strict";
@@ -4908,7 +4930,7 @@ $("achBtn").onclick=()=>window.__toggleAch();
   /* --- Khóa cuộn trang khi đang chơi: chạm/vuốt ngoài panel không làm trôi trang, chặn pull-to-refresh --- */
   document.addEventListener("touchmove",e=>{ if(!document.body.classList.contains("inGame")) return;
     const t=e.target;
-    if(t && t.closest && t.closest(".panelBox,#eventBox,#bagBox,#dialog,#sysBtns,#questHud.open,#ovBattle,input,textarea,select")) return;
+    if(t && t.closest && t.closest(".panelBox,#eventBox,#bagBox,#dialog,#sysBtns,#questHud.open,#ovBattle,#uiHideBtn,input,textarea,select")) return;
     // VÁ CUỘN CHẠM: chạm bắt đầu trên BẤT KỲ vùng nào tự cuộn dọc được và nội dung đang tràn
     // (panel con, menu chiêu trong trận, danh sách dài nằm sâu trong panel...) -> không chặn, để trình duyệt cuộn.
     let el=t; while(el && el!==document.body){ try{ const cs=getComputedStyle(el);
@@ -7913,6 +7935,81 @@ window.__OV6 = { rest: OV_REST, restMissing: OV_REST_MISSING, fog: OVF, fogSeen:
   setSteps: v => { OV.stepsLeft = Math.max(0, v | 0); ovUpdateStepsHud(); },
   openRest: i => { if (OV_REST[i]) ovOpenRest(OV_REST[i]); },
   version: "ov6-stamina-rest-fog-touch" };
+</script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   NÚT ẨN/HIỆN GIAO DIỆN (👁️) — màn hình sạch để di chuyển
+   - 1 nút duy nhất ở mép phải giữa màn hình, bán trong suốt, luôn thấy khi đang trong game
+     (kể cả trong trận: z-index 1200 trên lớp trận), nhãn "Ẩn giao diện" chỉ tới lần bấm đầu.
+   - Bấm ẨN: đóng mọi panel/hộp thoại đang mở (kể cả hộp thoại NPC) cho sạch, rồi ẩn bằng
+     class body.uiHidden (CSS fade 180ms, visibility/pointer-events — không đổi layout):
+     thanh trạng thái HP/MP/EXP/Lực/vàng + ngày giờ, chip nhiệm vụ, minimap, menu hệ thống
+     dưới, thanh boss (chỉ ẩn hiển thị, trạng thái boss giữ nguyên), banner test, zone toast.
+     GIỮ: nút 👁️, cần di chuyển (D-pad), nút "Nói", chạm ô để đi. Toast thường bị lọc khi
+     đang ẩn; toast quan trọng (hết thể lực / đánh lén / ngày mới / chết) vẫn hiện.
+   - Trong TRẬN: chỉ ẩn #ovBTop (thanh phụ + thứ tự lượt) và #ovBLog (nhật ký trận);
+     GIỮ #ovBBtns (Đánh/Chiêu/Vật phẩm/Né/Chạy), #ovBSub và #ovBField (thanh máu 2 bên).
+   - Trạng thái chỉ lưu trong phiên chơi (biến UIH_HIDDEN, KHÔNG ghi vào save).
+   - PC: phím Tab ẩn/hiện (chặn cuộn/chuyển focus mặc định của Tab trong game; khi đang
+     gõ trong ô nhập liệu thì Tab hoạt động bình thường).
+   ===================================================================================== */
+let UIH_HIDDEN = false, UIH_USED = false;
+const UIH_PANELS = ["eventBox", "bagBox", "sectBox", "skillBox", "statBox", "questBox", "jobBox", "shopBox", "familyBox", "helpBox", "legendBox", "mapBox", "achBox", "ownBox", "petBox"];
+function uihClosePanels() {
+  UIH_PANELS.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add("hidden"); });
+  if (typeof closeDialog === "function") closeDialog(); // đóng hộp thoại NPC đúng đường (xoá dlgNPC)
+  const d = document.getElementById("dialog"); if (d) d.classList.add("hidden");
+}
+function uihSet(h) {
+  UIH_HIDDEN = !!h;
+  document.body.classList.toggle("uiHidden", UIH_HIDDEN);
+  const b = document.getElementById("uiHideBtn");
+  if (b) { b.setAttribute("aria-pressed", UIH_HIDDEN ? "true" : "false");
+    b.setAttribute("aria-label", UIH_HIDDEN ? "Hiện giao diện" : "Ẩn giao diện");
+    b.title = UIH_HIDDEN ? "Hiện giao diện (Tab)" : "Ẩn giao diện (Tab)";
+    if (UIH_USED) b.classList.add("mini"); } // sau lần bấm đầu: thu về nút tròn chỉ còn icon
+}
+function uihToggle() {
+  UIH_USED = true;
+  if (!UIH_HIDDEN) uihClosePanels(); // bấm ẨN: đóng panel đang mở cho sạch hẳn
+  uihSet(!UIH_HIDDEN);
+}
+(function uihInit() {
+  const b = document.getElementById("uiHideBtn"), gs = document.getElementById("gameScreen");
+  if (!b || !gs) return;
+  const sync = () => { b.style.display = gs.classList.contains("hidden") ? "none" : "flex"; };
+  sync();
+  new MutationObserver(sync).observe(gs, { attributes: true, attributeFilter: ["class"] });
+  let last = 0; // click + touchend có chống bấm đúp 450ms (như nút trong trận)
+  const fire = () => { const t = performance.now(); if (t - last < 450) return; last = t; uihToggle(); };
+  b.addEventListener("click", fire);
+  b.addEventListener("touchend", e => { e.preventDefault(); fire(); }, { passive: false });
+  window.addEventListener("keydown", e => {
+    if (e.code !== "Tab") return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+    if (gs.classList.contains("hidden")) return; // ngoài màn game: Tab giữ nguyên mặc định
+    e.preventDefault(); uihToggle();
+  }, true);
+})();
+/* Toast: khi đang ẩn giao diện, lọc toast thường; toast quan trọng vẫn hiện */
+const _uihToast = toast;
+toast = function (msg) {
+  if (UIH_HIDDEN && !/thể lực|⚡|💀|đánh lén|ngày mới|🌅/i.test(String(msg))) return;
+  _uihToast(msg);
+};
+/* Trợ giúp (H): thêm 1 mục hướng dẫn nút 👁️ */
+const _uihHelp = renderHelpPanel;
+renderHelpPanel = function () {
+  _uihHelp();
+  const b = document.getElementById("helpBox"); if (!b || b.querySelector(".uihHelp")) return;
+  const d = document.createElement("div"); d.className = "uihHelp";
+  d.innerHTML = "<h4>👁️ Ẩn / Hiện giao diện</h4><p>Bấm nút <b>👁️</b> ở mép phải giữa màn hình (trên PC: phím <b>Tab</b>) để <b>ẩn toàn bộ</b> thanh trạng thái, nhiệm vụ, minimap và thanh menu dưới — màn hình sạch để đi ô; bấm lại để hiện. Khi đang ẩn vẫn dùng được cần di chuyển, nút <b>Nói</b> và chạm ô để đi như cũ; trong trận chỉ ẩn nhật ký trận, hàng nút Đánh/Chiêu/Vật phẩm/Né/Chạy vẫn giữ nguyên.</p>";
+  b.appendChild(d);
+};
+window.__UIHIDE = { toggle: uihToggle, set: uihSet, isHidden: () => UIH_HIDDEN, version: "uihide-1" };
 </script>
 </body>
 </html>
