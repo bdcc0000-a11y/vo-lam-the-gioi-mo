@@ -9555,5 +9555,578 @@ window.__WAR = {
   unitCount: () => WAR.units.length
 };
 </script>
+<script>
+"use strict";
+/* =====================================================================================
+   OV10 — SỐ 4: XÂY NHÀ BẰNG NGUYÊN LIỆU (khép vòng hệ thu thập OV7)
+   =====================================================================================
+   (1) ĐẤT & CẤP NHÀ: 7 NỀN ĐẤT TRỐNG tại các vùng an toàn có người ở (Thôn Ngưu Gia ·
+       Tương Dương · Lâm An · Làng Chài · Chợ Biên Giới · Thành Đại Lý · Cảng Tuyền Châu),
+       vị trí chọn bằng cùng bộ lọc tránh công trình của OV7 (né tổng đàn >=345px · điểm
+       nghỉ >=150px · điểm tài nguyên >=125px · rương >=120px · điểm Nam >=170px · hang
+       >=150px · bí kíp >=120px · nhà mua được >=170px · tâm vùng >=100px · vườn thuốc
+       >=250px · ô không bị chặn + 2 hàng ô vườn phía bắc không bị chặn). Người chơi chỉ
+       có MỘT nhà xây; 4 cấp, giá cân đối với sản lượng thu thập OV7 (1 buổi chặt/đập
+       ~15-25 nguyên liệu hỗn hợp):
+         C1 Lều Gỗ:    Gỗ x10 + 50v
+         C2 Nhà Gỗ:    Gỗ x25 + Đá x10 + 200v                       -> Bếp + Kho (60 món)
+         C3 Nhà Ngói:  Gỗ x20 + Gỗ Quý x3 + Đá x25 + Quặng Sắt x5 + 600v -> Vườn 4 ô, Kho 120
+         C4 Biệt Viện: Gỗ Quý x8 + Đá x40 + Quặng Sắt x15 + Tre x20 + 1500v -> Vườn 6 ô (+Tre/Gỗ), Kho 240
+       Xây/nâng tốn 5 nhịp qua ovChargeTicks (trừ thể lực + thế giới tiến nhịp như mọi
+       hành động lớn) + pháo bụi xây dựng. Hình nhà vẽ trong pipeline render chính, đổi
+       dáng theo cấp: lều -> nhà gỗ mái tranh -> nhà ngói 2 gian -> biệt viện tường sân.
+   (2) TIỆN ÍCH ĂN THẬT VÀO SỐ:
+       (a) NGỦ NHÀ MÌNH: an toàn 100%, hồi đầy HP/nội lực (đi thẳng ovAdvanceDay như ngủ
+           an toàn, KHÔNG rớt nhánh cắm trại/dã ngoại kể cả ở Chợ Biên Giới danger 2) +
+           Bước chân NGÀY HÔM SAU cộng theo cấp giường qua ovStepsMax: C1 +0 · C2 +5 ·
+           C3 +10 · C4 +15 (HOME.bonusDay/bonusAmt, hết ngày tự hết).
+       (b) BẾP (từ C2) — quy tắc nhất quán: nấu = ĂN NGAY, tốn 1 nhịp, MỘT buff duy nhất
+           tại một thời điểm (nấu món mới thay món cũ), hết ngày tự hết, hiện ở HUD +
+           panel Chỉ số:
+             🥮 Bánh Quả Dại        (Quả Dại x2)                    -> +10 Bước chân hôm nay
+             🍢 Cá Nướng Tẩm Dược   (Cá Chép/Cá Quý x1 + Dược Liệu x1) -> +10% tấn công (pAtk)
+             🍲 Canh Thịt Dược Liệu (Thịt Thú x1 + Dược Liệu x2)    -> thắng trận hồi 20% HP
+             🍵 Trà Dược Quý        (Dược Liệu Quý x1 + Quả Dại x1) -> +25% EXP (gainXP)
+       (c) VƯỜN (từ C3): 4 ô sau nhà (C4: 6 ô); hạt = chính nguyên liệu x1; gieo ngày d ->
+           thu được từ ngày d+2; thu tốn 1 thể lực (ovChargeTicks): Dược Liệu 2-3 ·
+           Dược Liệu Quý 2 · (chỉ C4) Tre 3 · Gỗ 2-3.
+       (d) KHO NHÀ (từ C2): rương riêng chứa MỌI vật phẩm, sức chứa tính tổng số món:
+           C2 60 · C3 120 · C4 240; gửi/rút 1 hoặc tất cả từng loại.
+   (3) NHẤT QUÁN: nhà xây TÍNH LÀ "NHÀ" cho hệ gia đình — onNewDayFamily được bọc: khi
+       người chơi chưa mua nhà mà đã xây nhà, tạm gán G.house trong lúc chạy ngày mới
+       (điều kiện có nhà để sinh con nhận đúng) rồi trả lại nguyên trạng; clanFame/
+       housePos của nhà MUA không đổi. NPC trong vùng nhà thỉnh thoảng bình luận về nhà
+       khi trò chuyện. Nhà nghỉ/lều nghỉ cũ giữ nguyên; save cũ không có field "ovHome"
+       thì nhà = chưa xây, chơi bình thường.
+   (4) SƯƠNG MÙ: nền đất/nhà chỉ vẽ khi ô đã khám phá (ovFogSeen) như dấu ⚔️ chiến sự;
+       biển tên chỉ hiện khi người chơi ở trong tầm nhìn.
+   ===================================================================================== */
+const HOME_TIERS = [
+  null,
+  { name: "Lều Gỗ", cost: { "Gỗ": 10 }, gold: 50, sleep: 0, store: 0 },
+  { name: "Nhà Gỗ", cost: { "Gỗ": 25, "Đá": 10 }, gold: 200, sleep: 5, store: 60 },
+  { name: "Nhà Ngói", cost: { "Gỗ": 20, "Gỗ Quý": 3, "Đá": 25, "Quặng Sắt": 5 }, gold: 600, sleep: 10, store: 120 },
+  { name: "Biệt Viện", cost: { "Gỗ Quý": 8, "Đá": 40, "Quặng Sắt": 15, "Tre": 20 }, gold: 1500, sleep: 15, store: 240 }
+];
+const HOME_RECIPES = [
+  { id: "steps", name: "🥮 Bánh Quả Dại", need: { "Quả Dại": 2 }, buff: "+10 Bước chân hôm nay", desc: "Bánh nướng từ quả dại — ăn vào chân nhẹ tênh, đi xa hơn hẳn." },
+  { id: "atk", name: "🍢 Cá Nướng Tẩm Dược", need: { "Dược Liệu": 1 }, fish: 1, buff: "+10% tấn công hôm nay", desc: "Cá nướng ướp dược liệu — khí huyết sung mãn, đòn đánh nặng thêm." },
+  { id: "heal", name: "🍲 Canh Thịt Dược Liệu", need: { "Thịt Thú": 1, "Dược Liệu": 2 }, buff: "Thắng trận hồi 20% HP", desc: "Canh thịt hầm dược liệu — thắng trận xong ngồi thở một lúc là hồi sức." },
+  { id: "xp", name: "🍵 Trà Dược Quý", need: { "Dược Liệu Quý": 1, "Quả Dại": 1 }, buff: "+25% EXP hôm nay", desc: "Trà từ dược liệu quý — đầu óc minh mẫn, luyện gì cũng vào nhanh." }
+];
+const HOME_CROPS = {
+  "Dược Liệu": { yield: () => 2 + ((Math.random() * 2) | 0), minTier: 3, icon: "🌿" },
+  "Dược Liệu Quý": { yield: () => 2, minTier: 3, icon: "✨" },
+  "Tre": { yield: () => 3, minTier: 4, icon: "🎋" },
+  "Gỗ": { yield: () => 2 + ((Math.random() * 2) | 0), minTier: 4, icon: "🪵" }
+};
+const HOME = {
+  built: false, zi: -1, gx: 0, gy: 0, tier: 0,
+  garden: [null, null, null, null, null, null], // {crop, day}
+  storage: {}, buff: null,                      // buff: {id, name, day}
+  bonusDay: 0, bonusAmt: 0, buildAnimT: 0, panelPlot: null
+};
+window.__HOME_STATE = HOME;
+/* ---------- Chọn vị trí nền đất (tất định, cùng bộ lọc tránh công trình của OV7) ---------- */
+const HOME_PLOT_ZONES = [6, 7, 20, 23, 26, 27, 28];
+const HOME_PLOTS = [];
+(function homeGenPlots() {
+  const FR = [[0.30, 0.64], [0.68, 0.30], [0.28, 0.30], [0.70, 0.68], [0.50, 0.80], [0.20, 0.52], [0.80, 0.52], [0.52, 0.20], [0.38, 0.44], [0.62, 0.56]];
+  for (const zi of HOME_PLOT_ZONES) {
+    const z = ZONES[zi]; if (!z) continue;
+    const bad = (x, y) => {
+      const c = ovCellOf(x, y); if (ovBlocked(c.gx, c.gy)) return true;
+      if (z.water && x > z.water.x - 36 && x < z.water.x + z.water.w + 36 && y > z.water.y - 36 && y < z.water.y + z.water.h + 36) return true;
+      for (const nm in HALLS) { const h = HALLS[nm]; if (Math.hypot(x - h.cx, y - h.cy) < 345) return true; }
+      if (typeof OV_REST !== "undefined") for (const rp of OV_REST) if (rp.zi === zi && Math.hypot(x - rp.x, y - rp.y) < 150) return true;
+      if (typeof OV7_NODES !== "undefined") for (const nd of OV7_NODES) if (nd.zi === zi && Math.hypot(x - nd.x, y - nd.y) < 125) return true;
+      if (typeof CHESTS !== "undefined") for (const ch of CHESTS) if (Math.hypot(x - ch.x, y - ch.y) < 120) return true;
+      if (typeof SOUTH_POIS !== "undefined") for (const p of SOUTH_POIS) if (Math.hypot(x - p.x, y - p.y) < 170) return true;
+      if (typeof CAVES !== "undefined") for (const cv of CAVES) if (Math.hypot(x - cv.x, y - cv.y) < 150) return true;
+      if (typeof SECRET !== "undefined" && SECRET && Math.hypot(x - SECRET.x, y - SECRET.y) < 120) return true;
+      if (zi === 26 && typeof SP_HERB !== "undefined" && SP_HERB && Math.hypot(x - SP_HERB.x, y - SP_HERB.y) < 250) return true;
+      if ((zi === 6 || zi === 7) && typeof housePos === "function") { const hp = housePos(zi); if (Math.hypot(x - hp.x, y - hp.y) < 170) return true; }
+      if (Math.hypot(x - (z.x + ZW / 2), y - (z.y + ZW / 2)) < 100) return true;
+      // 2 hàng ô vườn phía bắc + hàng hiên phía nam phải là đất đi được (để vẽ vườn & đứng cửa)
+      const cc = ovCellOf(x, y);
+      for (let dx = -1; dx <= 2; dx++) for (const dy of [-3, -2, 1]) if (ovBlocked(cc.gx + dx, cc.gy + dy)) return true;
+      return false;
+    };
+    let plot = null;
+    for (const f of FR) { if (plot) break;
+      const bx = z.x + ZW * f[0], by = z.y + ZW * f[1];
+      for (let r = 0; r <= 5 && !plot; r++)
+        for (let dy = -r; dy <= r && !plot; dy++)
+          for (let dx = -r; dx <= r && !plot; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            const x = bx + dx * OVC, y = by + dy * OVC;
+            if (x < z.x + 70 || x > z.x + ZW - 70 || y < z.y + 130 || y > z.y + ZW - 70) continue;
+            if (!bad(x, y)) { const c = ovCellOf(x, y), ctr = ovCenter(c.gx, c.gy);
+              plot = { zi, zone: z.name, gx: c.gx, gy: c.gy, x: ctr.x, y: ctr.y }; }
+          }
+    }
+    if (plot) HOME_PLOTS.push(plot);
+  }
+})();
+function homePlotAt(gx, gy) { // nền đất / nhà của mình trong tầm tương tác (kề <=2 ô)
+  if (!G || !OV.cell) return null;
+  const list = HOME.built ? [{ zi: HOME.zi, zone: ZONES[HOME.zi] ? ZONES[HOME.zi].name : "?", gx: HOME.gx, gy: HOME.gy, x: 0, y: 0 }] : HOME_PLOTS;
+  for (const p of list) if (Math.max(Math.abs(p.gx - OV.cell.gx), Math.abs(p.gy - OV.cell.gy)) <= 2) return p;
+  if (!HOME.built) for (const p of HOME_PLOTS) if (Math.max(Math.abs(p.gx - OV.cell.gx), Math.abs(p.gy - OV.cell.gy)) <= 2) return p;
+  return null;
+}
+function homeGardenCell(i) { // ô vườn i: hàng sau nhà (bắc): 0-3 ở gy-2, 4-5 ở gy-3
+  if (i < 4) return { gx: HOME.gx - 1 + i, gy: HOME.gy - 2 };
+  return { gx: HOME.gx + (i - 4), gy: HOME.gy - 3 };
+}
+function homeGardenSlots() { return HOME.tier >= 4 ? 6 : HOME.tier >= 3 ? 4 : 0; }
+function homeBuffActive(id) { return !!(G && HOME.buff && HOME.buff.day === G.day && (!id || HOME.buff.id === id)); }
+function homeItemCount(n) { return (G && G.items && G.items[n]) || 0; }
+function homeMissing(cost, gold) {
+  const miss = [];
+  for (const k in cost) { const have = homeItemCount(k); if (have < cost[k]) miss.push(k + " thiếu " + (cost[k] - have)); }
+  if (gold && G.gold < gold) miss.push("Vàng thiếu " + (gold - G.gold));
+  return miss;
+}
+function homePay(cost, gold) {
+  for (const k in cost) { G.items[k] = (G.items[k] || 0) - cost[k]; if (G.items[k] <= 0) delete G.items[k]; }
+  if (gold) G.gold -= gold;
+}
+function homeCostTxt(t) {
+  const parts = []; for (const k in t.cost) parts.push(k + " ×" + t.cost[k] + " (có " + homeItemCount(k) + ")");
+  if (t.gold) parts.push(t.gold + " vàng (có " + (G ? G.gold : 0) + ")");
+  return parts.join(" · ");
+}
+/* ---------- XÂY / NÂNG CẤP ---------- */
+function homeBuild(plot) {
+  if (!G || OV.battle || ovInCave()) return false;
+  const target = HOME.built ? HOME.tier + 1 : 1;
+  if (target > 4) { toast("🏠 Nhà đã đạt cấp cao nhất — Biệt Viện!"); return false; }
+  if (!HOME.built && !plot) { toast("Hãy đứng kề một nền đất trống mới xây nhà được."); return false; }
+  if (HOME.built && plot && (plot.gx !== HOME.gx || plot.gy !== HOME.gy)) { toast("Ngươi đã có nhà tại " + ZONES[HOME.zi].name + " — mỗi người chỉ xây một nhà."); return false; }
+  const t = HOME_TIERS[target];
+  const miss = homeMissing(t.cost, t.gold);
+  if (miss.length) { toast("🔨 Chưa đủ để xây " + t.name + ": " + miss.join(" · ") + ". Hãy đi chặt cây / đập đá / hái tre tích nguyên liệu."); return false; }
+  if (!ovChargeTicks(5, HOME.built ? "Nâng cấp nhà" : "Xây nhà")) return false;
+  homePay(t.cost, t.gold);
+  if (!HOME.built) { HOME.built = true; HOME.zi = plot.zi; HOME.gx = plot.gx; HOME.gy = plot.gy; }
+  HOME.tier = target; HOME.buildAnimT = performance.now();
+  const ctr = ovCenter(HOME.gx, HOME.gy);
+  if (typeof spawnFx === "function") { spawnFx(ctr.x, ctr.y - 20, "#c9a86a", 14, { spd: 170, life: 0.6, s: 4, shape: 1 });
+    spawnFx(ctr.x - 30, ctr.y - 10, "#8a5a2e", 10, { spd: 130, life: 0.5, s: 3, shape: 1 }); }
+  if (typeof addDmg === "function") addDmg(ctr.x, ctr.y - 84, "🔨 " + (target === 1 ? "DỰNG NHÀ XONG!" : "NÂNG CẤP XONG!"), "#ffd23e", 1);
+  toast("🏠 " + (target === 1 ? "Đã dựng xong " : "Đã nâng cấp lên ") + t.name + " tại " + ZONES[HOME.zi].name + "!"
+    + (target === 2 ? " Từ nay có Bếp nấu ăn và Kho nhà." : target === 3 ? " Từ nay có Vườn sau nhà trồng dược liệu." : target === 4 ? " Biệt viện hoàn thiện — vườn 6 ô, trồng thêm được Tre/Gỗ non." : ""));
+  if (typeof socRumor === "function" && target >= 3) socRumor("🏠 Hiệp khách " + (CHARS[G.charIdx] ? CHARS[G.charIdx].name : "") + " vừa xây xong " + t.name + " tại " + ZONES[HOME.zi].name + " — giang hồ qua lại ai cũng trầm trồ.");
+  saveGame(); updateHud(); renderHomePanel();
+  return true;
+}
+/* ---------- NGỦ TẠI NHÀ: an toàn 100% + bonus bước chân ngày mai ---------- */
+function homeSleep() {
+  if (!G || !HOME.built || OV.battle || ovInCave()) return false;
+  HOME.bonusDay = G.day + 1; HOME.bonusAmt = HOME_TIERS[HOME.tier].sleep;
+  ovAdvanceDay();
+  G.p.hp = G.p.maxhp; G.p.mp = G.p.maxmp; G.p.dotT = 0;
+  toast("🌅 Ngủ tại nhà mình — an toàn tuyệt đối. Ngày " + G.day + ": hồi đầy HP/nội lực, Thể lực " + OV.stepsLeft + "/" + ovStepsMax()
+    + (HOME.bonusAmt ? " (giường nhà cấp " + HOME.tier + " cộng +" + HOME.bonusAmt + " bước chân hôm nay!)" : "."));
+  saveGame(); updateHud();
+  const b = document.getElementById("homeBox"); if (b) b.classList.add("hidden");
+  return true;
+}
+/* ---------- BẾP: nấu = ăn ngay, 1 buff tại một thời điểm, hết ngày tự hết ---------- */
+function homeRecipeMissing(r) {
+  const miss = homeMissing(r.need, 0);
+  if (r.fish && homeItemCount("Cá Chép") + homeItemCount("Cá Quý") < 1) miss.push("Cá Chép/Cá Quý thiếu 1");
+  return miss;
+}
+function homeCook(id) {
+  if (!G || !HOME.built || HOME.tier < 2) { toast("🍳 Bếp chỉ có từ Nhà Gỗ (cấp 2) trở lên."); return false; }
+  const r = HOME_RECIPES.find(x => x.id === id); if (!r) return false;
+  const miss = homeRecipeMissing(r);
+  if (miss.length) { toast("🍳 Chưa nấu được " + r.name + ": " + miss.join(" · ") + "."); return false; }
+  if (!ovChargeTicks(1, "Nấu ăn")) return false;
+  homePay(r.need, 0);
+  if (r.fish) { if (homeItemCount("Cá Chép") > 0) homePay({ "Cá Chép": 1 }, 0); else homePay({ "Cá Quý": 1 }, 0); }
+  HOME.buff = { id: r.id, name: r.name, day: G.day };
+  if (r.id === "steps") OV.stepsLeft += 10;
+  toast("🍽️ Đã ăn " + r.name + " — buff hôm nay: " + r.buff + " (một món tại một thời điểm, hết ngày tự hết).");
+  saveGame(); updateHud(); ovUpdateStepsHud(); renderHomePanel();
+  return true;
+}
+/* ---------- VƯỜN: gieo (hạt = nguyên liệu x1) -> 2 ngày -> thu (1 thể lực) ---------- */
+function homePlant(i, crop) {
+  if (!G || !HOME.built || HOME.tier < 3) return false;
+  if (i < 0 || i >= homeGardenSlots()) return false;
+  const cd = HOME_CROPS[crop]; if (!cd || HOME.tier < cd.minTier) { toast("🌱 Cấp nhà này chưa trồng được " + crop + "."); return false; }
+  if (HOME.garden[i]) { toast("Ô vườn này đang có cây rồi."); return false; }
+  if (homeItemCount(crop) < 1) { toast("🌱 Thiếu hạt giống: cần 1 " + crop + " trong túi để gieo."); return false; }
+  homePay({ [crop]: 1 }, 0);
+  HOME.garden[i] = { crop, day: G.day };
+  toast("🌱 Đã gieo " + crop + " ở ô vườn " + (i + 1) + " — 2 ngày nữa thu hoạch được.");
+  saveGame(); renderHomePanel();
+  return true;
+}
+function homeHarvest(i) {
+  if (!G || !HOME.built) return false;
+  const g = HOME.garden[i]; if (!g) return false;
+  if (G.day < g.day + 2) { toast("🌱 " + g.crop + " chưa lớn — còn " + (g.day + 2 - G.day) + " ngày nữa mới thu được."); return false; }
+  if (!ovChargeTicks(1, "Thu hoạch vườn")) return false;
+  const n = HOME_CROPS[g.crop].yield();
+  addItem(g.crop, n);
+  HOME.garden[i] = null;
+  toast("🧺 Thu hoạch ô vườn " + (i + 1) + ": " + g.crop + " +" + n + " (gieo 1 hạt, thu gấp bội!)");
+  saveGame(); updateHud(); renderHomePanel();
+  return true;
+}
+/* ---------- KHO NHÀ: gửi / rút ---------- */
+function homeStoreTotal() { let t = 0; for (const k in HOME.storage) t += HOME.storage[k] || 0; return t; }
+function homeDeposit(item, all) {
+  if (!G || !HOME.built || HOME.tier < 2) return false;
+  const have = homeItemCount(item); if (have <= 0) return false;
+  const cap = HOME_TIERS[HOME.tier].store, room = cap - homeStoreTotal();
+  if (room <= 0) { toast("📦 Kho nhà đã đầy (" + cap + " món) — nâng cấp nhà để chứa thêm."); return false; }
+  const n = Math.min(have, all ? have : 1, room);
+  G.items[item] -= n; if (G.items[item] <= 0) delete G.items[item];
+  HOME.storage[item] = (HOME.storage[item] || 0) + n;
+  toast("📦 Đã gửi " + item + " ×" + n + " vào kho nhà (kho: " + homeStoreTotal() + "/" + cap + ").");
+  saveGame(); renderHomePanel();
+  return true;
+}
+function homeWithdraw(item, all) {
+  if (!G || !HOME.built || HOME.tier < 2) return false;
+  const have = HOME.storage[item] || 0; if (have <= 0) return false;
+  const n = all ? have : 1;
+  HOME.storage[item] -= n; if (HOME.storage[item] <= 0) delete HOME.storage[item];
+  addItem(item, n);
+  toast("📦 Đã rút " + item + " ×" + n + " từ kho nhà về túi.");
+  saveGame(); updateHud(); renderHomePanel();
+  return true;
+}
+/* ---------- PANEL NHÀ ---------- */
+function homeBoxEl() {
+  let b = document.getElementById("homeBox");
+  if (!b) { b = document.createElement("div"); b.id = "homeBox"; b.className = "panelBox hidden";
+    const gs = document.getElementById("gameScreen"); if (gs) gs.appendChild(b); }
+  return b;
+}
+function openHomePanel(plot) {
+  if (!G) return;
+  HOME.panelPlot = plot || (HOME.built ? { zi: HOME.zi, gx: HOME.gx, gy: HOME.gy } : homePlotAt(OV.cell ? OV.cell.gx : 0, OV.cell ? OV.cell.gy : 0));
+  renderHomePanel();
+  homeBoxEl().classList.remove("hidden");
+}
+function renderHomePanel() {
+  const b = homeBoxEl(); if (!b || !G) return;
+  const plot = HOME.panelPlot;
+  let h = "<h3>🏠 " + (HOME.built ? HOME_TIERS[HOME.tier].name + " — nhà của ngươi tại " + ZONES[HOME.zi].name : "Nền đất trống" + (plot ? " — " + plot.zone : "")) + "</h3>";
+  if (!HOME.built) {
+    if (!plot) { h += "<p>Hãy tới một <b>nền đất trống</b> (biển 🏠 tại các thôn/thành) và bấm <b>E</b> để xem đất & xây nhà.</p>"; }
+    else {
+      h += "<p>Nền đất tại <b>" + plot.zone + "</b> — đất bằng, gần chợ gần đường, hợp dựng nhà ở lâu dài. Ngươi chỉ xây được <b>một nhà</b>; chọn nền nào thì nhà ở đó vĩnh viễn.</p>";
+      h += "<h4>📐 Bốn cấp nhà</h4>";
+      HOME_TIERS.forEach((t, i) => { if (!t) return;
+        h += "<p>" + ["", "⛺", "🏠", "🏯", "🏰"][i] + " <b>Cấp " + i + " — " + t.name + "</b>: " + homeCostTxt(t)
+          + "<br><span class=\"dim\">Ngủ nhà: +" + t.sleep + " bước chân ngày mai"
+          + (i >= 2 ? " · 🍳 Bếp nấu ăn (buff cả ngày) · 📦 Kho " + t.store + " món" : "")
+          + (i >= 3 ? " · 🌱 Vườn " + (i >= 4 ? 6 : 4) + " ô trồng dược liệu" + (i >= 4 ? "/Tre/Gỗ" : "") : "") + "</span></p>"; });
+      const miss = homeMissing(HOME_TIERS[1].cost, HOME_TIERS[1].gold);
+      h += "<div class=\"row\"><button class=\"btn\" data-hact=\"build\">🔨 Xây Cấp 1 — Lều Gỗ (5⚡)</button></div>"
+        + (miss.length ? "<p class=\"dim\">Còn thiếu: " + miss.join(" · ") + " — đi chặt cây/đập đá/hái lượm dọc đường để tích nguyên liệu.</p>" : "<p class=\"dim\">Đủ nguyên liệu — xây ngay được!</p>");
+    }
+  } else {
+    const t = HOME_TIERS[HOME.tier];
+    h += "<p>Cấp nhà: <b>" + HOME.tier + " — " + t.name + "</b> · Ngủ nhà: hồi đầy + <b>+" + t.sleep + " bước chân</b> ngày mai, an toàn 100%."
+      + (HOME.bonusDay === G.day ? " <b>(Hôm nay đang có +" + HOME.bonusAmt + " bước chân từ giường nhà.)</b>" : "") + "</p>";
+    h += "<p>🍲 Buff món ăn hiện tại: " + (homeBuffActive() ? "<b>" + HOME.buff.name + "</b> — " + (HOME_RECIPES.find(r => r.id === HOME.buff.id) || {}).buff + " (hết hôm nay)" : "<span class=\"dim\">chưa ăn món nào hôm nay</span>") + "</p>";
+    h += "<div class=\"row\"><button class=\"btn\" data-hact=\"sleep\">🌙 Ngủ tại nhà (qua ngày mới)</button>";
+    if (HOME.tier < 4) { const nt = HOME_TIERS[HOME.tier + 1], miss = homeMissing(nt.cost, nt.gold);
+      h += "<button class=\"btn\" data-hact=\"build\">🔨 Nâng lên Cấp " + (HOME.tier + 1) + " — " + nt.name + " (5⚡)</button></div>"
+        + "<p>Nâng cấp cần: " + homeCostTxt(nt) + (miss.length ? "<br><span class=\"dim\">Còn thiếu: " + miss.join(" · ") + "</span>" : " — <b>đủ nguyên liệu!</b>") + "</p>";
+    } else h += "</div><p class=\"dim\">Nhà đã đạt cấp cao nhất — Biệt Viện.</p>";
+    // BẾP
+    h += "<h4>🍳 Bếp nhà" + (HOME.tier < 2 ? " — mở ở Cấp 2" : "") + "</h4>";
+    if (HOME.tier < 2) h += "<p class=\"dim\">Lều Gỗ chưa có bếp — nâng lên Nhà Gỗ (Cấp 2) để nấu ăn lấy buff cả ngày.</p>";
+    else for (const r of HOME_RECIPES) { const miss = homeRecipeMissing(r);
+      h += "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + r.name + "</span> — " + r.buff
+        + "<br><span class=\"dim\">" + r.desc + "<br>Cần: " + (r.fish ? "Cá Chép/Cá Quý ×1 (có " + (homeItemCount("Cá Chép") + homeItemCount("Cá Quý")) + ") · " : "")
+        + Object.keys(r.need).map(k => k + " ×" + r.need[k] + " (có " + homeItemCount(k) + ")").join(" · ")
+        + (miss.length ? " · <b>thiếu: " + miss.join(" · ") + "</b>" : "") + "</span></div>"
+        + "<button class=\"btn\" data-hcook=\"" + r.id + "\">Nấu & ăn (1⚡)</button></div>"; }
+    // VƯỜN
+    h += "<h4>🌱 Vườn sau nhà" + (HOME.tier < 3 ? " — mở ở Cấp 3" : "") + "</h4>";
+    if (HOME.tier < 3) h += "<p class=\"dim\">Nhà Ngói (Cấp 3) mới có vườn: 4 ô trồng dược liệu, gieo 1 hạt — 2 ngày sau thu gấp bội.</p>";
+    else { const slots = homeGardenSlots();
+      for (let i = 0; i < slots; i++) { const g = HOME.garden[i];
+        if (!g) { h += "<div class=\"shopRow\"><div class=\"si\">Ô " + (i + 1) + ": <span class=\"dim\">đất trống</span></div>"
+          + Object.keys(HOME_CROPS).filter(c => HOME.tier >= HOME_CROPS[c].minTier).map(c =>
+            "<button class=\"btn ghost\" data-hplant=\"" + i + ":" + c + "\">Gieo " + c + " (hạt ×1, có " + homeItemCount(c) + ")</button>").join("") + "</div>"; }
+        else { const ready = G.day >= g.day + 2;
+          h += "<div class=\"shopRow\"><div class=\"si\">Ô " + (i + 1) + ": " + HOME_CROPS[g.crop].icon + " <b>" + g.crop + "</b> — gieo ngày " + g.day
+          + (ready ? " · <b>đã thu hoạch được!</b>" : " · còn " + (g.day + 2 - G.day) + " ngày nữa lớn") + "</div>"
+          + (ready ? "<button class=\"btn\" data-hharv=\"" + i + "\">🧺 Thu hoạch (1⚡)</button>" : "") + "</div>"; } } }
+    // KHO
+    h += "<h4>📦 Kho nhà" + (HOME.tier < 2 ? " — mở ở Cấp 2" : " (" + homeStoreTotal() + "/" + t.store + " món)") + "</h4>";
+    if (HOME.tier < 2) h += "<p class=\"dim\">Nhà Gỗ (Cấp 2) có rương kho chứa thêm vật phẩm.</p>";
+    else { const keys = new Set([...Object.keys(G.items || {}), ...Object.keys(HOME.storage)]);
+      const list = [...keys].filter(k => (homeItemCount(k) > 0 || (HOME.storage[k] || 0) > 0)).sort();
+      if (!list.length) h += "<p class=\"dim\">Túi và kho đều trống.</p>";
+      for (const k of list) h += "<div class=\"shopRow\"><div class=\"si\"><span class=\"sn\">" + k + "</span> — túi: " + homeItemCount(k) + " · kho: " + (HOME.storage[k] || 0) + "</div>"
+        + "<button class=\"btn ghost\" data-hdep=\"" + k + "\">Gửi 1</button><button class=\"btn ghost\" data-hdepa=\"" + k + "\">Gửi hết</button>"
+        + "<button class=\"btn ghost\" data-hwd=\"" + k + "\">Rút 1</button><button class=\"btn ghost\" data-hwda=\"" + k + "\">Rút hết</button></div>"; }
+  }
+  h += "<div class=\"row\"><button class=\"btn ghost\" data-close=\"homeBox\">Đóng</button></div>";
+  b.innerHTML = h;
+  b.querySelectorAll("[data-hact]").forEach(btn => { btn.onclick = () => { const a = btn.dataset.hact;
+    if (a === "build") homeBuild(HOME.built ? { gx: HOME.gx, gy: HOME.gy, zi: HOME.zi } : HOME.panelPlot);
+    else if (a === "sleep") homeSleep(); }; });
+  b.querySelectorAll("[data-hcook]").forEach(btn => { btn.onclick = () => homeCook(btn.dataset.hcook); });
+  b.querySelectorAll("[data-hplant]").forEach(btn => { btn.onclick = () => { const [i, c] = btn.dataset.hplant.split(":"); homePlant(+i, c); }; });
+  b.querySelectorAll("[data-hharv]").forEach(btn => { btn.onclick = () => homeHarvest(+btn.dataset.hharv); });
+  b.querySelectorAll("[data-hdep]").forEach(btn => { btn.onclick = () => homeDeposit(btn.dataset.hdep, false); });
+  b.querySelectorAll("[data-hdepa]").forEach(btn => { btn.onclick = () => homeDeposit(btn.dataset.hdepa, true); });
+  b.querySelectorAll("[data-hwd]").forEach(btn => { btn.onclick = () => homeWithdraw(btn.dataset.hwd, false); });
+  b.querySelectorAll("[data-hwda]").forEach(btn => { btn.onclick = () => homeWithdraw(btn.dataset.hwda, true); });
+}
+/* ---------- Bọc các điểm vào ---------- */
+const _homeInteract = doInteract;
+doInteract = function () {
+  if (G && !OV.battle && !ovInCave()) { const p = homePlotAt(OV.cell ? OV.cell.gx : 0, OV.cell ? OV.cell.gy : 0);
+    if (p) { const rp = (typeof ovRestNear === "function") ? ovRestNear() : null;
+      if (!rp) { openHomePanel(HOME.built ? { zi: HOME.zi, gx: HOME.gx, gy: HOME.gy, zone: ZONES[HOME.zi].name } : p); return; } } }
+  _homeInteract();
+};
+const _homeUiPaused = ovUiPaused;
+ovUiPaused = function () { const b = document.getElementById("homeBox");
+  if (b && !b.classList.contains("hidden")) return true; return _homeUiPaused(); };
+const _homeBaseStepsMax = ovStepsMax;
+ovStepsMax = function () { let v = _homeBaseStepsMax();
+  if (G && HOME.bonusDay === G.day) v += HOME.bonusAmt;
+  if (homeBuffActive("steps")) v += 10;
+  return v; };
+const _homePAtk = pAtk;
+pAtk = function () { const v = _homePAtk(); return homeBuffActive("atk") ? Math.round(v * 1.10) : v; };
+const _homeGainXP = gainXP;
+gainXP = function (n) { if (homeBuffActive("xp")) n = Math.round(n * 1.25); _homeGainXP(n); };
+const _homeEndBattle = ovEndBattle;
+ovEndBattle = function (result) { _homeEndBattle(result);
+  if (result === "win" && G && homeBuffActive("heal") && G.p.hp > 0) {
+    const heal = Math.round(G.p.maxhp * 0.20), real = Math.min(heal, G.p.maxhp - G.p.hp);
+    if (real > 0) { G.p.hp += real; toast("🍲 Canh Thịt Dược Liệu phát huy tác dụng — thắng trận hồi " + real + " HP (20%)!"); updateHud(); } } };
+const _homeNewDay = ovOnNewDay;
+ovOnNewDay = function (a) { _homeNewDay(a);
+  if (G && HOME.buff && HOME.buff.day < G.day) { HOME.buff = null; ovUpdateStepsHud(); } };
+const _homeFam = onNewDayFamily;
+onNewDayFamily = function () { // nhà XÂY tính là "nhà" cho điều kiện gia đình (sinh con cần có nhà)
+  if (HOME.built && G && (G.house === null || G.house === undefined)) {
+    G.house = (HOME.zi === 6 || HOME.zi === 7) ? HOME.zi : 6;
+    try { _homeFam(); } finally { G.house = null; }
+  } else _homeFam(); };
+const _homeDialog = openDialog;
+openDialog = function (npc) { _homeDialog(npc);
+  if (!npc || !G || !HOME.built) return;
+  try { const zi = ZONES.indexOf(zoneAt(npc.x, npc.y)); if (zi !== HOME.zi) return;
+    const key = npc.name + "@" + G.day; if (HOME._commentKey === key) return;
+    if (hash(npc.name + G.day) % 100 >= 35) return;
+    HOME._commentKey = key;
+    const dlg = document.getElementById("dialog"); if (!dlg || dlg.classList.contains("hidden")) return;
+    const lines = ["Nhà của ngươi ở " + ZONES[HOME.zi].name + " trông khang trang quá — " + HOME_TIERS[HOME.tier].name + " hẳn hoi, giang hồ mấy ai có!",
+      "Nghe nói ngươi tự tay dựng " + HOME_TIERS[HOME.tier].name + " bằng gỗ đá mình chặt — nể thật đấy.",
+      "Có nhà cửa đàng hoàng ở " + ZONES[HOME.zi].name + ", hành tẩu giang hồ cũng yên tâm hơn hẳn."];
+    const d = document.createElement("p"); d.className = "dt"; d.style.color = "var(--gold2)";
+    d.textContent = "🏠 " + npc.name + " ngắm nhà ngươi: “" + lines[hash(npc.name) % lines.length] + "”";
+    const btns = dlg.querySelector(".dBtns"); if (btns) dlg.insertBefore(d, btns); else dlg.appendChild(d);
+  } catch (e) {} };
+const _homeStat = renderStatPanel;
+renderStatPanel = function () { _homeStat();
+  const b = document.getElementById("statBox"); if (!b || !G || b.querySelector(".ovHomeStat")) return;
+  const d = document.createElement("div"); d.className = "ovHomeStat";
+  d.innerHTML = "<h4>🏠 Nhà & bữa ăn</h4><p>" + (HOME.built
+    ? "Nhà: <b>Cấp " + HOME.tier + " — " + HOME_TIERS[HOME.tier].name + "</b> tại " + ZONES[HOME.zi].name
+      + " · Ngủ nhà mai +" + HOME_TIERS[HOME.tier].sleep + " bước chân" + (HOME.bonusDay === G.day ? " · <b>hôm nay đang + " + HOME.bonusAmt + " từ giường nhà</b>" : "")
+      + (HOME.tier >= 2 ? " · Kho: " + homeStoreTotal() + "/" + HOME_TIERS[HOME.tier].store + " món" : "")
+    : "Chưa xây nhà — tìm biển 🏠 <b>Nền đất trống</b> ở các thôn/thành, bấm E xem đất, chặt gỗ đập đá tích nguyên liệu rồi dựng nhà.")
+    + "<br>🍲 Buff món ăn hôm nay: " + (homeBuffActive() ? "<b>" + HOME.buff.name + "</b> — " + (HOME_RECIPES.find(r => r.id === HOME.buff.id) || {}).buff : "chưa ăn (nấu ở Bếp nhà từ Cấp 2)") + "</p>";
+  b.appendChild(d); };
+const _homeHelp = renderHelpPanel;
+renderHelpPanel = function () { _homeHelp(); const b = document.getElementById("helpBox");
+  if (b && !b.querySelector(".ovHomeHelp")) { const d = document.createElement("div"); d.className = "ovHomeHelp";
+    d.innerHTML = "<h4>🏠 Xây nhà bằng nguyên liệu — nhà của ngươi</h4>"
+    + "<p>Tìm biển <b>🏠 Nền đất trống</b> tại Thôn Ngưu Gia · Tương Dương · Lâm An · Làng Chài · Chợ Biên Giới · Thành Đại Lý · Cảng Tuyền Châu, đứng kề bấm <b>E</b>: xem 4 cấp nhà & giá, xây bằng <b>nguyên liệu thu thập dọc đường</b> + vàng (C1 Lều Gỗ: Gỗ ×10 + 50v · C2 Nhà Gỗ: Gỗ ×25 + Đá ×10 + 200v · C3 Nhà Ngói: Gỗ ×20 + Gỗ Quý ×3 + Đá ×25 + Quặng ×5 + 600v · C4 Biệt Viện: Gỗ Quý ×8 + Đá ×40 + Quặng ×15 + Tre ×20 + 1500v). Xây/nâng tốn <b>5 thể lực</b>. Mỗi người chỉ có <b>một</b> nhà; nút <b>🏠 Nhà của ta</b> ở thanh menu đưa ngươi về nhà ngay.</p>"
+    + "<p><b>Ngủ tại nhà:</b> an toàn 100%, hồi đầy HP/nội lực và giường tốt cộng <b>Bước chân ngày mai</b>: C2 +5 · C3 +10 · C4 +15. <b>Bếp (từ C2):</b> nấu = ăn ngay, tốn 1 thể lực, <b>một buff tại một thời điểm</b>, hết ngày tự hết — Bánh Quả Dại +10 bước chân · Cá Nướng Tẩm Dược +10% tấn công · Canh Thịt Dược Liệu thắng trận hồi 20% HP · Trà Dược Quý +25% EXP. <b>Vườn (từ C3):</b> 4 ô sau nhà (C4: 6 ô, trồng thêm Tre/Gỗ), hạt là chính nguyên liệu ×1, gieo xong <b>2 ngày</b> sau thu 2–3, thu tốn 1 thể lực. <b>Kho nhà (từ C2):</b> rương chứa thêm 60/120/240 món, gửi/rút trong panel Nhà. Nhà xây cũng tính là <b>nhà</b> cho việc lập gia đình/sinh con như nhà mua.</p>";
+    b.appendChild(d); } };
+/* ---------- Vẽ nền đất / nhà / vườn trong pipeline render ---------- */
+function homeDrawHouseShape(sx, sy, tier, now) {
+  ctx.save(); ctx.translate(sx, sy);
+  // nền sân đất dọn sạch
+  ctx.fillStyle = "rgba(122,94,52,.30)";
+  ctx.beginPath(); ctx.ellipse(0, 6, tier >= 4 ? 96 : tier >= 3 ? 78 : tier >= 2 ? 62 : 46, tier >= 4 ? 30 : 24, 0, 0, 6.29); ctx.fill();
+  if (tier === 1) { // LỀU GỖ: lều vải tam giác + cọc + đống gỗ bên cạnh
+    ctx.fillStyle = "#a8834f"; ctx.beginPath(); ctx.moveTo(-34, 4); ctx.lineTo(0, -38); ctx.lineTo(34, 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#c9a86a"; ctx.beginPath(); ctx.moveTo(-34, 4); ctx.lineTo(0, -38); ctx.lineTo(6, 4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#241708"; ctx.beginPath(); ctx.moveTo(-7, 4); ctx.lineTo(0, -16); ctx.lineTo(7, 4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#6b4213"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -44); ctx.lineTo(0, -34); ctx.stroke();
+    ctx.fillStyle = "#8a5a2e"; ctx.fillRect(38, -2, 16, 5); ctx.fillRect(40, -7, 13, 5);
+  } else if (tier === 2) { // NHÀ GỖ: tường ván + mái tranh + cửa sổ sáng
+    ctx.fillStyle = "#8a5a2e"; ctx.fillRect(-40, -34, 80, 38);
+    ctx.fillStyle = "#755026"; for (let i = -36; i < 40; i += 12) ctx.fillRect(i, -34, 2, 38);
+    ctx.fillStyle = "#b89a4a"; ctx.beginPath(); ctx.moveTo(-50, -32); ctx.lineTo(0, -58); ctx.lineTo(50, -32); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#9c7f38"; ctx.beginPath(); ctx.moveTo(-50, -32); ctx.lineTo(0, -58); ctx.lineTo(0, -32); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#3a2410"; ctx.fillRect(-8, -22, 16, 26);
+    ctx.fillStyle = "#ffd98a"; ctx.fillRect(20, -26, 12, 11); ctx.strokeStyle = "#3a2410"; ctx.lineWidth = 1.5; ctx.strokeRect(20, -26, 12, 11);
+    ctx.fillStyle = "#6e6a63"; ctx.fillRect(-52, 2, 104, 5); // thềm đá
+  } else if (tier === 3) { // NHÀ NGÓI: tường vôi + mái ngói xám 2 gian + rương kho bên hông
+    ctx.fillStyle = "#d8cfc0"; ctx.fillRect(-52, -40, 88, 44); ctx.fillRect(36, -28, 30, 32);
+    ctx.fillStyle = "#4a5a68"; ctx.beginPath(); ctx.moveTo(-62, -38); ctx.lineTo(-8, -66); ctx.lineTo(46, -38); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#3d4c59"; ctx.beginPath(); ctx.moveTo(30, -27); ctx.lineTo(51, -44); ctx.lineTo(72, -27); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#2e3a44"; ctx.lineWidth = 1.4; for (let i = -54; i < 44; i += 9) { ctx.beginPath(); ctx.moveTo(i, -40 + Math.abs(i + 8) * 0.52); ctx.lineTo(i + 4, -38); ctx.stroke(); }
+    ctx.fillStyle = "#5d3a1a"; ctx.fillRect(-14, -26, 17, 30);
+    ctx.fillStyle = "#ffd98a"; ctx.fillRect(-40, -32, 12, 11); ctx.fillRect(14, -32, 12, 11);
+    ctx.strokeStyle = "#3a2410"; ctx.lineWidth = 1.5; ctx.strokeRect(-40, -32, 12, 11); ctx.strokeRect(14, -32, 12, 11);
+    ctx.fillStyle = "#7a4a22"; ctx.fillRect(44, -8, 18, 12); ctx.fillStyle = "#e0aa4e"; ctx.fillRect(44, -3, 18, 2.4); // rương kho
+    ctx.fillStyle = "#6e6a63"; ctx.fillRect(-60, 2, 134, 5);
+  } else { // BIỆT VIỆN: tường bao + cổng + đại sảnh mái ngói lớn + lồng đèn
+    ctx.strokeStyle = "#cbbfa8"; ctx.lineWidth = 6; ctx.strokeRect(-88, -64, 176, 76);
+    ctx.fillStyle = "#8a7a5c"; ctx.fillRect(-88, -70, 176, 7);
+    ctx.fillStyle = "#d8cfc0"; ctx.fillRect(-46, -52, 92, 46);
+    ctx.fillStyle = "#4a5a68"; ctx.beginPath(); ctx.moveTo(-58, -50); ctx.lineTo(0, -84); ctx.lineTo(58, -50); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#3d4c59"; ctx.beginPath(); ctx.moveTo(-58, -50); ctx.lineTo(0, -84); ctx.lineTo(0, -50); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#d8cfc0"; ctx.fillRect(-84, -34, 30, 28);
+    ctx.fillStyle = "#54687a"; ctx.beginPath(); ctx.moveTo(-88, -33); ctx.lineTo(-69, -48); ctx.lineTo(-50, -33); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#5d3a1a"; ctx.fillRect(-9, -34, 18, 28);
+    ctx.fillStyle = "#ffd98a"; ctx.fillRect(-36, -44, 12, 11); ctx.fillRect(24, -44, 12, 11);
+    ctx.strokeStyle = "#3a2410"; ctx.lineWidth = 1.5; ctx.strokeRect(-36, -44, 12, 11); ctx.strokeRect(24, -44, 12, 11);
+    ctx.fillStyle = "#7a4a22"; ctx.fillRect(52, -14, 20, 13); ctx.fillStyle = "#e0aa4e"; ctx.fillRect(52, -8, 20, 2.4);
+    ctx.fillStyle = "#c23b2e"; ctx.beginPath(); ctx.arc(-64, -52, 5, 0, 6.29); ctx.arc(64, -52, 5, 0, 6.29); ctx.fill(); // đèn lồng đỏ
+    ctx.fillStyle = "#5d3a1a"; ctx.fillRect(-13, 8, 26, 5); // cổng mở giữa tường nam
+  }
+  ctx.restore();
+}
+function homeDraw() {
+  if (!G || OV.battle || ovInCave()) return;
+  const now = performance.now();
+  const seenCell = (px, py) => !(typeof OVF !== "undefined" && OVF.on && OVF.seen) || ovFogSeen(Math.floor(px / OVF.CS), Math.floor(py / OVF.CS)); // ovFogSeen nhận tọa độ LƯỚI SƯƠNG (pixel/CS) như dấu ⚔️ chiến sự
+  const near = (x, y) => Math.hypot(x - G.p.x, y - G.p.y) <= (typeof OV_VIEW_R !== "undefined" ? OV_VIEW_R : 260);
+  const drawSign = (sx, sy, txt) => { ctx.save(); ctx.textAlign = "center";
+    ctx.font = "bold 11px 'Be Vietnam Pro'"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+    ctx.fillStyle = "#ffe9bd"; ctx.fillText(txt, sx, sy); ctx.restore(); };
+  if (!HOME.built) {
+    for (const p of HOME_PLOTS) {
+      const sx = p.x - cam.x, sy = p.y - cam.y;
+      if (sx < -90 || sx > VW + 90 || sy < -110 || sy > VH + 90) continue;
+      if (!seenCell(p.x, p.y)) continue;
+      ctx.save();
+      ctx.fillStyle = "rgba(140,105,55,.5)"; ctx.fillRect(sx - 58, sy - 38, 116, 84);
+      ctx.strokeStyle = "#8a6428"; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.strokeRect(sx - 58, sy - 38, 116, 84); ctx.setLineDash([]);
+      ctx.fillStyle = "#6b4213"; ctx.fillRect(sx - 3, sy - 30, 6, 26);
+      ctx.fillStyle = "#e8cf9a"; ctx.fillRect(sx - 30, sy - 44, 60, 17);
+      ctx.fillStyle = "#2b1c0d"; ctx.font = "bold 10.5px 'Be Vietnam Pro'"; ctx.textAlign = "center";
+      ctx.fillText("🏠 ĐẤT TRỐNG", sx, sy - 31);
+      ctx.restore();
+      if (near(p.x, p.y)) drawSign(sx, sy + 62, "🏠 Nền đất trống — bấm E xem đất & xây nhà");
+    }
+    return;
+  }
+  const ctr = ovCenter(HOME.gx, HOME.gy), sx = ctr.x - cam.x, sy = ctr.y - cam.y;
+  if (sx < -140 || sx > VW + 140 || sy < -170 || sy > VH + 140) return;
+  if (!seenCell(ctr.x, ctr.y)) return;
+  // vườn sau nhà (từ C3)
+  if (HOME.tier >= 3) for (let i = 0; i < homeGardenSlots(); i++) { const gc = homeGardenCell(i);
+    const gxp = gc.gx * OVC - cam.x, gyp = gc.gy * OVC - cam.y;
+    ctx.save(); ctx.fillStyle = "#5d4020"; ctx.fillRect(gxp + 3, gyp + 8, OVC - 6, OVC - 12);
+    ctx.fillStyle = "#6e4e26"; for (let r = 0; r < 3; r++) ctx.fillRect(gxp + 5, gyp + 12 + r * 8, OVC - 10, 2.4);
+    const g = HOME.garden[i];
+    if (g) { ctx.font = "15px serif"; ctx.textAlign = "center";
+      ctx.fillText(G.day >= g.day + 2 ? HOME_CROPS[g.crop].icon : "🌱", gxp + OVC / 2, gyp + 26);
+      if (G.day >= g.day + 2) { ctx.fillStyle = "#ffd23e"; ctx.font = "bold 9px 'Be Vietnam Pro'"; ctx.fillText("THU ĐƯỢC", gxp + OVC / 2, gyp + 37); } }
+    ctx.restore(); }
+  homeDrawHouseShape(sx, sy + 8, HOME.tier, now);
+  if (now - HOME.buildAnimT < 1400) { ctx.save(); ctx.fillStyle = "rgba(201,168,106,.5)";
+    for (let i = 0; i < 6; i++) { const a = i * 1.05 + now / 300, r = 26 + ((now - HOME.buildAnimT) / 1400) * 44;
+      ctx.beginPath(); ctx.arc(sx + Math.cos(a) * r, sy - 16 + Math.sin(a) * r * 0.5, 5, 0, 6.29); ctx.fill(); } ctx.restore(); }
+  if (near(ctr.x, ctr.y)) drawSign(sx, sy - (HOME.tier >= 4 ? 96 : HOME.tier >= 3 ? 78 : HOME.tier >= 2 ? 68 : 52),
+    "🏠 " + HOME_TIERS[HOME.tier].name + " của " + (CHARS[G.charIdx] ? CHARS[G.charIdx].name : "ngươi") + " — bấm E vào nhà");
+}
+const _homeRender = render;
+render = function (now) { _homeRender(now); homeDraw(); };
+/* ---------- Nút về nhà trên thanh menu ---------- */
+(function homeInjectBtn() {
+  const sys = document.getElementById("sysBtns"); if (!sys || document.getElementById("homeGoBtn")) return;
+  const b = document.createElement("button"); b.className = "btn ghost"; b.id = "homeGoBtn"; b.textContent = "🏠 Nhà của ta";
+  b.addEventListener("click", () => {
+    if (!G) return;
+    if (!HOME.built) { toast("🏠 Ngươi chưa xây nhà — tìm biển 🏠 Nền đất trống tại Thôn Ngưu Gia / Tương Dương / Lâm An / Làng Chài / Chợ Biên Giới / Đại Lý / Tuyền Châu, bấm E để xây bằng nguyên liệu thu thập."); return; }
+    const c = ovNearestWalkable(HOME.gx, HOME.gy + 1, false); OV.cell = c; OV.path = []; OV.anim = null;
+    const ctr = ovCenter(c.gx, c.gy); G.p.x = ctr.x; G.p.y = ctr.y; curZone = null;
+    if (typeof ovFogReveal === "function") ovFogReveal();
+    toast("🏠 Về tới " + HOME_TIERS[HOME.tier].name + " tại " + ZONES[HOME.zi].name + " — bấm E để vào nhà.");
+    ovUpdateStepsHud();
+  });
+  sys.appendChild(b);
+})();
+/* ---------- Lưu / nạp (field "ovHome") ---------- */
+function homeSerialize() {
+  return { built: HOME.built, zi: HOME.zi, gx: HOME.gx, gy: HOME.gy, tier: HOME.tier,
+    garden: HOME.garden, storage: HOME.storage, buff: HOME.buff, bonusDay: HOME.bonusDay, bonusAmt: HOME.bonusAmt };
+}
+function homeRestore(j) {
+  HOME.built = false; HOME.zi = -1; HOME.gx = 0; HOME.gy = 0; HOME.tier = 0;
+  HOME.garden = [null, null, null, null, null, null]; HOME.storage = {}; HOME.buff = null;
+  HOME.bonusDay = 0; HOME.bonusAmt = 0; HOME.panelPlot = null;
+  if (!j || !j.built) return;
+  HOME.built = true; HOME.zi = j.zi; HOME.gx = j.gx; HOME.gy = j.gy; HOME.tier = j.tier || 1;
+  if (Array.isArray(j.garden)) for (let i = 0; i < 6; i++) HOME.garden[i] = j.garden[i] || null;
+  HOME.storage = j.storage || {}; HOME.buff = j.buff || null;
+  HOME.bonusDay = j.bonusDay || 0; HOME.bonusAmt = j.bonusAmt || 0;
+}
+const _homeSave = saveGame;
+saveGame = function () { _homeSave();
+  try { if (!G) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw); j.ovHome = homeSerialize(); localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _homeStart = startGame;
+startGame = function (ci, fs) {
+  let snap = null;
+  if (fs) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); snap = j ? (j.ovHome || null) : null; } catch (e) {} }
+  _homeStart(ci, fs);
+  homeRestore(snap);
+};
+/* ---------- API kiểm chứng cho probe ---------- */
+window.__HOME = {
+  version: "ov10-home-1",
+  plots: HOME_PLOTS.map(p => ({ zi: p.zi, zone: p.zone, gx: p.gx, gy: p.gy, x: p.x, y: p.y })),
+  tiers: HOME_TIERS, recipes: HOME_RECIPES,
+  state: () => ({ built: HOME.built, zi: HOME.zi, zone: HOME.zi >= 0 ? (ZONES[HOME.zi] || {}).name : null,
+    tier: HOME.tier, gx: HOME.gx, gy: HOME.gy,
+    garden: HOME.garden.map(g => g ? { crop: g.crop, day: g.day, ready: G ? G.day >= g.day + 2 : false } : null),
+    storage: Object.assign({}, HOME.storage), buff: HOME.buff ? Object.assign({}, HOME.buff) : null,
+    buffActive: G ? homeBuffActive() : false, bonusDay: HOME.bonusDay, bonusAmt: HOME.bonusAmt,
+    gold: G ? G.gold : 0, items: G ? Object.assign({}, G.items) : {},
+    day: G ? G.day : 0, stepsLeft: typeof OV !== "undefined" ? OV.stepsLeft : 0,
+    stepsMax: G ? ovStepsMax() : 0, baseStepsMax: G ? _homeBaseStepsMax() : 0,
+    pAtk: G ? pAtk() : 0, basePAtk: G ? _homePAtk() : 0,
+    hp: G ? G.p.hp : 0, maxhp: G ? G.p.maxhp : 0 }),
+  teleportToPlot: i => { const p = HOME_PLOTS[i]; if (!p || !G) return false;
+    const c = ovNearestWalkable(p.gx, p.gy + 1, false); OV.cell = c; OV.path = []; OV.anim = null;
+    const ctr = ovCenter(c.gx, c.gy); G.p.x = ctr.x; G.p.y = ctr.y;
+    if (typeof ovFogReveal === "function") ovFogReveal(); return { gx: c.gx, gy: c.gy, plot: p }; },
+  teleportHome: () => { if (!HOME.built || !G) return false;
+    const c = ovNearestWalkable(HOME.gx, HOME.gy + 1, false); OV.cell = c; OV.path = []; OV.anim = null;
+    const ctr = ovCenter(c.gx, c.gy); G.p.x = ctr.x; G.p.y = ctr.y;
+    if (typeof ovFogReveal === "function") ovFogReveal(); return c; },
+  openPanel: () => { openHomePanel(); return !homeBoxEl().classList.contains("hidden"); },
+  panelText: () => homeBoxEl().textContent,
+  build: () => homeBuild(HOME.built ? { gx: HOME.gx, gy: HOME.gy, zi: HOME.zi } : homePlotAt(OV.cell.gx, OV.cell.gy)),
+  sleep: () => homeSleep(),
+  cook: id => homeCook(id),
+  plant: (i, crop) => homePlant(i, crop),
+  harvest: i => homeHarvest(i),
+  deposit: (item, all) => homeDeposit(item, !!all),
+  withdraw: (item, all) => homeWithdraw(item, !!all),
+  give: (item, n) => { if (G) { addItem(item, n); return homeItemCount(item); } return 0; },
+  setGold: n => { if (G) { G.gold = n; return G.gold; } return 0; },
+  setSteps: n => { OV.stepsLeft = n; ovUpdateStepsHud(); return OV.stepsLeft; },
+  advanceDay: () => { ovAdvanceDay(); return G.day; },
+  digest: () => JSON.stringify(homeSerialize())
+};
+</script>
 </body>
 </html>
