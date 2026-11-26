@@ -193,11 +193,7 @@ h1,h2,h3{font-family:"Noto Serif",serif;margin:0}
 #testBanner input[type=checkbox]{min-height:auto;width:16px;height:16px;accent-color:var(--gold)}
 @media(max-width:820px){#testBanner{top:auto;bottom:calc(296px + env(safe-area-inset-bottom,0px))}}
 .testTag{display:inline-block;background:#c23b2e;color:#fff;font-weight:800;font-size:10px;border-radius:4px;padding:0 5px;margin-left:5px;vertical-align:1px;letter-spacing:.4px}
-/* ===== Gợi ý xoay ngang (chỉ hiện trên máy cảm ứng đang để DỌC) ===== */
-#rotateHint{display:none;position:absolute;top:calc(110px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:25;align-items:center;gap:7px;background:rgba(20,12,5,.92);border:1.5px solid var(--gold);color:#ffe9bd;border-radius:999px;padding:4px 6px 4px 11px;font-size:11.5px;font-weight:700;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.5);max-width:94vw}
-#rotateHint span{overflow:hidden;text-overflow:ellipsis}
-#rotateHintX{flex:none;width:22px;height:22px;min-height:22px;padding:0;border-radius:50%;border:1.5px solid var(--gold);background:#241708;color:var(--gold2);font-size:11px;line-height:1;cursor:pointer}
-@media(pointer:coarse) and (max-width:820px) and (orientation:portrait){#rotateHint{display:flex}}
+
 /* ===== PHONE DỌC ≤820px: cụm điều khiển NHỎ HƠN NỮA + neo sát đáy, giữa màn hình trống ===== */
 @media(max-width:820px) and (orientation:portrait){
   /* Thanh hệ thống ở đáy cao ~46px → mọi cụm neo ngay phía trên nó */
@@ -262,8 +258,6 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
 }
 /* Nới vùng chạm cho nút nhỏ sẵn có (giữ nguyên hình thức hiển thị) */
 #questToggle::after{content:"";position:absolute;inset:-8px}
-#rotateHintX{position:relative}
-#rotateHintX::after{content:"";position:absolute;inset:-9px}
 @media(max-width:820px){#sysBtns .btn{min-height:40px}}
 @media(orientation:landscape) and (max-height:540px){#sysBtns .btn{min-height:40px}}
 </style>
@@ -368,8 +362,6 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
     <button class="btn ghost" id="fsBtn">⛶ Toàn màn hình</button>
     <button class="btn ghost" id="exitBtn">🚪 Chọn lại</button>
   </div>
-
-  <div id="rotateHint"><span>📱 Xoay ngang điện thoại để thấy đường rộng hơn</span><button id="rotateHintX" type="button" aria-label="Tắt gợi ý xoay màn hình">✕</button></div>
 
   <div id="touchUI">
     <div id="joy"><div id="joyKnob"></div></div>
@@ -3222,8 +3214,6 @@ window.addEventListener("touchend",e=>{ for(const t of e.changedTouches) if(t.id
 $("questToggle").addEventListener("click",()=>{ const qh=$("questHud"), open=qh.classList.toggle("open");
   $("questToggle").textContent=open?"▾":"▸"; $("questToggle").setAttribute("aria-expanded",open?"true":"false"); });
 $("questMini").addEventListener("click",()=>$("questToggle").click());
-/* Gợi ý xoay ngang: nút ✕ ẩn trong phiên chơi hiện tại (chỉ ẩn bằng style tại chỗ, không ghi vào save) */
-$("rotateHintX").addEventListener("click",()=>{ $("rotateHint").style.display="none"; });
 document.querySelectorAll("#actBtns button").forEach(b=>{ b.addEventListener("touchstart",e=>{ e.preventDefault(); initAudio();
   const k=b.dataset.k; if(k==="j")doAttack(); if(k==="k")doSkill(); if(k==="space")doDash(); if(k==="e")doInteract(); },{passive:false}); });
 /* ================= PHASE 5-6: STORY 2 · KỲ NGỘ · TÌNH DUYÊN · NHÀ · NGHỀ · KINH TẾ · BOSS ẨN ================= */
@@ -4709,7 +4699,7 @@ $("achBtn").onclick=()=>window.__toggleAch();
   if(fsBtn) fsBtn.addEventListener("click",async()=>{ try{
       if(document.fullscreenElement){ await document.exitFullscreen(); return; }
       const de=document.documentElement;
-      if(!de.requestFullscreen){ toast("Trình duyệt này không hỗ trợ toàn màn hình — hãy xoay ngang máy để chơi rộng hơn."); return; }
+      if(!de.requestFullscreen){ toast("Trình duyệt này không hỗ trợ toàn màn hình."); return; }
       await de.requestFullscreen();
       try{ if(screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); }catch(e){}
     }catch(e){} });
@@ -5237,10 +5227,7 @@ function ovSkillFxSrc(id) { const m = SKILL_FX[id]; return m ? ovFxSrc(m[0]) : "
   #ovBOrder .chip.now{border-color:#f5cf87;box-shadow:0 0 0 3px rgba(245,207,135,.45);transform:scale(1.14)}
   #ovBOrder .chip.dead{opacity:.35;filter:grayscale(1)}
   #ovBField{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0;position:relative}
-  #ovBFxLayer{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none} /* layer được JS chuyển ra body, NGOÀI #ovBattle: overlay trận là stacking context (fixed+z-index+backdrop-filter) nên ảnh fx nằm trong nó bị cô lập blend, nền đen không cháy hết -> ô đen. Nằm ngoài body thì mix-blend-mode:screen hòa thẳng với cả sân trận như bản chính vẽ additive trên canvas. */
-  .ovFxImg{position:fixed;mix-blend-mode:screen;pointer-events:none;transform:translate(-50%,-50%);object-fit:contain;z-index:1001}
-  .ovProj{position:fixed;mix-blend-mode:screen;pointer-events:none;object-fit:contain;z-index:1002}
-  .ovSpark{position:fixed;border-radius:50%;pointer-events:none;z-index:1002;box-shadow:0 0 6px currentColor}
+  #ovBFxCv{position:fixed;inset:0;pointer-events:none;z-index:1001} /* FX trận vẽ bằng CANVAS 2D phủ toàn màn hình: bản trước dùng <img> DOM + mix-blend-mode:screen + WAAPI trên phần tử fixed — trên Safari iOS/trình duyệt mobile tổ hợp này hay thành vô hình, và ảnh tạo mới lúc tung chiêu chưa tải xong đã hết animation nên phone không thấy gì. Canvas chạy mọi trình duyệt mobile; ảnh lấy từ kho VFXIMG preload sẵn của bản chính và được khử nền đen tại nguồn (xem ovFxSprite) vì canvas phủ không blend 'lighter' với trang bên dưới được như canvas thế giới của bản chính. */
   #ovBBanner{position:absolute;left:50%;top:33%;transform:translate(-50%,-50%);z-index:9;font-size:clamp(21px,4.6vw,34px);font-weight:900;color:#ffe9b0;letter-spacing:.5px;text-shadow:0 2px 0 rgba(90,50,5,.9),0 0 22px rgba(255,180,60,.55),0 4px 10px #000;opacity:0;pointer-events:none;text-align:center;white-space:nowrap}
   #ovBBanner.show{animation:ovBannerA .9s ease-out forwards}
   @keyframes ovBannerA{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}30%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-58%) scale(1.02)}}
@@ -5261,12 +5248,6 @@ function ovSkillFxSrc(id) { const m = SKILL_FX[id]; return m ? ovFxSrc(m[0]) : "
   .ovUnit.deadU{filter:grayscale(1) brightness(.5);opacity:.6;transform:rotate(6deg)}
   .ovUnit.target .spr,.ovUnit.target .medal{border-color:#ffd34d;box-shadow:0 0 0 3px rgba(255,211,77,.5)}
   .ovUnit .st{font-size:11px;color:#ffd34d;min-height:14px}
-  #ovBFx{display:none;position:relative;height:0;text-align:center;z-index:5;pointer-events:none}
-  #ovBFxImg{position:absolute;left:50%;top:-86px;transform:translateX(-50%);width:172px;height:172px;object-fit:contain;opacity:0;mix-blend-mode:screen}
-  #ovBFxImg.pop{animation:ovFxPop .55s ease-out forwards}
-  #ovBFxAura{position:absolute;left:50%;top:-96px;transform:translateX(-50%);width:192px;height:192px;object-fit:contain;opacity:0;mix-blend-mode:screen}
-  #ovBFxAura.pop{animation:ovFxPop .7s ease-out forwards}
-  @keyframes ovFxPop{0%{opacity:0;transform:translateX(-50%) scale(.55) rotate(-6deg)}25%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(1.25) rotate(5deg)}}
   .ovDmg{position:absolute;left:50%;top:-8px;transform:translateX(-50%);font-weight:900;font-size:21px;color:#ffd34d;text-shadow:0 2px 4px #000;animation:ovFloat 1s ease-out forwards;pointer-events:none;white-space:nowrap;z-index:6}
   .ovDmg.hurt{color:#ff7b6b}.ovDmg.heal{color:#8be06a}.ovDmg.miss{color:#cfd8e3;font-size:15px}
   @keyframes ovFloat{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-52px);opacity:0}}
@@ -5281,18 +5262,19 @@ function ovSkillFxSrc(id) { const m = SKILL_FX[id]; return m ? ovFxSrc(m[0]) : "
   #ovBSub button{flex:1 1 160px;min-height:50px;text-align:left;border-radius:12px;border:1.5px solid #6b532f;background:rgba(38,26,13,.96);color:#f5e7c8;padding:7px 10px;cursor:pointer;font-size:13.5px}
   #ovBSub button:disabled{opacity:.45}
   #ovBSub small{display:block;color:#c9b48c}
-  @media (max-width:640px){ .ovUnit{width:84px} .ovUnit .spr,.ovUnit .medal{width:60px;height:60px;font-size:32px} #ovBFxImg{width:132px;height:132px;top:-66px} #ovBBtns{gap:5px} #ovBBtns button{font-size:12px;min-height:44px} #ovBLog{max-height:48px;font-size:12.5px} }
-  @media (prefers-reduced-motion: reduce){ #ovBFxImg.pop,#ovBFxAura.pop,.ovDmg{animation-duration:.01s !important} }`;
+  @media (max-width:640px){ .ovUnit{width:84px} .ovUnit .spr,.ovUnit .medal{width:60px;height:60px;font-size:32px} #ovBBtns{gap:5px} #ovBBtns button{font-size:12px;min-height:44px} #ovBLog{max-height:48px;font-size:12.5px} }
+  @media (prefers-reduced-motion: reduce){ .ovDmg{animation-duration:.01s !important} }`;
   document.head.appendChild(st);
   const d = document.createElement("div"); d.id = "ovBattle";
   d.innerHTML = `<div id="ovBTop"><span id="ovBTitle">⚔️ Trận đấu</span><div id="ovBOrder"></div></div>
-    <div id="ovBField"><div class="ovRow" id="ovBFoes"></div><div id="ovBFx"><img id="ovBFxAura" alt=""><img id="ovBFxImg" alt=""></div><div class="ovRow" id="ovBAllies"></div><div id="ovBFxLayer"></div><div id="ovBBanner"></div></div>
+    <div id="ovBField"><div class="ovRow" id="ovBFoes"></div><div class="ovRow" id="ovBAllies"></div><div id="ovBBanner"></div></div>
     <div id="ovBLog"></div><div id="ovBBtns">
       <button id="ovBAtk">⚔️ Đánh thường</button><button id="ovBSkill">✨ Chiêu thức</button>
       <button id="ovBItem">🧪 Vật phẩm</button><button id="ovBDodge">🌀 Né tránh</button><button id="ovBFlee">🏃 Bỏ chạy</button></div>
     <div id="ovBSub"></div>`;
   document.body.appendChild(d);
-  document.body.appendChild(d.querySelector("#ovBFxLayer")); // tách layer FX ra body (xem ghi chú ở CSS #ovBFxLayer)
+  const fxCv = document.createElement("canvas"); fxCv.id = "ovBFxCv"; // canvas FX phủ toàn màn hình, nằm ngoài #ovBattle (xem ghi chú ở CSS #ovBFxCv)
+  document.body.appendChild(fxCv);
 })();
 function ovBlog(html) { const B = OV.battle; if (!B) return;
   B.log.push(html); if (B.log.length > 30) B.log.shift();
@@ -5314,31 +5296,99 @@ function ovWait(ms) { if (OV_RM) ms = Math.round(ms * 0.45);
 function ovCenterOf(u) { const el = u ? ovUnitEl(u) : null; // tọa độ VIEWPORT (ảnh fx dùng position:fixed ở layer ngoài body)
   if (!el) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * 0.36 }; }
+/* ================= FX TRẬN VẼ BẰNG CANVAS 2D — dùng chung kho ảnh VFXIMG của bản chính =================
+   Vì sao đổi: bản DOM cũ tạo Image mới ngay lúc tung chiêu rồi chạy WAAPI 560ms bất kể ảnh đã
+   tải xong chưa + mix-blend-mode:screen trên phần tử fixed — trên phone (Safari iOS, trình duyệt
+   nhúng, mạng chậm) ảnh hoặc chưa kịp hiện, hoặc blend thành vô hình -> "skill không có hình".
+   Canvas 2D + 'lighter' là đúng cách bản chính vẽ (drawVfx) và chạy mọi trình duyệt mobile;
+   ảnh lấy từ VFXIMG đã preload từ lúc tải trang, thêm preload lúc mở trận + hiệu ứng CHỜ ảnh
+   sẵn sàng mới bắt đầu chạy nhịp (tối đa 1.5s) nên không bao giờ diễn "trống". */
+const OVFXC = {}; // cache path -> HTMLImageElement (ưu tiên dùng lại chính object trong VFXIMG)
+function ovFxImg(src) { if (!src) return null;
+  if (OVFXC[src]) return OVFXC[src];
+  if (typeof VFXIMG !== "undefined") for (const k in VFXIMG) { const im = VFXIMG[k];
+    if (im && im.src && im.src.endsWith("/" + src)) { OVFXC[src] = im; return im; } }
+  const im = new Image(); im.src = src; OVFXC[src] = im; return im; }
+function ovFxReady(im) { return !!(im && im.complete && im.naturalWidth > 0); }
+function ovPreloadBattleFx() { // nạp trước toàn bộ ảnh chiêu + hào quang + vệt chém ngay khi mở trận
+  try { for (const id in SKILL_FX) ovFxImg(ovSkillFxSrc(id));
+    ovFxImg(ovFxSrc("slash"));
+    if (typeof VAR_ELEM !== "undefined") for (const k in VAR_ELEM) ovFxImg(ovFxSrc(VAR_ELEM[k].img));
+  } catch (e) {} }
+const OVFXK = {}; // src -> sprite đã khử nền đen {el,w,h} (xử lý 1 lần, cache cả phiên)
+function ovFxSprite(src) { // TOÀN BỘ ảnh fx của game là pixel-art NỀN ĐEN alpha=255 (kể cả fxu-*/fxv-*):
+  // vẽ thẳng lên canvas phủ sẽ thành Ô ĐEN (đây cũng là lý do bản chính phải vẽ 'lighter' lên canvas thế giới).
+  // Canvas phủ không blend được với trang bên dưới bằng globalCompositeOperation, nên khử nền đen tại nguồn:
+  // alpha = độ sáng kênh lớn nhất (kèm ngưỡng khử nhiễu), màu được đẩy bão hòa 255/max — kết quả tương đương
+  // hòa trộn screen/additive khi đặt lên sân trận. Ảnh nào vốn trong suốt (alpha góc < 128) thì dùng nguyên bản.
+  if (OVFXK[src]) return OVFXK[src];
+  const im = ovFxImg(src); if (!im || !ovFxReady(im)) return null;
+  const w = im.naturalWidth, h = im.naturalHeight;
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+  const cx = cv.getContext("2d", { willReadFrequently: true }); cx.drawImage(im, 0, 0);
+  let id; try { id = cx.getImageData(0, 0, w, h); } catch (e) { OVFXK[src] = { el: im, w: w, h: h }; return OVFXK[src]; }
+  const d = id.data, cornerA = Math.min(d[3], d[(w - 1) * 4 + 3], d[(h - 1) * w * 4 + 3], d[(h * w - 1) * 4 + 3]);
+  if (cornerA < 128) { OVFXK[src] = { el: im, w: w, h: h }; return OVFXK[src]; } // ảnh trong suốt sẵn: dùng thẳng
+  for (let i = 0; i < d.length; i += 4) { const m = Math.max(d[i], d[i + 1], d[i + 2]);
+    if (m <= 10) { d[i + 3] = 0; continue; }
+    d[i + 3] = Math.round((m - 10) * 255 / 245);
+    if (m < 255) { const f = 255 / m; d[i] = Math.min(255, d[i] * f); d[i + 1] = Math.min(255, d[i + 1] * f); d[i + 2] = Math.min(255, d[i + 2] * f); } }
+  cx.putImageData(id, 0, 0);
+  OVFXK[src] = { el: cv, w: w, h: h }; return OVFXK[src]; }
+const OVFXQ = { items: [], raf: 0 };
+function ovFxCtx() { const cv = document.getElementById("ovBFxCv"); if (!cv) return null;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), w = window.innerWidth, h = window.innerHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.width = w + "px"; cv.style.height = h + "px"; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx; }
+function ovFxPush(it) { OVFXQ.items.push(it);
+  if (!OVFXQ.raf) OVFXQ.raf = requestAnimationFrame(ovFxFrame); }
+function ovFxFrame() { const ctx = ovFxCtx(); if (!ctx) { OVFXQ.raf = 0; OVFXQ.items = []; return; }
+  const now = performance.now(), W = window.innerWidth, H = window.innerHeight;
+  ctx.clearRect(0, 0, W, H);
+  OVFXQ.items = OVFXQ.items.filter(it => ovFxDraw(ctx, it, now));
+  if (OVFXQ.items.length) OVFXQ.raf = requestAnimationFrame(ovFxFrame);
+  else { OVFXQ.raf = 0; ctx.clearRect(0, 0, W, H); } }
+function ovFxDraw(ctx, it, now) { // trả true = còn sống; nhịp chỉ chạy khi sprite đã sẵn sàng
+  let sp = null;
+  if (it.kind !== "spark") { sp = ovFxSprite(it.src);
+    if (!sp) { if (now - it.t0 > 1500) { if (it.done) it.done(); return false; }
+      it.t0 = now; return true; } }
+  const p = Math.min(1, (now - it.t0) / it.dur);
+  ctx.save();
+  if (it.kind === "burst") { // cùng envelope bản DOM cũ: scale .42 -> 1.03 (26%) -> 1.24, alpha 0->1->0, xoay -spin->0->+spin, trôi lên 4%
+    const q = p < 0.26 ? p / 0.26 : (p - 0.26) / 0.74;
+    const sc = p < 0.26 ? 0.42 + 0.61 * q : 1.03 + 0.21 * q;
+    ctx.globalAlpha = p < 0.26 ? q : 1 - q;
+    ctx.translate(it.x, it.y - (p < 0.26 ? 0 : it.size * 0.04 * q));
+    ctx.rotate((p < 0.26 ? -it.spin * (1 - q) : it.spin * q) * Math.PI / 180);
+    const s = it.size * sc; ctx.drawImage(sp.el, -s / 2, -s / 2, s, s);
+  } else if (it.kind === "proj") { // đạn bay a->b (easing smoothstep ~ cubic-bezier(.35,.55,.6,1)), giữ tỉ lệ gốc của ảnh
+    const e = p * p * (3 - 2 * p), x = it.ax + (it.bx - it.ax) * e, y = it.ay + (it.by - it.ay) * e;
+    const sc = 0.8 + 0.32 * e, w = it.size * sc, h = w * (sp.h / sp.w || 1);
+    ctx.globalAlpha = 0.9 + 0.1 * e;
+    ctx.translate(x, y); ctx.rotate(it.ang); ctx.drawImage(sp.el, -w / 2, -h / 2, w, h);
+  } else { // spark: hạt sáng văng ra + rơi nhẹ xuống, mờ dần
+    const dt = Math.min(0.05, (now - (it.last || it.t0)) / 1000); it.last = now;
+    it.x += it.vx * dt; it.y += it.vy * dt; it.vy += 300 * dt;
+    ctx.globalAlpha = 1 - p; ctx.fillStyle = it.color;
+    ctx.beginPath(); ctx.arc(it.x, it.y, it.r, 0, 6.29); ctx.fill();
+  }
+  ctx.restore();
+  if (p >= 1) { if (it.done) it.done(); return false; }
+  return true; }
 function ovBurstAt(u, src, size, opts) { opts = opts || {}; if (!src || !u) return;
-  const layer = document.getElementById("ovBFxLayer"); if (!layer) return;
-  const c = ovCenterOf(u), s = size || 200;
-  const mkImg = (srcI, sz, dur, behind) => { const im = document.createElement("img"); im.src = srcI; im.alt = ""; im.className = "ovFxImg";
-    im.style.width = sz + "px"; im.style.height = sz + "px"; im.style.left = c.x + "px"; im.style.top = c.y + "px"; im.style.zIndex = behind ? 1001 : 1002;
-    layer.appendChild(im);
-    const spin = (Math.random() * 24 - 12) + (opts.spin || 0);
-    const an = im.animate([
-      { transform: "translate(-50%,-50%) scale(.42) rotate(" + (-spin) + "deg)", opacity: 0 },
-      { transform: "translate(-50%,-50%) scale(1.03) rotate(0deg)", opacity: 1, offset: 0.26 },
-      { transform: "translate(-50%,-54%) scale(1.24) rotate(" + spin + "deg)", opacity: 0 }],
-      { duration: OV_RM ? Math.round(dur * 0.5) : dur, easing: "ease-out", fill: "backwards" });
-    an.onfinish = () => im.remove(); };
-  if (opts.auraSrc) mkImg(opts.auraSrc, s * 1.22, (opts.dur || 560) + 170, true);
-  mkImg(src, s, opts.dur || 560, false); }
-function ovSparks(u, color, n, power) { const layer = document.getElementById("ovBFxLayer"); if (!layer || !u) return;
-  const c = ovCenterOf(u);
-  for (let i = 0; i < (n || 10); i++) { const d = document.createElement("div"); d.className = "ovSpark";
-    d.style.background = color; d.style.color = color; d.style.left = c.x + "px"; d.style.top = c.y + "px";
-    const sz = 3 + Math.random() * 4 * (power || 1); d.style.width = sz + "px"; d.style.height = sz + "px";
-    layer.appendChild(d);
-    const a = Math.random() * Math.PI * 2, dist = (34 + Math.random() * 62) * (power || 1);
-    d.animate([{ transform: "translate(-50%,-50%)", opacity: 1 },
-      { transform: "translate(" + (Math.cos(a) * dist - 3) + "px," + (Math.sin(a) * dist + 16) + "px)", opacity: 0 }],
-      { duration: 380 + Math.random() * 220, easing: "cubic-bezier(.1,.7,.3,1)" }).onfinish = () => d.remove(); } }
+  const c = ovCenterOf(u), s = size || 200, base = opts.dur || 560, k = OV_RM ? 0.5 : 1;
+  const spin = (Math.random() * 24 - 12) + (opts.spin || 0), now = performance.now();
+  if (opts.auraSrc) ovFxPush({ kind: "burst", src: opts.auraSrc, x: c.x, y: c.y, size: s * 1.22, dur: (base + 170) * k, spin: spin * 0.6, t0: now });
+  ovFxPush({ kind: "burst", src: src, x: c.x, y: c.y, size: s, dur: base * k, spin: spin, t0: now }); }
+function ovSparks(u, color, n, power) { if (!u) return;
+  const c = ovCenterOf(u), now = performance.now();
+  for (let i = 0; i < (n || 10); i++) { const a = Math.random() * Math.PI * 2, dist = (34 + Math.random() * 62) * (power || 1);
+    const dur = 380 + Math.random() * 220, sp = dist / (dur / 1000);
+    ovFxPush({ kind: "spark", x: c.x, y: c.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 26,
+      dur: dur, color: color || "#ffd98a", r: (3 + Math.random() * 4 * (power || 1)) / 2, t0: now }); } }
 function ovShake(lv) { if (!lv || OV_RM) return; const b = document.getElementById("ovBattle");
   const a = [0, 3, 6, 11][lv] || 3;
   b.animate([{ transform: "translate(0,0)" }, { transform: "translate(" + a + "px," + (-a * 0.5) + "px)" },
@@ -5364,17 +5414,12 @@ function ovKnock(u, fromU) { const el = u ? ovUnitEl(u) : null; if (!el || !from
   el.animate([{ transform: "translate(0,0)" }, { transform: "translate(" + (dx / d * 13) + "px," + (dy / d * 6 - 2) + "px)", offset: 0.3 },
     { transform: "translate(0,0)" }], { duration: 260, easing: "ease-out" }); }
 function ovProjectile(fromU, toU, src, size, ms) { return new Promise(res => {
-    const layer = document.getElementById("ovBFxLayer"); if (!layer || !src || !fromU || !toU) { res(); return; }
+    if (!src || !fromU || !toU) { res(); return; }
+    ovFxImg(src); // kích tải (nếu chưa) — nhịp bay chỉ chạy khi sprite sẵn sàng (xem ovFxDraw)
     const a = ovCenterOf(fromU), b = ovCenterOf(toU);
-    const im = document.createElement("img"); im.src = src; im.alt = ""; im.className = "ovProj";
-    const s = size || 92; im.style.width = s + "px"; im.style.height = "auto"; // giữ tỉ lệ gốc của ảnh (rồng vàng là ảnh dọc)
-    im.style.left = a.x + "px"; im.style.top = a.y + "px"; layer.appendChild(im);
-    const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
-    const an = im.animate([
-      { left: a.x + "px", top: a.y + "px", transform: "translate(-50%,-50%) rotate(" + ang + "deg) scale(.8)", opacity: 0.9 },
-      { left: b.x + "px", top: b.y + "px", transform: "translate(-50%,-50%) rotate(" + ang + "deg) scale(1.12)", opacity: 1 }],
-      { duration: (OVFX.skip || OV_RM) ? 70 : (ms || 270), easing: "cubic-bezier(.35,.55,.6,1)" });
-    an.onfinish = () => { im.remove(); res(); }; }); }
+    ovFxPush({ kind: "proj", src: src, ax: a.x, ay: a.y, bx: b.x, by: b.y, size: size || 92,
+      dur: (OVFX.skip || OV_RM) ? 70 : (ms || 270), ang: Math.atan2(b.y - a.y, b.x - a.x),
+      t0: performance.now(), done: res }); }); }
 function ovTierOf(id, sk) { if ((typeof SIG_FX !== "undefined" && SIG_FX[id]) || (sk && (sk.mul || 0) >= 2.4)) return 3;
   if (sk && (sk.mul || 0) >= 1.8) return 2; return 1; }
 function ovImpactFx(u, src, tier, opts) { opts = opts || {};
@@ -5485,6 +5530,7 @@ function ovOpenBattle(cfg) {
   B.order = units.slice().sort((a, b2) => b2.spd - a.spd);
   B.target = ovAliveFoes()[0] || null;
   document.getElementById("ovBTitle").textContent = title;
+  ovPreloadBattleFx(); // phone: nạp sẵn ảnh chiêu trước khi tung chiêu đầu tiên (xem ovFxImg/ovFxDraw)
   document.getElementById("ovBattle").classList.add("open");
   document.getElementById("ovBSub").classList.remove("open");
   ovBlog(title + " Thứ tự lượt theo Tốc độ: " + B.order.map(u => u.name).join(" → "));
