@@ -8782,5 +8782,778 @@ if (window.__OV) { window.__OV.autoStart = d => ovAutoStart(d);
   window.__OV.autoTo = i => { const es = ovQuestEntries(); const e = es[i]; if (!e || !e.dest) return false; ovAutoStart(e.dest); return true; };
   window.__OV.version8 = "ov8-quests-auto-1"; }
 </script>
+
+<script>
+"use strict";
+/* =====================================================================================
+   OV9 — ⚔️ CHIẾN SỰ GIANG HỒ: CÁC PHÁI GIAO TRANH GIÀNH LÃNH ĐỊA (việc số 3)
+   (1) LỊCH: mỗi 5–7 ngày nổ 1 cuộc giao tranh giữa 2 phái KÌNH ĐỊCH (6 cặp cố định,
+       mỗi phái đúng 1 cặp). Báo trước 1 ngày: tin đồn (socRumor — NPC/tửu lâu lan
+       truyền) + mục riêng trong panel Nhiệm vụ (Q) + ⚔️ trên bản đồ M/minimap (chỉ
+       khi vùng đã khám phá). Vùng giao tranh: vùng trung lập gần trung điểm 2 tổng
+       đàn, tránh vùng có tổng đàn và tránh trấn chính nếu được.
+   (2) DIỄN BIẾN THẬT: đến ngày, mỗi phái cử 1 đội = 1 cao thủ CÓ TÊN (đội trưởng —
+       ưu tiên chưởng môn/trưởng lão; nếu người đó đang là đích/người giao ủy thác
+       đang dở hoặc là người giao nhiệm vụ chính hiện tại thì MIỄN gọi, chọn người
+       khác trong phái) + 5 đệ tử (sprite đệ tử màu phái). Hai đội hành quân tới bãi
+       chiến (giai đoạn 'march' 20 nhịp — người chơi đang ở trong vùng được báo động
+       + có thời gian rời đi), rồi ĐÁNH NHAU THẬT theo NHỊP thế giới: đứng gần thì
+       đánh từng ô bằng chiêu phái (ảnh skill riêng, số sát thương bay, thanh máu —
+       cùng kênh FX của hệ cao thủ tự đánh quái); ở xa thì quyết toán gọn bằng sức
+       mạnh đội hình trên CÙNG số máu đó — tới nơi giữa chừng là phần còn lại diễn
+       thật. Cao thủ có tên KHÔNG chết: xuống 20% máu là rút lui. Tối đa 1 chiến sự
+       tại một thời điểm (nhẹ hơn nhiều so với giới hạn 6 trận NPC của bản chính).
+   (3) NGƯỜI CHƠI THAM GIA (panel Nhiệm vụ hoặc nói chuyện với đội trưởng tại bãi):
+       [Giúp phái A] [Giúp phái B] [Can hòa] [Đứng xem]. Giúp 1 phái: đệ tử phái địch
+       kề bên là vào trận turn-based (đồng minh = đệ tử phái mình giúp + đội trưởng
+       nếu gần), thắng/thua cộng điểm thế trận thật. Can hòa: cần Giao Tiếp >= 8
+       HOẶC Danh tiếng >= 50; tỉ lệ thành công = 35% + (GT-5)*7% + (thiện cảm 2
+       chưởng môn)/300 (kẹp 10%–95%), mỗi chiến sự chỉ thử 1 lần. Đứng xem: nhặt đồ
+       rơi quanh bãi (tối đa 3 lần/đợt); lảng vảng sát bãi khi đang đánh mà chưa chọn
+       phe: cảnh báo 1 lần, sau đó có thể bị đánh lan (vào trận với đệ tử 1 bên).
+   (4) ĐIỂM THẾ TRẬN: hạ 1 đệ tử địch = +2 cho phe đối diện · ép đội trưởng địch rút
+       lui = +6. Hết 170 nhịp giao tranh mà chưa phân thắng bại: xét điểm -> tỉ lệ
+       máu còn lại của đội -> tổng sức mạnh đội hình (hòa tuyệt đối thì phái đứng
+       trước trong cặp thắng). Phái thắng nắm ẢNH HƯỞNG vùng trong 7 ngày:
+       · ủy thác SINH trong vùng đó: vàng thưởng +15% (làm tròn, ghi baseGold);
+       · lần đầu trò chuyện với NPC trong vùng đang chịu ảnh hưởng: thiện cảm +3;
+       · tin đồn kết quả + vai trò của người chơi lan khắp giang hồ (socRumor +
+         tiếng đồn s5Deed khi người chơi có vai trò);
+       · thiện cảm chưởng môn: giúp phái thắng +10 / giúp phái thua +4 (ghi ơn) ·
+         phái thắng khi mình giúp bên thua -4 / khi mình giúp bên thắng, chưởng môn
+         bên thua -6 · can hòa thành công: cả hai +5 và Danh tiếng +8 · can hòa
+         thất bại: cả hai -3. Giúp đúng phái của mình thắng: +30 cống hiến phái.
+       Panel Nhiệm vụ có mục "🌏 Thế cục giang hồ": vùng đang chịu ảnh hưởng + số
+       ngày còn lại + lịch sử các cuộc giao tranh (thắng/thua, vai trò của mình).
+   (5) AN TOÀN: không sinh đội trong hang/điểm nghỉ (điểm tập kết né điểm nghỉ >= 3
+       ô, nằm trên ô đi được); save/load giữa chiến sự giữ nguyên trạng thái (đội
+       hình, điểm, ngày, phe đã chọn) qua field "ovWar"; sương mù: chỉ vẽ giao
+       tranh trong tầm nhìn, ⚔️ bản đồ chỉ khi vùng đã khám phá.
+   ===================================================================================== */
+const WAR_PAIRS = [
+  ["Thiếu Lâm", "Minh Giáo"],   // Phật môn vs Thánh hỏa Nhật Nguyệt — Quang Minh Đỉnh
+  ["Võ Đang", "Côn Luân"],      // hai nhà Đạo gia tranh danh chính thống
+  ["Cái Bang", "Tinh Túc"],     // Thiên Long: bang chúng thiên hạ vs độc phái Tinh Túc Hải
+  ["Nga Mi", "Hoa Sơn"],        // Diệt Tuyệt vs Nhạc Bất Quần — chính phái tranh tiếng
+  ["Tiêu Dao", "Điểm Thương"],  // Linh Thứu Cung vs Đại Lý Đoàn Thị
+  ["Cổ Mộ", "Toàn Chân"]        // Lâm Triều Anh vs Vương Trùng Dương — mối thù truyền kiếp
+];
+const WAR_CFG = {
+  discN: 5,            // đệ tử mỗi đội (cộng đội trưởng = 6 người/đội)
+  marchTicks: 20,      // nhịp hành quân trước khi chạm trán
+  fightMaxTicks: 170,  // nhịp giao tranh tối đa trước khi quyết toán
+  scoreDisc: 2,        // điểm thế trận: hạ 1 đệ tử
+  scoreCap: 6,         // điểm thế trận: ép đội trưởng rút lui
+  influenceDays: 7,    // ngày ảnh hưởng vùng sau khi thắng
+  errandBonus: 1.15,   // ủy thác sinh trong vùng ảnh hưởng: +15% vàng
+  affGift: 3,          // thiện cảm khởi điểm + cho NPC vùng ảnh hưởng (lần đầu trò chuyện)
+  mediateGtNeed: 8, mediateFameNeed: 50,
+  mediateFame: 8,      // danh tiếng khi can hòa thành công
+  lootMax: 3
+};
+const WAR = {
+  next: null,          // {day, pair:[A,B], zi, announced}
+  cur: null,           // {a,b,zi,day,stage:'march'|'fight',marchT,fightT,scoreA,scoreB,side,mediated,warned,lootN,capA,capB}
+  units: [],           // đệ tử ảo + đơn vị đội trưởng (đội trưởng có .npc hoặc .virtual)
+  influence: {},       // zi -> {sect, until} (còn hiệu lực khi G.day <= until)
+  history: [],         // {day,a,b,zi,winner,scoreA,scoreB,role}
+  lastPair: -1,
+  affGift: {},         // "zi:name" -> 1 (đã tặng thiện cảm khởi điểm)
+  battleCd: 0,         // nhịp hồi sau 1 trận của người chơi (chống mở trận dồn dập)
+  uidSeq: 900000
+};
+window.__WAR_STATE = WAR;
+function warZoneName(zi) { return ZONES[zi] ? ZONES[zi].name : "?"; }
+function warSectLeaderNpc(sect) { const sd = SECTS[sect]; if (!sd) return null; return NPCS.find(n => n.ci === sd.leader) || null; }
+function warPickZone(a, b, seedDay) {
+  const hq = new Set(Object.values(SECTS).map(s => s.zone));
+  const za = ZONES[SECTS[a].zone], zb = ZONES[SECTS[b].zone];
+  const mx = (za.cx + zb.cx) / 2, my = (za.cy + zb.cy) / 2;
+  const rnd = seededRand(hash(a + "|" + b + "|" + seedDay));
+  let cands = ZONES.map((z, zi) => ({ zi, d: Math.abs(z.cx - mx) + Math.abs(z.cy - my) + rnd() * 0.6 }))
+    .filter(c => !hq.has(c.zi) && c.zi !== SECTS[a].zone && c.zi !== SECTS[b].zone);
+  const noTown = cands.filter(c => { const dz = ZONES[c.zi].decor; return dz !== "city" && dz !== "village"; });
+  if (noTown.length) cands = noTown;
+  const wild = cands.filter(c => { const dg = ZONES[c.zi].danger || 0; return dg >= 2 && dg <= 4; });
+  if (wild.length) cands = wild;
+  cands.sort((x, y) => x.d - y.d);
+  const top = cands.slice(0, Math.min(4, cands.length));
+  return top[(rnd() * top.length) | 0].zi;
+}
+function warScheduleNext(fromDay) {
+  let pi = (Math.random() * WAR_PAIRS.length) | 0;
+  if (WAR_PAIRS.length > 1 && pi === WAR.lastPair) pi = (pi + 1) % WAR_PAIRS.length;
+  const pair = WAR_PAIRS[pi];
+  const day = fromDay + 5 + ((Math.random() * 3) | 0); // 5–7 ngày sau
+  WAR.next = { day, pair: [pair[0], pair[1]], zi: warPickZone(pair[0], pair[1], day), announced: false };
+  WAR.lastPair = pi;
+  return WAR.next;
+}
+function warAnnounce() {
+  const n = WAR.next; if (!n || n.announced) return;
+  n.announced = true;
+  const txt = "⚔️ GIANG HỒ ĐỘNG: phái " + n.pair[0] + " và phái " + n.pair[1] + " hẹn quyết chiến tại " + warZoneName(n.zi)
+    + " vào ngày mai (ngày " + n.day + ") — phái thắng sẽ nắm ảnh hưởng vùng đó trong " + WAR_CFG.influenceDays + " ngày!";
+  if (typeof socRumor === "function") socRumor(txt);
+  toast("📰 Tin giang hồ: " + n.pair[0] + " ⚔️ " + n.pair[1] + " hẹn giao tranh tại " + warZoneName(n.zi) + " vào ngày mai! Xem mục ⚔️ Chiến sự trong Nhiệm vụ (Q).");
+  saveGame();
+}
+/* ---------- Đội trưởng: miễn gọi khi đang vướng việc của người chơi ---------- */
+function warCaptainBusy(n) {
+  if (!n) return true;
+  if (G.spouse === n.name) return true;
+  if (typeof SOC !== "undefined" && SOC.errands && SOC.errands.some(e => e.targetName === n.name || e.giver === n.name)) return true;
+  try { const s2 = G.story2; if (s2 && !s2.done && typeof STORY2 !== "undefined" && STORY2[s2.step] && STORY2[s2.step].giver === n.ci) return true; } catch (e) {}
+  return false;
+}
+function warPickCaptain(sect) {
+  const members = NPCS.filter(n => !n.generic && typeof npcSectOf === "function" && npcSectOf(n) === sect);
+  const rank = n => (n.isLeader ? 0 : n.isElder ? 1 : 2);
+  members.sort((x, y) => rank(x) - rank(y) || (y.atk || 0) - (x.atk || 0));
+  for (const n of members) if (!warCaptainBusy(n)) return { npc: n, name: n.name, virtual: false };
+  const lead = warSectLeaderNpc(sect);
+  const lc = lead ? CHARS[lead.ci] : null;
+  return { npc: null, name: "Đội trưởng " + sect, virtual: true,
+    ci: lead ? lead.ci : 0, atk: (lc ? lc.atk : 14) + 4, maxhp: 280 };
+}
+/* ---------- Dựng đội hình tại bãi chiến ---------- */
+function warPostCell(center, dx, dy, zi) {
+  let c = ovNearestWalkable(center.gx + dx, center.gy + dy, false);
+  const rp = (typeof OV_REST !== "undefined") ? OV_REST.find(r => r.zi === zi) : null;
+  if (rp) { const rc = ovCellOf(rp.x, rp.y);
+    if (Math.max(Math.abs(c.gx - rc.gx), Math.abs(c.gy - rc.gy)) < 3) c = ovNearestWalkable(c.gx + 4, c.gy, false); }
+  return c;
+}
+function warSpawn() {
+  const n = WAR.next; if (!n || WAR.cur) return;
+  const zi = n.zi, z = ZONES[zi];
+  const cc = ovCellOf(z.x + z.w / 2, z.y + z.h / 2);
+  const center = ovNearestWalkable(cc.gx, cc.gy, false);
+  WAR.cur = { a: n.pair[0], b: n.pair[1], zi, day: G.day, stage: "march", marchT: 0, fightT: 0,
+    scoreA: 0, scoreB: 0, side: null, mediated: null, warned: false, lootN: 0, capA: null, capB: null, cx: center.gx, cy: center.gy };
+  WAR.units = [];
+  const dz = z.danger || 2;
+  const mkDisc = (side, sect, i) => {
+    const offs = side === "A" ? [[-4, 0], [-4, -2], [-4, 2], [-5, -1], [-5, 1]] : [[4, 0], [4, -2], [4, 2], [5, -1], [5, 1]];
+    const post = warPostCell(center, offs[i][0], offs[i][1], zi);
+    const edge = warPostCell(center, (side === "A" ? -11 : 11), offs[i][1] * 2, zi);
+    const hp = Math.round(100 + dz * 16 + Math.random() * 24);
+    const ctr = ovCenter(edge.gx, edge.gy);
+    return { wid: ++WAR.uidSeq, side, sect, captain: false, name: "Đệ tử " + sect + " " + (i + 1),
+      gx: edge.gx, gy: edge.gy, postGx: post.gx, postGy: post.gy, rx: ctr.x, ry: ctr.y,
+      hp, maxhp: hp, atk: Math.round(12 + dz * 1.5 + Math.random() * 3), def: 5 + dz, cds: {}, actT: (Math.random() * 3) | 0, down: false, ph: Math.random() * 6.28 };
+  };
+  const mkCap = (side, sect, cap) => {
+    const post = warPostCell(center, side === "A" ? -3 : 3, 0, zi);
+    const u = { wid: ++WAR.uidSeq, side, sect, captain: true, name: cap.name, virtual: !!cap.virtual,
+      npc: cap.npc || null, ci: cap.npc ? cap.npc.ci : cap.ci, postGx: post.gx, postGy: post.gy,
+      atk: cap.npc ? cap.npc.atk : cap.atk, maxhp: cap.npc ? cap.npc.maxhp : cap.maxhp,
+      hp: cap.npc ? cap.npc.hp : cap.maxhp, def: 8, cds: {}, actT: 0, down: false, ph: 0 };
+    if (cap.npc) { // đội trưởng có tên: quân đã kéo tới trong ngày báo trước — ghim vị trí + nhiệm vụ hành quân
+      const s = ovNpcState2(cap.npc); const ctr = ovCenter(post.gx, post.gy);
+      s.gx = post.gx; s.gy = post.gy; s.px = ctr.x; s.py = ctr.y; s.rx = ctr.x; s.ry = ctr.y; s.left = 999;
+      cap.npc.x = ctr.x; cap.npc.y = ctr.y; cap.npc.__warDuty = true;
+      if (cap.npc.hp < cap.npc.maxhp * 0.5) cap.npc.hp = cap.npc.maxhp; // ra trận với sức khỏe đầy đủ
+      u.hp = cap.npc.hp; u.maxhp = cap.npc.maxhp;
+    } else { const ctr = ovCenter(post.gx, post.gy); u.gx = post.gx; u.gy = post.gy; u.rx = ctr.x; u.ry = ctr.y; }
+    return u;
+  };
+  const capA = warPickCaptain(WAR.cur.a), capB = warPickCaptain(WAR.cur.b);
+  WAR.cur.capA = capA.name; WAR.cur.capB = capB.name;
+  for (let i = 0; i < WAR_CFG.discN; i++) WAR.units.push(mkDisc("A", WAR.cur.a, i));
+  for (let i = 0; i < WAR_CFG.discN; i++) WAR.units.push(mkDisc("B", WAR.cur.b, i));
+  WAR.units.push(mkCap("A", WAR.cur.a, capA));
+  WAR.units.push(mkCap("B", WAR.cur.b, capB));
+  WAR.next = null;
+  const pz = zoneAt(G.p.x, G.p.y);
+  if (pz && ZONES.indexOf(pz) === zi) toast("⚔️ Hai phái " + WAR.cur.a + " và " + WAR.cur.b + " đã kéo quân tới " + z.name + "! Giao tranh sắp nổ ra — hãy rời khỏi bãi chiến, chọn giúp một phái, hoặc can hòa (mục ⚔️ trong Nhiệm vụ Q)!");
+  else toast("⚔️ CHIẾN SỰ NỔ RA: " + WAR.cur.a + " ⚔️ " + WAR.cur.b + " tại " + z.name + "! Tới nơi xem/chọn phe qua Nhiệm vụ (Q).");
+  if (typeof socRumor === "function") socRumor("⚔️ Quân của " + WAR.cur.a + " (đội trưởng " + capA.name + ") và " + WAR.cur.b + " (đội trưởng " + capB.name + ") đã chạm mặt tại " + z.name + " — sắp đánh nhau to rồi!");
+  saveGame();
+}
+/* ---------- Truy cập thống nhất vị trí / máu của 1 đơn vị ---------- */
+function warUnitCell(u) {
+  if (u.npc) { const p = ovNpcLivePos(u.npc); return ovCellOf(p.x, p.y); }
+  return { gx: u.gx, gy: u.gy };
+}
+function warUnitPos(u) {
+  if (u.npc) return ovNpcLivePos(u.npc);
+  return { x: u.rx, y: u.ry };
+}
+function warHp(u) { return u.npc ? u.npc.hp : u.hp; }
+function warSetHp(u, v) { if (u.npc) { u.npc.hp = v; u.hp = v; } else u.hp = v; }
+function warAlive(side) { return WAR.units.filter(u => !u.down && (side ? u.side === side : true)); }
+function warPower(side) { let p = 0; for (const u of warAlive(side)) p += (u.captain ? u.atk * 2 : u.atk) * Math.max(0, warHp(u) / u.maxhp); return p; }
+function warAddScore(side, pts) { if (!WAR.cur) return; if (side === "A") WAR.cur.scoreA += pts; else WAR.cur.scoreB += pts; }
+/* ---------- Gây sát thương giữa 2 đơn vị (kênh FX như cao thủ tự đánh quái) ---------- */
+function warHit(att, tgt, dmg, col) {
+  if (!tgt || tgt.down) return 0;
+  const crit = Math.random() < 0.12;
+  // hệ số chiến sự 0.5: giao tranh là trận đánh lớn kéo dài (điểm thế trận tích lũy dần), không phải đấu tay đôi vài đòn
+  const d = Math.max(1, Math.round(dmg * 0.5 * (0.9 + Math.random() * 0.2) * (crit ? 1.7 : 1)));
+  warSetHp(tgt, warHp(tgt) - d);
+  const tp = warUnitPos(tgt);
+  addDmg(tp.x, tp.y - 58, (crit ? "💥" : "") + d, crit ? "#ffd23e" : (col || "#ffd98a"), crit ? 1 : 0);
+  if (Math.hypot(tp.x - G.p.x, tp.y - G.p.y) < 760) spawnFx(tp.x, tp.y - 24, col || "#e8573a", 4, { spd: 150, life: 0.3, s: 3, shape: 1 });
+  if (tgt.captain) { // cao thủ có tên: 20% máu là rút lui, KHÔNG chết
+    if (warHp(tgt) <= tgt.maxhp * 0.2) { warSetHp(tgt, Math.max(1, Math.round(tgt.maxhp * 0.2))); warDownUnit(tgt); } }
+  else if (warHp(tgt) <= 0) warDownUnit(tgt);
+  return d;
+}
+function warDownUnit(u) {
+  if (u.down) return; u.down = true;
+  warAddScore(u.side === "A" ? "B" : "A", u.captain ? WAR_CFG.scoreCap : WAR_CFG.scoreDisc);
+  const p = warUnitPos(u);
+  addDmg(p.x, p.y - 74, u.captain ? "🏳️ RÚT LUI!" : "💥 Gục ngã!", "#ffb03a", 1);
+  if (u.npc) { u.npc.__warDuty = false; u.npc.bubble = "Thương nặng… rút lui hồi phục đã!"; u.npc.bubbleT = 3;
+    const s = OV.tickNpc.get(u.npc); if (s) s.roam = null; }
+}
+/* ---------- Một đơn vị ra đòn (chiêu phái luân phiên như npcCombatTick) ---------- */
+function warUnitAttack(u, tgt) {
+  const sect = u.sect;
+  const list = (typeof sectSkills === "function") ? sectSkills(sect).slice().reverse() : [];
+  const sig = (typeof NPC_SIG !== "undefined") ? NPC_SIG[sect] : null;
+  if (sig && list.includes(sig)) { list.splice(list.indexOf(sig), 1); list.unshift(sig); }
+  const uc = warUnitCell(u), tc = warUnitCell(tgt);
+  const dist = Math.max(Math.abs(uc.gx - tc.gx), Math.abs(uc.gy - tc.gy));
+  const ap = warUnitPos(u), tp = warUnitPos(tgt);
+  for (const id of list) { const sk = SKILLS[id]; if (!sk) continue;
+    if ((u.cds[id] || 0) > 0) continue;
+    const rng = sk.kind === "needle" ? 6 : sk.kind === "blink" ? 7 : sk.kind === "multi" ? 5 : 1;
+    if (dist > rng) continue;
+    u.cds[id] = Math.max(2, Math.round((sk.cd || 2) * 1.6));
+    const col = (SECTS[sect] && SECTS[sect].color) || "#ffd98a";
+    if (typeof addSkillImg === "function") addSkillImg(id, tp.x, tp.y - 24, { size: sk.kind === "aoe" ? 175 : 130, dur: 0.35, flip: tp.x < ap.x });
+    if (sig === id && Math.hypot(tp.x - G.p.x, tp.y - G.p.y) < 700) { try { sfxWhoosh(skillProfile(id, sk)); } catch (e) {} }
+    warHit(u, tgt, u.atk * 1.35 * (sk.mul || 1) - (tgt.def || 0) * 0.4, col);
+    return true;
+  }
+  if (dist <= 1) { addSlash(ap.x + (tp.x > ap.x ? 30 : -30), ap.y - 24, 84, 0, tp.x < ap.x, 0.14);
+    warHit(u, tgt, u.atk * 0.85 - (tgt.def || 0) * 0.4, "#ffd98a"); return true; }
+  return false;
+}
+function warStepToward(u, cell) { // đệ tử ảo bước 1 ô tham lam (như ovTickNpc gần)
+  const dx = Math.sign(cell.gx - u.gx), dy = Math.sign(cell.gy - u.gy);
+  if (!dx && !dy) return;
+  const tries = Math.abs(cell.gx - u.gx) >= Math.abs(cell.gy - u.gy) ? [[dx, 0], [0, dy]] : [[0, dy], [dx, 0]];
+  for (const t of tries) { if (!t[0] && !t[1]) continue;
+    if (!ovBlocked(u.gx + t[0], u.gy + t[1])) { u.gx += t[0]; u.gy += t[1]; return; } }
+}
+/* ---------- Nhịp chiến sự (gắn vào ovTickOnce) ---------- */
+function warTick() {
+  if (!G || OV.battle || ovInCave()) return;
+  if (WAR.battleCd > 0) WAR.battleCd--;
+  // tới ngày hẹn mà chưa dựng chiến sự (ngủ qua ngày hẹn / vừa nạp save) -> dựng ngay
+  if (!WAR.cur && WAR.next && G.day >= WAR.next.day) { if (!WAR.next.announced) warAnnounce(); warSpawn(); }
+  const cur = WAR.cur; if (!cur) return;
+  const centerPx = ovCenter(cur.cx, cur.cy);
+  const playerNear = Math.hypot(centerPx.x - G.p.x, centerPx.y - G.p.y) < 1100;
+  // đội trưởng có tên: giữ nhiệm vụ — hành quân tới điểm tập kết / áp sát địch khi đánh
+  for (const u of WAR.units) { if (!u.captain || !u.npc || u.down) continue;
+    const s = ovNpcState2(u.npc); s.left = 999;
+    if (cur.stage === "fight") { const foes = warAlive(u.side === "A" ? "B" : "A");
+      if (foes.length) { const foeCap = foes.find(f => f.captain); // cao thủ tìm cao thủ mà đấu
+        let bt = foeCap ? warUnitPos(foeCap) : null, bd = 1e18;
+        if (!bt) for (const f of foes) { const fp = warUnitPos(f); const d = Math.hypot(fp.x - s.px, fp.y - s.py); if (d < bd) { bd = d; bt = fp; } }
+        if (bt) s.roam = [bt.x, bt.y]; } }
+    else { const pc = ovCenter(u.postGx, u.postGy); s.roam = [pc.x, pc.y]; } }
+  if (cur.stage === "march") {
+    cur.marchT++;
+    for (const u of WAR.units) { if (u.down || u.npc) continue;
+      const post = { gx: u.postGx, gy: u.postGy }; if (u.gx !== post.gx || u.gy !== post.gy) warStepToward(u, post); }
+    if (cur.marchT >= WAR_CFG.marchTicks) { cur.stage = "fight"; cur.fightT = 0;
+      toast("⚔️ Hai đội đã chạm mặt tại " + warZoneName(cur.zi) + " — GIAO TRANH BẮT ĐẦU! (" + cur.a + " ⚔️ " + cur.b + ")"); }
+    return;
+  }
+  // ----- stage fight -----
+  cur.fightT++;
+  for (const u of WAR.units) for (const k in u.cds) if (u.cds[k] > 0) u.cds[k]--;
+  if (playerNear) { // ĐÁNH THẬT từng ô — nhịp ra đòn như cao thủ tự đánh quái (đòn thường ~3 nhịp, đội trưởng ~2 nhịp; chiêu theo hồi chiêu riêng)
+    for (const u of warAlive()) {
+      const foes = warAlive(u.side === "A" ? "B" : "A"); if (!foes.length) break;
+      let bt = u.captain ? (foes.find(f => f.captain) || null) : null; // đội trưởng ưu tiên đấu đội trưởng địch
+      if (!bt) { let bd = 1e18; const uc = warUnitCell(u);
+        for (const f of foes) { const fc = warUnitCell(f); const d = Math.max(Math.abs(fc.gx - uc.gx), Math.abs(fc.gy - uc.gy)); if (d < bd) { bd = d; bt = f; } } }
+      if (!bt) break;
+      if ((u.actT || 0) > 0) { u.actT--; // đang hồi đòn: đệ tử vẫn áp sát, đội trưởng di chuyển bằng roam
+        if (!u.npc) { const uc = warUnitCell(u), tc = warUnitCell(bt);
+          if (Math.max(Math.abs(tc.gx - uc.gx), Math.abs(tc.gy - uc.gy)) > 1) warStepToward(u, tc); }
+        continue; }
+      if (warUnitAttack(u, bt)) u.actT = u.captain ? 2 : 3;
+      else if (!u.npc) warStepToward(u, warUnitCell(bt));
+    }
+  } else { // Ở XA: quyết toán gọn bằng sức mạnh đội hình trên cùng quỹ máu
+    const pA = warPower("A"), pB = warPower("B");
+    const strike = (attSide, defSide, pow) => { if (pow <= 0) return;
+      const pool = warAlive(defSide); if (!pool.length) return;
+      const discs = pool.filter(x => !x.captain);
+      const tgt = (discs.length ? discs : pool)[(Math.random() * (discs.length ? discs.length : pool.length)) | 0];
+      warSetHp(tgt, warHp(tgt) - pow * 0.045 * (0.7 + Math.random() * 0.6));
+      if (tgt.captain) { if (warHp(tgt) <= tgt.maxhp * 0.2) { warSetHp(tgt, Math.max(1, Math.round(tgt.maxhp * 0.2))); warDownUnit(tgt); } }
+      else if (warHp(tgt) <= 0) warDownUnit(tgt); };
+    strike("B", "A", pB); strike("A", "B", pA);
+  }
+  // ----- người chơi: nhặt đồ rơi / bị đánh lan / đụng đệ tử địch -----
+  warPlayerField(centerPx);
+  // ----- phân thắng bại -----
+  const aAlive = warAlive("A").length, bAlive = warAlive("B").length;
+  if (aAlive === 0 || bAlive === 0) warEnd("wipe");
+  else if (cur.fightT >= WAR_CFG.fightMaxTicks) warEnd("cap");
+}
+function warPlayerField(centerPx) {
+  const cur = WAR.cur; if (!cur || cur.stage !== "fight" || !OV.cell) return;
+  const pc = OV.cell;
+  const dCenter = Math.max(Math.abs(pc.gx - cur.cx), Math.abs(pc.gy - cur.cy));
+  // nhặt đồ rơi khi đứng xem (chưa giúp bên nào đánh nhau)
+  if (cur.side !== "A" && cur.side !== "B" && dCenter <= 6 && cur.lootN < WAR_CFG.lootMax && Math.random() < 0.05) {
+    cur.lootN++;
+    const pool = [["Gỗ", 2], ["Đá", 2], ["Tre", 2], ["Dược Liệu", 1], ["Quặng Sắt", 1], ["Kim Sang Dược", 1]];
+    const it = pool[(Math.random() * pool.length) | 0];
+    addItem(it[0], it[1]); toast("🧺 Đứng xem giao tranh, ngươi nhặt được đồ rơi quanh bãi chiến: " + it[0] + " ×" + it[1] + "!");
+    updateHud(); return;
+  }
+  if (WAR.battleCd > 0 || OV.graceT > 0) return;
+  // đã chọn phe: đệ tử địch kề bên -> vào trận
+  if (cur.side === "A" || cur.side === "B") {
+    const foeSide = cur.side === "A" ? "B" : "A";
+    const near = warAlive(foeSide).filter(u => { const c = warUnitCell(u); return Math.max(Math.abs(c.gx - pc.gx), Math.abs(c.gy - pc.gy)) <= 1; });
+    if (near.length) { warOpenSkirmish(foeSide, false); return; }
+  } else if (dCenter <= 2) { // chưa chọn phe mà lảng vảng sát bãi
+    if (!cur.warned) { cur.warned = true;
+      toast("⚠️ Ngươi đứng quá gần bãi chiến! Đao kiếm vô tình — hãy chọn giúp một phái / can hòa (Nhiệm vụ Q), hoặc lùi xa ra kẻo bị đánh lan!"); return; }
+    if (Math.random() < 0.15) { const sd = Math.random() < 0.5 ? "A" : "B";
+      const near = warAlive(sd).filter(u => { const c = warUnitCell(u); return Math.max(Math.abs(c.gx - pc.gx), Math.abs(c.gy - pc.gy)) <= 5; });
+      if (near.length) { toast("⚔️ Đao kiếm vô tình — đệ tử " + (sd === "A" ? cur.a : cur.b) + " tưởng ngươi là địch, xông vào đánh lan!"); warOpenSkirmish(sd, true); } }
+  }
+}
+/* ---------- Mở trận turn-based với đệ tử phái địch (đồng minh = đội phái mình giúp) ---------- */
+function warOpenSkirmish(foeSide, splash) {
+  const cur = WAR.cur; if (!cur || OV.battle) return false;
+  const pc = OV.cell || ovCellOf(G.p.x, G.p.y);
+  const byDist = side => warAlive(side).map(u => ({ u, d: Math.max(Math.abs(warUnitCell(u).gx - pc.gx), Math.abs(warUnitCell(u).gy - pc.gy)) }))
+    .sort((x, y) => x.d - y.d);
+  const foes = byDist(foeSide).filter(x => x.d <= (splash ? 5 : 3)).slice(0, 3).map(x => x.u);
+  if (!foes.length) return false;
+  let allies = [];
+  if (!splash && (cur.side === "A" || cur.side === "B")) allies = byDist(cur.side).filter(x => x.d <= 7).slice(0, 3).map(x => x.u);
+  const faux = foes.map(u => ({ faux: u, elite: !!u.captain,
+    t: { n: u.name, kind: "fighter", c: (SECTS[u.sect] && SECTS[u.sect].color) || "#ccc", spd: 70, xp: 0, gold: 0 },
+    hp: Math.round(warHp(u)), maxhp: u.maxhp, atk: u.atk, spd: 70 }));
+  ovOpenBattle({ mode: "war", warFoes: faux, warAllies: allies, warFoeSide: foeSide, warSplash: !!splash });
+  return !!OV.battle;
+}
+/* ---------- Chọn phe / can hòa ---------- */
+function warChooseSide(s) {
+  const cur = WAR.cur; if (!cur) { toast("Hiện không có chiến sự nào đang diễn ra."); return false; }
+  if (cur.side === s) return true;
+  cur.side = s;
+  if (s === "A" || s === "B") toast("⚔️ Ngươi quyết giúp phái " + (s === "A" ? cur.a : cur.b) + "! Đệ tử phái địch trong vùng từ giờ là địch của ngươi — áp sát là vào trận, đồng đội của phái ngươi giúp sẽ đánh cùng.");
+  else toast("👀 Ngươi đứng ngoài quan chiến — quanh bãi chiến thỉnh thoảng có đồ rơi nhặt được, nhưng đứng sát quá coi chừng đao kiếm vô tình.");
+  saveGame(); return true;
+}
+function warMediateChance() {
+  const cur = WAR.cur; if (!cur || !G) return 0;
+  const la = warSectLeaderNpc(cur.a), lb = warSectLeaderNpc(cur.b);
+  const affA = la ? (G.aff[la.name] || 0) : 0, affB = lb ? (G.aff[lb.name] || 0) : 0;
+  return Math.max(0.10, Math.min(0.95, 0.35 + (pStat("gt") - 5) * 0.07 + (affA + affB) / 300));
+}
+function warMediate() {
+  const cur = WAR.cur;
+  if (!cur) return { ok: false, why: "no-war" };
+  if (cur.mediated) return { ok: false, why: "already-tried" };
+  const gt = pStat("gt"), fame = G.fame || 0;
+  if (gt < WAR_CFG.mediateGtNeed && fame < WAR_CFG.mediateFameNeed) {
+    toast("🤝 Can hòa cần Giao Tiếp >= " + WAR_CFG.mediateGtNeed + " hoặc Danh tiếng >= " + WAR_CFG.mediateFameNeed
+      + " (ngươi: Giao Tiếp " + gt + ", Danh tiếng " + fame + ") — hai phái chưa nể mặt ngươi đâu.");
+    return { ok: false, why: "gate", gt, fame };
+  }
+  const chance = warMediateChance();
+  const roll = Math.random();
+  const la = warSectLeaderNpc(cur.a), lb = warSectLeaderNpc(cur.b);
+  if (roll < chance) { cur.mediated = "success";
+    const f0 = G.fame || 0; fameChange(WAR_CFG.mediateFame, 0);
+    if (la) gainAff(la, 5); if (lb) gainAff(lb, 5);
+    const res = { ok: true, chance, roll, fameDelta: (G.fame || 0) - f0 };
+    warEnd("mediate");
+    return res;
+  }
+  cur.mediated = "fail";
+  if (la) gainAff(la, -3); if (lb) gainAff(lb, -3);
+  toast("🤝 Can hòa THẤT BẠI (tỉ lệ thành công " + Math.round(chance * 100) + "%) — hai chưởng môn đều lắc đầu, thiện cảm mỗi bên -3. Chiến sự tiếp diễn!");
+  saveGame();
+  return { ok: false, why: "roll", chance, roll };
+}
+/* ---------- Kết thúc chiến sự & hậu quả ---------- */
+function warWinnerSide(cur) {
+  if (warAlive("A").length === 0 && warAlive("B").length > 0) return "B";
+  if (warAlive("B").length === 0 && warAlive("A").length > 0) return "A";
+  if (cur.scoreA !== cur.scoreB) return cur.scoreA > cur.scoreB ? "A" : "B";
+  const hpFrac = s => { const al = WAR.units.filter(u => u.side === s); if (!al.length) return 0;
+    return al.reduce((t, u) => t + Math.max(0, warHp(u) / u.maxhp), 0) / al.length; };
+  const fa = hpFrac("A"), fb = hpFrac("B");
+  if (Math.abs(fa - fb) > 0.001) return fa > fb ? "A" : "B";
+  const pa = warPower("A"), pb = warPower("B");
+  if (pa !== pb) return pa > pb ? "A" : "B";
+  return "A";
+}
+function warEnd(reason) {
+  const cur = WAR.cur; if (!cur) return;
+  const mediated = reason === "mediate";
+  const winner = mediated ? null : warWinnerSide(cur);
+  const winnerSect = winner ? (winner === "A" ? cur.a : cur.b) : null;
+  const loserSect = winner ? (winner === "A" ? cur.b : cur.a) : null;
+  const role = mediated ? "Can hòa" : cur.side === "A" ? "Giúp " + cur.a : cur.side === "B" ? "Giúp " + cur.b
+    : cur.side === "watch" ? "Đứng xem" : "Không tham gia";
+  // thiện cảm chưởng môn theo vai trò
+  const la = warSectLeaderNpc(cur.a), lb = warSectLeaderNpc(cur.b);
+  if (!mediated && (cur.side === "A" || cur.side === "B")) {
+    const helpedWin = (cur.side === winner);
+    const helpedNpc = cur.side === "A" ? la : lb, enemyNpc = cur.side === "A" ? lb : la;
+    if (helpedNpc) gainAff(helpedNpc, helpedWin ? 10 : 4);
+    if (enemyNpc) gainAff(enemyNpc, helpedWin ? -6 : -4);
+    if (G.sect && G.sect === winnerSect) { G.contrib = (G.contrib || 0) + 30; G.contribTotal = (G.contribTotal || 0) + 30; }
+  }
+  // ảnh hưởng vùng 7 ngày
+  if (winnerSect) WAR.influence[cur.zi] = { sect: winnerSect, until: G.day + WAR_CFG.influenceDays - 1 };
+  WAR.history.unshift({ day: G.day, a: cur.a, b: cur.b, zi: cur.zi, winner: winnerSect || "Hòa",
+    scoreA: cur.scoreA, scoreB: cur.scoreB, role });
+  if (WAR.history.length > 8) WAR.history.length = 8;
+  // tin đồn lan khắp giang hồ
+  const zn = warZoneName(cur.zi), pname = CHARS[G.charIdx] ? CHARS[G.charIdx].name : "Hiệp khách";
+  let rumor;
+  if (mediated) rumor = "🤝 Tại " + zn + ", hiệp khách " + pname + " đứng ra can hòa — " + cur.a + " và " + cur.b
+    + " nể mặt rút quân, giang hồ tránh được một trận đổ máu. Danh tiếng " + pname + " vang xa!";
+  else { rumor = "⚔️ Chiến sự tại " + zn + " đã ngã ngũ: phái " + winnerSect + " thắng phái " + loserSect
+    + " (điểm thế trận " + cur.scoreA + "–" + cur.scoreB + ") — vùng " + zn + " nay chịu ảnh hưởng của " + winnerSect + " trong " + WAR_CFG.influenceDays + " ngày."
+    + (cur.side === winner ? " Hiệp khách " + pname + " đã ra tay giúp " + winnerSect + " thắng trận này!" : cur.side ? " Hiệp khách " + pname + " có giúp " + (cur.side === "A" ? cur.a : cur.b) + " nhưng không xoay được thế cục." : ""); }
+  if (typeof socRumor === "function") socRumor(rumor);
+  if (typeof s5Deed === "function" && (mediated || cur.side === winner)) s5Deed(rumor, zn);
+  toast(mediated ? "🤝 CAN HÒA THÀNH CÔNG! Hai phái rút quân khỏi " + zn + " — Danh tiếng +" + WAR_CFG.mediateFame + ", thiện cảm hai chưởng môn +5."
+    : "🏁 Chiến sự tại " + zn + " kết thúc: phái " + winnerSect + " THẮNG (điểm " + cur.scoreA + "–" + cur.scoreB + ")! Vùng này chịu ảnh hưởng của " + winnerSect + " trong " + WAR_CFG.influenceDays + " ngày.");
+  // dọn dẹp: thả đội trưởng về lịch trình, xóa đệ tử ảo
+  for (const u of WAR.units) if (u.npc) { u.npc.__warDuty = false; const s = OV.tickNpc.get(u.npc); if (s) s.roam = null; }
+  WAR.units = []; WAR.cur = null;
+  warScheduleNext(G.day);
+  updateHud(); saveGame();
+}
+/* ---------- Ngày mới: báo trước + hết hạn ảnh hưởng + quyết toán qua đêm ---------- */
+function warNewDay() {
+  if (!G) return;
+  for (const zi in WAR.influence) { if (G.day > WAR.influence[zi].until) {
+    toast("🌏 Ảnh hưởng của phái " + WAR.influence[zi].sect + " tại " + warZoneName(+zi) + " đã hết — vùng trở lại trung lập.");
+    delete WAR.influence[zi]; } }
+  if (WAR.cur && WAR.cur.day < G.day) warEnd("overnight"); // ngủ qua đêm giữa chiến sự: quyết toán theo thế trận hiện tại
+  if (!WAR.cur && WAR.next) {
+    if (G.day >= WAR.next.day - 1 && !WAR.next.announced) warAnnounce();
+    if (G.day >= WAR.next.day) warSpawn();
+  }
+}
+/* ---------- Bọc các điểm vào của bản chính ---------- */
+const _warTickOnce = ovTickOnce;
+ovTickOnce = function () { _warTickOnce(); warTick(); };
+const _warNewDay = ovOnNewDay;
+ovOnNewDay = function (a) { _warNewDay(a); warNewDay(); };
+const _warPost = ovPostUpdate;
+ovPostUpdate = function (dt) { _warPost(dt);
+  for (const u of WAR.units) { if (u.npc || u.down) continue; // đệ tử ảo trượt hình về ô nhịp như NPC
+    const c = ovCenter(u.gx, u.gy), k = Math.min(1, dt * 6 + 0.001);
+    u.rx += (c.x - u.rx) * k; u.ry += (c.y - u.ry) * k;
+    if (Math.abs(c.x - u.rx) < 1) u.rx = c.x; if (Math.abs(c.y - u.ry) < 1) u.ry = c.y; } };
+/* trận turn-based: chế độ "war" — địch là đệ tử phái địch, đồng minh là đội phái mình giúp */
+const _warOpenBattle = ovOpenBattle;
+ovOpenBattle = function (cfg) {
+  if (!cfg || cfg.mode !== "war") return _warOpenBattle(cfg);
+  const meta = { foeSide: cfg.warFoeSide, splash: !!cfg.warSplash, allies: cfg.warAllies || [] };
+  _warOpenBattle({ mode: "wild", foes: cfg.warFoes });
+  const B = OV.battle; if (!B) return;
+  B.warCtx = meta;
+  document.getElementById("ovBTitle").textContent = "⚔️ Chiến sự " + WAR.cur.a + " ⚔️ " + WAR.cur.b + " — " + (meta.splash ? "bị đánh lan!" : "giúp " + (WAR.cur.side === "A" ? WAR.cur.a : WAR.cur.b) + "!");
+  for (const u of B.units) if (u.side === "foe" && u.faux) { u.warUnit = u.faux.faux || u.faux; u.icon = "⚔️"; }
+  for (const wu of meta.allies) { if (wu.down) continue;
+    const au = { uid: ++WAR.uidSeq + 500000, side: "ally", warUnit: wu, name: wu.name, ci: wu.captain ? wu.ci : null,
+      icon: wu.captain ? null : "🛡️", hp: Math.round(warHp(wu)), maxhp: wu.maxhp,
+      spd: wu.captain && wu.npc ? Math.round(wu.npc.spd * 3) : 72, stun: 0, dot: 0, atk: wu.atk };
+    if (wu.npc) au.npc = wu.npc;
+    B.units.push(au); B.order.push(au); }
+  B.order.sort((x, y) => y.spd - x.spd);
+  if (typeof ovRenderBattle === "function") ovRenderBattle();
+};
+const _warEndBattle = ovEndBattle;
+ovEndBattle = function (result) {
+  const B = OV.battle, ctxB = B && B.warCtx ? B.warCtx : null;
+  let downs = 0;
+  if (ctxB && WAR.cur) { // đồng bộ máu/kết quả về đội hình thật TRƯỚC khi bản chính đóng trận
+    for (const u of B.units) { if (!u.warUnit) continue;
+      if (u.side === "foe") { warSetHp(u.warUnit, Math.max(0, u.hp));
+        if (u.hp <= 0 && !u.warUnit.down) { warDownUnit(u.warUnit); downs++; } }
+      else if (u.warUnit.npc) { u.warUnit.npc.hp = Math.max(1, u.hp); u.warUnit.hp = u.hp;
+        if (u.hp <= u.warUnit.maxhp * 0.2 && !u.warUnit.down) warDownUnit(u.warUnit); }
+      else { warSetHp(u.warUnit, Math.max(0, u.hp)); if (u.hp <= 0 && !u.warUnit.down) warDownUnit(u.warUnit); } }
+  }
+  _warEndBattle(result);
+  if (ctxB) { WAR.battleCd = 8;
+    if (WAR.cur) toast("⚔️ Thế trận hiện tại: " + WAR.cur.a + " " + WAR.cur.scoreA + " — " + WAR.cur.scoreB + " " + WAR.cur.b + (downs ? " (trận vừa rồi hạ " + downs + " địch)" : ""));
+    saveGame(); }
+};
+/* ủy thác sinh trong vùng ảnh hưởng: +15% vàng (ghi baseGold để đối chiếu công thức gốc) */
+const _warGenErrand = socGenErrand;
+socGenErrand = function (giver) { const e = _warGenErrand(giver);
+  if (e && !e.warBonus && WAR.influence[e.giverZone] && G && G.day <= WAR.influence[e.giverZone].until) {
+    e.baseGold = e.gold; e.gold = Math.round(e.gold * WAR_CFG.errandBonus); e.warBonus = WAR.influence[e.giverZone].sect; }
+  return e; };
+/* hội thoại: thiện cảm khởi điểm vùng ảnh hưởng + nút chọn phe khi gặp đội trưởng tại bãi */
+const _warOpenDialog = openDialog;
+openDialog = function (npc) { _warOpenDialog(npc);
+  if (!npc || !G) return;
+  const dlg = document.getElementById("dialog");
+  if (!dlg || dlg.classList.contains("hidden")) return;
+  try { const zi = ZONES.indexOf(zoneAt(npc.x, npc.y)); const inf = zi >= 0 ? WAR.influence[zi] : null;
+    if (inf && G.day <= inf.until && !WAR.affGift[zi + ":" + npc.name]) { WAR.affGift[zi + ":" + npc.name] = 1;
+      const got = gainAff(npc, WAR_CFG.affGift);
+      toast("🌏 Vùng này đang chịu ảnh hưởng của phái " + inf.sect + " — dân tình niềm nở hơn với ngươi (thiện cảm " + npc.name + " +" + got + ")."); } } catch (e) {}
+  const cur = WAR.cur; if (!cur || (cur.stage !== "march" && cur.stage !== "fight")) return;
+  const capU = WAR.units.find(u => u.captain && u.npc === npc);
+  if (!capU) return;
+  const box = dlg.querySelector(".dBtns") || dlg;
+  const div = document.createElement("div"); div.className = "warDlgBtns";
+  div.style.cssText = "margin-top:8px;border-top:1px dashed #6b4c22;padding-top:8px";
+  div.innerHTML = "<p class=\"dt\">⚔️ <b>" + npc.name + "</b> đang cầm quân cho phái <b>" + capU.sect + "</b> tại bãi chiến " + warZoneName(cur.zi)
+    + " (thế trận: " + cur.a + " " + cur.scoreA + " — " + cur.scoreB + " " + cur.b + ").</p>"
+    + (cur.side ? "<p class=\"dt\">Ngươi đang: <b>" + (cur.side === "A" ? "giúp " + cur.a : cur.side === "B" ? "giúp " + cur.b : "đứng xem") + "</b></p>" : "");
+  const mk = (label, fn) => { const b = document.createElement("button"); b.className = "btn"; b.textContent = label;
+    b.onclick = () => { fn(); closeDialog(); }; div.appendChild(b); };
+  if (cur.side !== "A") mk("⚔️ Giúp " + cur.a, () => warChooseSide("A"));
+  if (cur.side !== "B") mk("⚔️ Giúp " + cur.b, () => warChooseSide("B"));
+  if (!cur.mediated) mk("🤝 Can hòa", () => warMediate());
+  if (cur.side !== "watch") mk("👀 Đứng xem", () => warChooseSide("watch"));
+  box.appendChild(div);
+};
+/* panel Nhiệm vụ: thêm mục chiến sự (có 🚶 Tới nơi) + khung tham gia + 🌏 Thế cục */
+const _warQuestEntries = ovQuestEntries;
+ovQuestEntries = function () { const out = _warQuestEntries();
+  if (!G) return out;
+  if (WAR.next && WAR.next.announced) out.push({ group: "⚔️ Chiến sự giang hồ",
+    title: "⚔️ " + WAR.next.pair[0] + " vs " + WAR.next.pair[1] + " — hẹn giao tranh tại " + warZoneName(WAR.next.zi),
+    desc: "Ngày " + WAR.next.day + " hai phái quyết chiến giành ảnh hưởng vùng " + warZoneName(WAR.next.zi) + " trong " + WAR_CFG.influenceDays + " ngày. Tới nơi để giúp một phái, can hòa hoặc đứng xem.",
+    prog: "", dest: ovDestZone(WAR.next.zi), destText: "Bãi chiến: " + warZoneName(WAR.next.zi) });
+  if (WAR.cur) { const cur = WAR.cur;
+    out.push({ group: "⚔️ Chiến sự giang hồ",
+      title: "⚔️ ĐANG " + (cur.stage === "march" ? "HÀNH QUÂN" : "GIAO TRANH") + ": " + cur.a + " vs " + cur.b + " tại " + warZoneName(cur.zi),
+      desc: "Đội trưởng: " + cur.capA + " (" + cur.a + ") · " + cur.capB + " (" + cur.b + "). "
+        + (cur.side === "A" ? "Ngươi đang giúp " + cur.a + "." : cur.side === "B" ? "Ngươi đang giúp " + cur.b + "."
+          : cur.side === "watch" ? "Ngươi đang đứng xem." : "Ngươi chưa chọn phe — chọn ở khung ⚔️ bên dưới hoặc gặp đội trưởng tại bãi chiến."),
+      prog: cur.scoreA + " — " + cur.scoreB, dest: ovDestZone(cur.zi), destText: "Bãi chiến: " + warZoneName(cur.zi) }); }
+  return out; };
+const _warQuestPanel = renderQuestPanel;
+renderQuestPanel = function () { _warQuestPanel();
+  const b = document.getElementById("questBox"); if (!b || !G) return;
+  let h = "";
+  const cur = WAR.cur;
+  if (cur && (cur.stage === "march" || cur.stage === "fight")) {
+    h += "<h4>⚔️ Tham gia chiến sự tại " + warZoneName(cur.zi) + "</h4><div class=\"qRow\">"
+      + "<b>" + cur.a + " " + cur.scoreA + " — " + cur.scoreB + " " + cur.b + "</b> · Đội trưởng: " + cur.capA + " / " + cur.capB + "<br>"
+      + "<span class=\"dim\">Giúp một phái: đệ tử địch thành địch của ngươi (vào trận turn-based, đồng đội phái đó đánh cùng), kết quả cộng điểm thế trận thật (hạ đệ tử +2, ép đội trưởng rút +6). "
+      + "Can hòa cần Giao Tiếp >= " + WAR_CFG.mediateGtNeed + " hoặc Danh tiếng >= " + WAR_CFG.mediateFameNeed + " — tỉ lệ thành công hiện tại: <b>" + Math.round(warMediateChance() * 100) + "%</b>"
+      + (cur.mediated ? " · Đã thử can hòa đợt này: " + (cur.mediated === "success" ? "thành công" : "thất bại") : "") + ".</span><br>"
+      + (cur.side !== "A" ? "<button class=\"btn\" data-waract=\"A\">⚔️ Giúp " + cur.a + "</button> " : "")
+      + (cur.side !== "B" ? "<button class=\"btn\" data-waract=\"B\">⚔️ Giúp " + cur.b + "</button> " : "")
+      + (!cur.mediated ? "<button class=\"btn\" data-waract=\"M\">🤝 Can hòa</button> " : "")
+      + (cur.side !== "watch" ? "<button class=\"btn ghost\" data-waract=\"W\">👀 Đứng xem</button>" : "")
+      + (cur.side ? "<br><span class=\"dim\">Đang: <b>" + (cur.side === "A" ? "giúp " + cur.a : cur.side === "B" ? "giúp " + cur.b : "đứng xem") + "</b></span>" : "")
+      + "</div>";
+  }
+  h += "<h4>🌏 Thế cục giang hồ</h4>";
+  const infKeys = Object.keys(WAR.influence).filter(zi => G.day <= WAR.influence[zi].until);
+  if (infKeys.length) for (const zi of infKeys) { const inf = WAR.influence[zi];
+    h += "<p>🏳️ <b>" + warZoneName(+zi) + "</b> — ảnh hưởng của phái <b>" + inf.sect + "</b> · còn <b>" + (inf.until - G.day + 1) + "</b> ngày · ủy thác sinh tại vùng +15% vàng, dân vùng thiện cảm khởi điểm +.</p>"; }
+  else h += "<p class=\"dim\">Chưa vùng nào chịu ảnh hưởng của phái nào — các vùng đều trung lập.</p>";
+  if (WAR.next) h += "<p>🗓️ Chiến sự tới: <b>" + WAR.next.pair[0] + " ⚔️ " + WAR.next.pair[1] + "</b> tại <b>" + warZoneName(WAR.next.zi) + "</b> — ngày " + WAR.next.day + (WAR.next.announced ? " (đã loan tin)" : " (chưa loan tin)") + ".</p>";
+  if (WAR.history.length) { h += "<p><b>Lịch sử giao tranh:</b></p>";
+    for (const hh of WAR.history) h += "<p class=\"dim\">· Ngày " + hh.day + ": " + hh.a + " vs " + hh.b + " tại " + warZoneName(hh.zi) + " — "
+      + (hh.winner === "Hòa" ? "🤝 Hòa (can hòa thành công)" : "phái <b>" + hh.winner + "</b> thắng") + " (điểm " + hh.scoreA + "–" + hh.scoreB + ") · Vai trò của ngươi: " + hh.role + "</p>"; }
+  if (h) { const anchor = b.querySelector(".row"); const div = document.createElement("div"); div.innerHTML = h;
+    if (anchor) b.insertBefore(div, anchor); else b.appendChild(div);
+    div.querySelectorAll("[data-waract]").forEach(btn => { btn.onclick = () => { const a = btn.dataset.waract;
+      if (a === "M") warMediate(); else warChooseSide(a === "W" ? "watch" : a);
+      renderQuestPanel(); }; }); }
+};
+/* minimap + bản đồ M: dấu ⚔️ (chỉ khi vùng đã khám phá theo sương mù / visited) */
+const _warMinimap = drawMinimap;
+drawMinimap = function () { _warMinimap();
+  if (!G) return;
+  const m = document.getElementById("minimap"); if (!m || m.offsetParent === null) return;
+  const zi = WAR.cur ? WAR.cur.zi : (WAR.next && WAR.next.announced ? WAR.next.zi : -1);
+  if (zi < 0) return;
+  const z = ZONES[zi], cxp = z.x + z.w / 2, cyp = z.y + z.h / 2;
+  if (typeof OVF !== "undefined" && OVF.on && OVF.seen && !ovFogSeen(Math.floor(cxp / OVF.CS), Math.floor(cyp / OVF.CS))) return;
+  const g = m.getContext("2d"), sx = m.width / WORLD_W, sy = m.height / WORLD_H;
+  g.save(); g.font = "11px serif"; g.textAlign = "center";
+  g.shadowColor = "#000"; g.shadowBlur = 3;
+  g.fillText("⚔️", cxp * sx, cyp * sy + 4); g.restore(); };
+const _warMapPanel = renderMapPanel;
+renderMapPanel = function (selZi) { _warMapPanel(selZi);
+  const b = document.getElementById("mapBox"); if (!b || !G || b.querySelector(".ovWarInfo")) return;
+  const zi = WAR.cur ? WAR.cur.zi : (WAR.next && WAR.next.announced ? WAR.next.zi : -1);
+  if (zi < 0 || !(G.visited && G.visited[zi])) return;
+  const d = document.createElement("div"); d.className = "ovWarInfo";
+  d.innerHTML = WAR.cur ? "⚔️ <b>Chiến sự đang diễn ra tại " + warZoneName(zi) + ":</b> " + WAR.cur.a + " ⚔️ " + WAR.cur.b
+      + " — thế trận " + WAR.cur.scoreA + "–" + WAR.cur.scoreB + ". Tới nơi để tham chiến, can hòa hoặc đứng xem."
+    : "⚔️ <b>Sắp giao tranh tại " + warZoneName(zi) + ":</b> " + WAR.next.pair[0] + " ⚔️ " + WAR.next.pair[1] + " — ngày " + WAR.next.day + ".";
+  b.appendChild(d); };
+/* vẽ đội quân trên bản đồ (sau lớp sương của OV6: tự lọc theo tầm nhìn — chỉ thấy khi ở gần) */
+function warDraw() {
+  if (!G || !WAR.cur || OV.battle || ovInCave()) return;
+  const now = performance.now(), cur = WAR.cur;
+  const seen = (x, y) => !(typeof OVF !== "undefined" && OVF.on) || Math.hypot(x - G.p.x, y - G.p.y) <= (typeof OV_VIEW_R !== "undefined" ? OV_VIEW_R : 260);
+  const cp = ovCenter(cur.cx, cur.cy), csx = cp.x - cam.x, csy = cp.y - cam.y;
+  if (csx > -80 && csx < VW + 80 && csy > -120 && csy < VH + 80
+      && (!(typeof OVF !== "undefined" && OVF.on && OVF.seen) || ovFogSeen(Math.floor(cp.x / OVF.CS), Math.floor(cp.y / OVF.CS)))) {
+    ctx.save(); ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 5;
+    ctx.font = (20 + Math.sin(now / 300) * 2.5) + "px serif";
+    ctx.fillText("⚔️", csx, csy - 64);
+    ctx.font = "bold 11.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+    ctx.fillText(cur.a + " " + cur.scoreA + " — " + cur.scoreB + " " + cur.b, csx, csy - 46);
+    ctx.restore();
+  }
+  for (const u of WAR.units) { if (u.down) continue;
+    const p = warUnitPos(u), sx = p.x - cam.x, sy = p.y - cam.y;
+    if (sx < -60 || sx > VW + 60 || sy < -110 || sy > VH + 60) continue;
+    if (!seen(p.x, p.y)) continue;
+    const col = (SECTS[u.sect] && SECTS[u.sect].color) || "#ccc";
+    if (u.npc) { // đội trưởng có tên: sprite do vòng vẽ chính đảm nhiệm — ở đây chỉ thêm cờ + thanh máu
+      ctx.save(); ctx.textAlign = "center";
+      ctx.font = "13px serif"; ctx.shadowColor = "#000"; ctx.shadowBlur = 3;
+      ctx.fillText("🚩", sx, sy - 62);
+      const pct = Math.max(0, warHp(u) / u.maxhp);
+      ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(sx - 20, sy - 58, 40, 5);
+      ctx.fillStyle = u.side === "A" ? "#7fd1f2" : "#ff8a7a"; ctx.fillRect(sx - 19, sy - 57, 38 * pct, 3);
+      ctx.restore(); continue; }
+    drawDisciple(sx, sy, col, u.ph, now);
+    ctx.save(); ctx.textAlign = "center";
+    ctx.font = "10px serif"; ctx.fillText(u.captain ? "🚩" : (u.side === "A" ? "🔵" : "🔴"), sx, sy - 44);
+    const pct = Math.max(0, warHp(u) / u.maxhp);
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(sx - 16, sy - 40, 32, 4.5);
+    ctx.fillStyle = u.side === "A" ? "#7fd1f2" : "#ff8a7a"; ctx.fillRect(sx - 15, sy - 39.2, 30 * pct, 2.8);
+    ctx.font = "bold 9.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd"; ctx.shadowColor = "#000"; ctx.shadowBlur = 3;
+    ctx.fillText(u.name, sx, sy + 14);
+    ctx.restore();
+  }
+}
+const _warRender = render;
+render = function (now) { _warRender(now); warDraw(); };
+/* Trợ giúp: luật chiến sự */
+const _warHelp = renderHelpPanel;
+renderHelpPanel = function () { _warHelp(); const b = document.getElementById("helpBox");
+  if (b && !b.querySelector(".ovWarHelp")) { const d = document.createElement("div"); d.className = "ovWarHelp";
+    d.innerHTML = "<h4>⚔️ Chiến sự giang hồ — các phái tranh giành lãnh địa</h4>"
+    + "<p>Mỗi <b>5–7 ngày</b>, hai phái <b>kình địch</b> (Thiếu Lâm–Minh Giáo · Võ Đang–Côn Luân · Cái Bang–Tinh Túc · Nga Mi–Hoa Sơn · Tiêu Dao–Điểm Thương · Cổ Mộ–Toàn Chân) hẹn giao tranh tại một vùng trung lập. Tin báo trước <b>1 ngày</b> qua tin đồn và mục ⚔️ trong Nhiệm vụ (Q); bản đồ M/minimap hiện ⚔️ nếu vùng đã khám phá.</p>"
+    + "<p>Mỗi phái cử <b>1 cao thủ có tên + 5 đệ tử</b> tới đánh nhau thật theo nhịp thế giới (ở gần thì xem đánh từng ô bằng chiêu phái; ở xa thì quyết toán theo sức mạnh đội hình). Cao thủ có tên không chết — xuống 20% máu là rút lui. <b>Điểm thế trận:</b> hạ 1 đệ tử <b>+2</b>, ép đội trưởng rút lui <b>+6</b>; hết 170 nhịp thì xét điểm → tỉ lệ máu → sức mạnh đội hình.</p>"
+    + "<p><b>Tham gia</b> (panel Nhiệm vụ hoặc gặp đội trưởng tại bãi chiến): <b>Giúp một phái</b> — đệ tử địch thành địch của ngươi, vào trận turn-based có đồng đội phái đó đánh cùng, kết quả cộng điểm thật. <b>Can hòa</b> — cần Giao Tiếp >= " + WAR_CFG.mediateGtNeed + " hoặc Danh tiếng >= " + WAR_CFG.mediateFameNeed + "; tỉ lệ = 35% + (Giao Tiếp − 5) × 7% + thiện cảm 2 chưởng môn / 300 (10%–95%), mỗi đợt chỉ thử 1 lần: thành công hai bên rút quân, ngươi <b>+" + WAR_CFG.mediateFame + " danh tiếng</b>, thiện cảm 2 chưởng môn +5; thất bại mỗi bên −3. <b>Đứng xem</b> — nhặt đồ rơi quanh bãi (tối đa " + WAR_CFG.lootMax + " lần/đợt); đứng sát bãi khi đang đánh mà chưa chọn phe có thể bị <b>đánh lan</b>.</p>"
+    + "<p><b>Hậu quả:</b> phái thắng nắm <b>ảnh hưởng vùng " + WAR_CFG.influenceDays + " ngày</b> — ủy thác sinh trong vùng <b>+15% vàng</b>, lần đầu trò chuyện với NPC trong vùng được <b>+" + WAR_CFG.affGift + " thiện cảm</b>. Thiện cảm chưởng môn theo vai trò: giúp phái thắng <b>+10</b> / giúp phái thua <b>+4</b>; chưởng môn bên thắng khi ngươi giúp bên thua <b>−4</b>, bên thua khi ngươi giúp bên thắng <b>−6</b>. Xem toàn cảnh ở mục <b>🌏 Thế cục giang hồ</b> trong Nhiệm vụ (Q).</p>";
+    b.appendChild(d); } };
+/* ---------- Lưu / nạp (field "ovWar" — save cũ không có field thì tự khởi tạo) ---------- */
+function warSerialize() {
+  return { next: WAR.next, lastPair: WAR.lastPair, influence: WAR.influence, history: WAR.history, affGift: WAR.affGift,
+    cur: WAR.cur ? { a: WAR.cur.a, b: WAR.cur.b, zi: WAR.cur.zi, day: WAR.cur.day, stage: WAR.cur.stage,
+      marchT: WAR.cur.marchT, fightT: WAR.cur.fightT, scoreA: WAR.cur.scoreA, scoreB: WAR.cur.scoreB,
+      side: WAR.cur.side, mediated: WAR.cur.mediated, warned: WAR.cur.warned, lootN: WAR.cur.lootN,
+      capA: WAR.cur.capA, capB: WAR.cur.capB, cx: WAR.cur.cx, cy: WAR.cur.cy,
+      capHpA: (() => { const u = WAR.units.find(x => x.captain && x.side === "A"); return u ? Math.round(warHp(u)) : null; })(),
+      capHpB: (() => { const u = WAR.units.find(x => x.captain && x.side === "B"); return u ? Math.round(warHp(u)) : null; })(),
+      capDownA: (() => { const u = WAR.units.find(x => x.captain && x.side === "A"); return u ? !!u.down : false; })(),
+      capDownB: (() => { const u = WAR.units.find(x => x.captain && x.side === "B"); return u ? !!u.down : false; })(),
+      discs: WAR.units.filter(u => !u.captain).map(u => ({ side: u.side, sect: u.sect, name: u.name, gx: u.gx, gy: u.gy,
+        postGx: u.postGx, postGy: u.postGy, hp: Math.round(u.hp), maxhp: u.maxhp, atk: u.atk, def: u.def, down: u.down })) } : null };
+}
+function warRestore(j) {
+  WAR.next = null; WAR.cur = null; WAR.units = []; WAR.influence = {}; WAR.history = []; WAR.affGift = {}; WAR.lastPair = -1;
+  if (!j) { if (G) warScheduleNext(G.day + 0); if (WAR.next) WAR.next.day = (G ? G.day : 1) + 3; return; } // game mới: đợt đầu sau 3 ngày
+  WAR.next = j.next || null; WAR.lastPair = (typeof j.lastPair === "number") ? j.lastPair : -1;
+  WAR.influence = j.influence || {}; WAR.history = j.history || []; WAR.affGift = j.affGift || {};
+  if (!j.cur) { if (!WAR.next && G) warScheduleNext(G.day); return; }
+  const c = j.cur;
+  WAR.cur = { a: c.a, b: c.b, zi: c.zi, day: c.day, stage: c.stage, marchT: c.marchT || 0, fightT: c.fightT || 0,
+    scoreA: c.scoreA || 0, scoreB: c.scoreB || 0, side: c.side || null, mediated: c.mediated || null,
+    warned: !!c.warned, lootN: c.lootN || 0, capA: c.capA, capB: c.capB, cx: c.cx, cy: c.cy };
+  WAR.units = [];
+  for (const d of (c.discs || [])) { const ctr = ovCenter(d.gx, d.gy);
+    WAR.units.push({ wid: ++WAR.uidSeq, side: d.side, sect: d.sect, captain: false, name: d.name, gx: d.gx, gy: d.gy,
+      postGx: d.postGx, postGy: d.postGy, rx: ctr.x, ry: ctr.y, hp: d.hp, maxhp: d.maxhp, atk: d.atk, def: d.def, cds: {}, actT: 0, down: !!d.down, ph: Math.random() * 6.28 }); }
+  const mkCap = (side, sect, capName, capHp) => {
+    const post = warPostCell({ gx: WAR.cur.cx, gy: WAR.cur.cy }, side === "A" ? -3 : 3, 0, WAR.cur.zi);
+    let npc = NPCS.find(n => n.name === capName) || null;
+    if (npc && npcSectOf(npc) !== sect) npc = null;
+    if (npc) { const s = ovNpcState2(npc); const ctr = ovCenter(post.gx, post.gy);
+      s.gx = post.gx; s.gy = post.gy; s.px = ctr.x; s.py = ctr.y; s.rx = ctr.x; s.ry = ctr.y; s.left = 999;
+      npc.x = ctr.x; npc.y = ctr.y; npc.__warDuty = true;
+      if (capHp != null) npc.hp = Math.max(1, Math.min(npc.maxhp, capHp));
+      return { wid: ++WAR.uidSeq, side, sect, captain: true, name: capName, virtual: false, npc, ci: npc.ci,
+        postGx: post.gx, postGy: post.gy, atk: npc.atk, maxhp: npc.maxhp, hp: npc.hp, def: 8, cds: {}, actT: 0, down: false, ph: 0 }; }
+    const lead = warSectLeaderNpc(sect), lc = lead ? CHARS[lead.ci] : null;
+    const ctr = ovCenter(post.gx, post.gy);
+    return { wid: ++WAR.uidSeq, side, sect, captain: true, name: capName, virtual: true, npc: null, ci: lead ? lead.ci : 0,
+      gx: post.gx, gy: post.gy, postGx: post.gx, postGy: post.gy, rx: ctr.x, ry: ctr.y,
+      atk: (lc ? lc.atk : 14) + 4, maxhp: 280, hp: capHp != null ? capHp : 280, def: 8, cds: {}, actT: 0, down: false, ph: 0 };
+  };
+  WAR.units.push(mkCap("A", c.a, c.capA, c.capHpA));
+  WAR.units.push(mkCap("B", c.b, c.capB, c.capHpB));
+  for (const u of WAR.units) { if (!u.captain) continue; // cờ rút lui của đội trưởng lưu tường minh (maxhp NPC có thể lệch nhẹ giữa 2 lần dựng)
+    const cd = u.side === "A" ? c.capDownA : c.capDownB, chp = u.side === "A" ? c.capHpA : c.capHpB;
+    if (cd || (cd === undefined && chp != null && chp <= u.maxhp * 0.2 + 1)) u.down = true; }
+}
+const _warSave = saveGame;
+saveGame = function () { _warSave();
+  try { if (!G) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw); j.ovWar = warSerialize(); localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _warStart = startGame;
+startGame = function (ci, fs) {
+  let snap = null; // chụp ovWar TRƯỚC khi chuỗi startGame chạy (tránh saveGame giữa chừng ghi đè)
+  if (fs) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); snap = j ? (j.ovWar || null) : null; } catch (e) {} }
+  _warStart(ci, fs);
+  WAR.units = []; WAR.cur = null; WAR.battleCd = 0;
+  if (G) warRestore(snap); // snap null (game mới / save cũ chưa có chiến sự) -> lên lịch đợt đầu
+};
+/* ---------- API kiểm chứng cho probe ---------- */
+window.__WAR = {
+  version: "ov9-sect-war-1",
+  pairs: WAR_PAIRS, cfg: WAR_CFG,
+  state: () => ({ next: WAR.next, cur: WAR.cur ? { a: WAR.cur.a, b: WAR.cur.b, zi: WAR.cur.zi, zone: warZoneName(WAR.cur.zi),
+      day: WAR.cur.day, stage: WAR.cur.stage, marchT: WAR.cur.marchT, fightT: WAR.cur.fightT,
+      scoreA: WAR.cur.scoreA, scoreB: WAR.cur.scoreB, side: WAR.cur.side, mediated: WAR.cur.mediated,
+      capA: WAR.cur.capA, capB: WAR.cur.capB } : null,
+    units: WAR.units.map(u => ({ name: u.name, side: u.side, sect: u.sect, captain: !!u.captain, virtual: !!u.virtual,
+      hp: Math.round(warHp(u)), maxhp: u.maxhp, down: u.down, cell: warUnitCell(u) })),
+    influence: WAR.influence, history: WAR.history }),
+  digest: () => JSON.stringify({ next: WAR.next, cur: WAR.cur ? { a: WAR.cur.a, b: WAR.cur.b, zi: WAR.cur.zi, stage: WAR.cur.stage,
+      scoreA: WAR.cur.scoreA, scoreB: WAR.cur.scoreB, side: WAR.cur.side, capA: WAR.cur.capA, capB: WAR.cur.capB } : null,
+    units: WAR.units.map(u => [u.name, Math.round(warHp(u)), u.down ? 1 : 0]),
+    influence: WAR.influence, history: WAR.history.length }),
+  schedule: () => WAR.next,
+  forceAnnounce: () => { if (!WAR.next) warScheduleNext(G.day); WAR.next.day = G.day + 1; warAnnounce(); return WAR.next; },
+  forceStart: (pairIdx) => { if (WAR.cur) return { err: "war-active" };
+    let pi = (typeof pairIdx === "number") ? pairIdx : (Math.random() * WAR_PAIRS.length) | 0;
+    const pair = WAR_PAIRS[pi]; WAR.lastPair = pi;
+    WAR.next = { day: G.day, pair: [pair[0], pair[1]], zi: warPickZone(pair[0], pair[1], G.day), announced: true };
+    warSpawn(); return window.__WAR.state(); },
+  forceFight: () => { if (WAR.cur && WAR.cur.stage === "march") { WAR.cur.stage = "fight"; WAR.cur.fightT = 0; } return WAR.cur ? WAR.cur.stage : null; },
+  forceEnd: (side) => { if (!WAR.cur) return { err: "no-war" };
+    if (side === "A") { WAR.cur.scoreA = 99; WAR.cur.scoreB = 0; } if (side === "B") { WAR.cur.scoreB = 99; WAR.cur.scoreA = 0; }
+    warEnd("force"); return window.__WAR.state(); },
+  setSide: s => warChooseSide(s),
+  mediate: () => warMediate(),
+  mediateInfo: () => ({ gt: pStat("gt"), gtNeed: WAR_CFG.mediateGtNeed, fame: G ? (G.fame || 0) : 0, fameNeed: WAR_CFG.mediateFameNeed,
+    gateOk: pStat("gt") >= WAR_CFG.mediateGtNeed || (G && (G.fame || 0) >= WAR_CFG.mediateFameNeed), chance: WAR.cur ? warMediateChance() : 0 }),
+  setInfluence: (zi, sect, days) => { WAR.influence[zi] = { sect, until: G.day + (days || WAR_CFG.influenceDays) - 1 }; return WAR.influence[zi]; },
+  errandBonus: (name) => { const n = socNpcByName(name); if (!n) return null;
+    const e = socGenErrand(n); return e ? { giver: e.giver, giverZone: e.giverZone, gold: e.gold, baseGold: e.baseGold || e.gold, warBonus: e.warBonus || null } : null; },
+  teleportToWar: () => { if (!WAR.cur) return false; const c = ovNearestWalkable(WAR.cur.cx + 1, WAR.cur.cy + 6, false);
+    OV.cell = c; const ctr = ovCenter(c.gx, c.gy); G.p.x = ctr.x; G.p.y = ctr.y; if (typeof ovFogReveal === "function") ovFogReveal(); return c; },
+  openSkirmish: () => { if (!WAR.cur) return false; const fs2 = WAR.cur.side === "A" ? "B" : WAR.cur.side === "B" ? "A" : null;
+    if (!fs2) return false; return warOpenSkirmish(fs2, false); },
+  rumors: () => (typeof SOC !== "undefined" ? SOC.rumors : []),
+  power: () => WAR.cur ? { A: Math.round(warPower("A")), B: Math.round(warPower("B")) } : null,
+  unitCount: () => WAR.units.length
+};
+</script>
 </body>
 </html>
