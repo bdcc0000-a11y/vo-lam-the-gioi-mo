@@ -6076,5 +6076,635 @@ if (window.__OV) { window.__OV.tickToday = () => OV.tick.today; window.__OV.tick
   window.__OV.version = "ov3-tick-world"; }
 </script>
 
+<script>
+"use strict";
+/* =====================================================================================
+   OV4 — NPC NHƯ NGƯỜI THẬT (xây trên OV3: nhịp thế giới + thể lực = thời gian)
+   TẦNG 1 · CHỦ ĐỘNG BẮT CHUYỆN: NPC có lý do (có việc nhờ / tin nóng / tri kỷ) sẽ BƯỚC Ô
+     tiến lại kề người chơi, gọi bằng bong bóng; tới nơi mà người chơi đang rảnh thì tự mở
+     thoại (lần mở này KHÔNG trừ thể lực — NPC chủ động), đang bận/trong trận thì để lại
+     dấu "!" + tin chờ. Chống spam: mỗi NPC 1 lần/nửa ngày nhịp (~26 nhịp), toàn cục tối
+     đa 3 lần/ngày, ưu tiên NPC có việc thật. Thiện cảm <= -20: NPC tránh mặt + cảnh cáo.
+   TẦNG 2 · ỦY THÁC ĐỘNG (nhờ việc): sinh từ vai trò + trạng thái thật của NPC —
+     giao đồ/thư tới NPC thật ở vùng khác · mua giúp món ở tiệm · thu thập nguyên liệu
+     đúng nghề (dược sư=Thảo Dược, thợ rèn=Quặng Sắt, đầu bếp=Thịt Thú/Cá Chép) · dọn quái
+     ở vùng bị quấy nhiễu · tìm người (vị trí lấy từ mô phỏng thật) · hộ tống (NPC đi
+     theo ô thật tới vùng đích). Thưởng vàng/thiện cảm/danh tiếng/vật phẩm tỉ lệ độ khó +
+     khoảng cách; hạn theo ngày; quá hạn -> thất bại, thiện cảm -3; từ chối khéo KHÔNG
+     phạt. Mỗi NPC tối đa 1 ủy thác mở, người chơi tối đa 5 ủy thác đang nhận. Ghi vào
+     Nhật ký (Q) mục "Ủy thác giang hồ" + vòng vàng đánh dấu đích trên minimap.
+   TẦNG 3 · ĐỐI ĐÁP THEO NGỮ CẢNH + TRÍ NHỚ: thanh chủ đề trong hội thoại [Chuyện trò]
+     [Tin giang hồ] [Hỏi về phái] [Hỏi thăm người] [Việc cần giúp] — đào sâu trong cùng
+     1 lần mở thoại KHÔNG tốn thêm thể lực. Câu trả lời biến thiên theo tính cách (8 tính
+     cách của bản chính + bảng gán riêng theo nguyên tác cho ~28 nhân vật có tên), thiện
+     cảm, quan hệ phái, danh tiếng, tin giang hồ mới xảy ra, giờ giấc. NPC NHỚ: số lần
+     trò chuyện, việc đã giúp/từ chối/quá hạn — nhắc lại tự nhiên trong thoại.
+   TẦNG 4 · NPC TỰ SỐNG: ngoài lịch trình OV3, NPC thỉnh thoảng đi THĂM NPC khác (tới
+     đứng kề, trò chuyện vài nhịp — người chơi gần đó nghe lỏm được), ra tửu lâu nghe
+     ngóng, chạy tránh khi boss xuất hiện gần, bình luận khi chứng kiến người chơi
+     thắng trận gần đó. Mọi hành vi diễn ra thật trên lưới ô qua ovNpcAnchor.
+   Save: errands/offers/mem/rumors lưu thêm vào save ô vuông qua field "ovSoc"
+     (save cũ không có field -> tự khởi tạo rỗng, không đụng field cũ).
+   ===================================================================================== */
+const SOC = {
+  errands: [], offers: {}, mem: {}, rumors: [],
+  st: new Map(), approaches: 0, lastDay: 0, lastOverhear: -99,
+  watch: { lv: 0, sect: null, boss: null, bossx: null, lastWinTick: -999, lastWinZone: "" },
+  opening: false, pendingEventTitle: ""
+};
+window.__SOC = SOC;
+
+/* ---------- Tính cách theo nguyên tác cho nhân vật có tên (ghi đè pers khi vào game) ---------- */
+const SOC_PERS_OVERRIDE = {
+  "Quách Tĩnh": "Trượng nghĩa", "Hoàng Dung": "Vui tính", "Chu Bá Thông": "Vui tính",
+  "Hoàng Dược Sư": "Kiêu ngạo", "Hồng Thất Công": "Hào sảng", "Âu Dương Phong": "Gian xảo",
+  "Hư Trúc": "Nhân hậu", "Phong Thanh Dương": "Trầm lặng", "Tạ Tốn": "Trầm lặng",
+  "Trương Tam Phong": "Nhân hậu", "Độc Cô Cầu Bại": "Trầm lặng", "Vương Trùng Dương": "Trầm lặng",
+  "Nhậm Ngã Hành": "Kiêu ngạo", "Hướng Vấn Thiên": "Hào sảng", "Diệt Tuyệt Sư Thái": "Kiêu ngạo",
+  "Tả Lãnh Thiền": "Gian xảo", "Lý Mạc Sầu": "Trầm lặng", "Thiên Sơn Đồng Mão": "Kiêu ngạo",
+  "Thành Côn": "Gian xảo", "Điền Bá Quang": "Vui tính", "Khưu Xứ Cơ": "Trượng nghĩa",
+  "Lâm Triều Anh": "Trầm lặng", "A Thanh": "Nhân hậu", "Bình Nhất Chỉ": "Vui tính",
+  "Khúc Dương": "Nhân hậu", "Mộ Dung Bác": "Đa nghi", "Ngao Bái": "Kiêu ngạo",
+  "Khang Hy": "Kiêu ngạo", "Dương Quá": "Kiêu ngạo", "Tiểu Long Nữ": "Trầm lặng"
+};
+function socPers(n) { return SOC_PERS_OVERRIDE[n.name] || n.pers; }
+function socPersOf(name) { const n = NPCS.find(x => x.name === name); return n ? socPers(n) : "Nhân hậu"; }
+function socPick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+
+/* ---------- Kho thoại theo tính cách ---------- */
+const SOC_CHAT = {
+  "Hào sảng": ["Ha ha! Ngồi xuống làm chén trà đã, chuyện gì tính sau!", "Ta vừa đi một vòng {zone}, phong cảnh đáng giá lắm!", "Giang hồ mà — hôm nay gặp nhau là có duyên, có gì vui kể ta nghe với!"],
+  "Trầm lặng": ["…Ừm. Gió hôm nay mát.", "Ta ít nói. Nhưng nghe thì ta nghe hết.", "…Ngồi ngắm mây một lát cũng tốt."],
+  "Gian xảo": ["He he… ngươi có nghe ngóng được gì hay ho không? Kể ta, ta kể lại gấp đôi.", "Mắt ngươi sáng thế kia — chắc vừa có lộc gì phải không?", "Ta biết một chỗ bán đồ rẻ… nhưng tin tức thì không miễn phí đâu. Đùa đấy!"],
+  "Nhân hậu": ["Dạo này trời trở lạnh, hành tẩu nhớ mang theo áo ấm.", "Thấy ai khó khăn thì giúp một tay — phúc đức để lại cho mình.", "Ngươi ăn uống đầy đủ chứ? Gầy đi là ta lo đấy."],
+  "Kiêu ngạo": ["Hừ. Ngươi cũng có chút tiếng tăm rồi đấy — cố mà giữ.", "Đừng tưởng giang hồ dễ đi. Ta thấy nhiều kẻ ngã rồi.", "Có việc thì nói nhanh — ta còn phải luyện công."],
+  "Vui tính": ["Nghe chuyện này chưa? Có cao thủ sợ vợ hơn sợ chưởng môn, ha ha!", "Đời ngắn lắm — cười một cái rồi hẵng đánh nhau!", "Hôm nay ta vui — chắc tại sáng nay ăn được bát mì ngon!"],
+  "Đa nghi": ["…Ngươi có thấy ai lạ mặt quanh đây không? Ta cứ thấy bất an.", "Nói nhỏ thôi. Tai vách mạch rừng.", "Đêm qua ta nghe tiếng động lạ ngoài sân… ngươi có nghe gì không?"],
+  "Trượng nghĩa": ["Thấy chuyện bất bình chớ đứng nhìn — đó là đạo hiệp khách!", "Vùng này mà có kẻ ức hiếp dân lành, cứ báo ta một tiếng!", "Nghĩa khí không phải để nói — là để làm. Ngươi thấy đúng không?"]
+};
+const SOC_RUMOR_FRAME = {
+  "Hào sảng": "Tin nóng đây! {r} — cả trấn đang bàn tán!",
+  "Trầm lặng": "…{r} Nghe vậy thôi.",
+  "Gian xảo": "He he, tin này đáng giá lắm… nhưng nể ngươi, ta nói không công: {r}",
+  "Nhân hậu": "Ta nghe mà lo: {r} Ngươi ra đường nhớ cẩn thận nhé.",
+  "Kiêu ngạo": "Hừ, chuyện đó mà ngươi cũng chưa biết? {r}",
+  "Vui tính": "Tin sốt dẻo đây! {r} — giang hồ dạo này vui thật!",
+  "Đa nghi": "Nói nhỏ thôi… {r} Đừng bảo là ta kể đấy.",
+  "Trượng nghĩa": "{r} — có việc cần ra tay thì cứ gọi ta!"
+};
+const SOC_CALLS = {
+  errand: ["Vị huynh đài này! Ta có việc muốn nhờ một tay!", "Khoan đã — ngươi đi chậm thôi, ta có việc gấp muốn nhờ!", "May quá, gặp được ngươi ở đây! Ta đang cần người giúp."],
+  greet: ["Ơ, lâu rồi mới gặp! Lại đây nói vài câu nào!", "Đi đâu vội thế? Dừng chân chào nhau một tiếng đã!"],
+  rumor: ["Này này! Có tin nóng hổi — lại đây ta kể!", "Ngươi nghe chuyện này chưa? Lại gần đây!"]
+};
+const SOC_REFUSAL = {
+  "Nhân hậu": "Không sao đâu, khi nào rảnh hẵng hay. Ta không trách ngươi.",
+  "Hào sảng": "Ha, bận thì thôi! Lúc khác ta lại nhờ.",
+  "Kiêu ngạo": "Hừ. Không giúp thì thôi — ta tự lo.",
+  "Gian xảo": "He he… tiếc thật. Lần sau đừng hối hận đấy.",
+  "Trầm lặng": "…Ừm. Vậy thôi.",
+  "Vui tính": "Thôi được! Bận thì cứ bận — ta chờ dịp khác.",
+  "Đa nghi": "…Ngươi từ chối nhanh thế? Thôi, kệ vậy.",
+  "Trượng nghĩa": "Cũng được. Việc nghĩa không ép người."
+};
+const SOC_THANKS = {
+  "Nhân hậu": "Ngươi tốt quá… ơn này ta ghi lòng tạc dạ.",
+  "Hào sảng": "Ha ha! Sảng khoái! Ngươi đúng là huynh đệ tốt!",
+  "Kiêu ngạo": "Hừ… làm tốt lắm. Ta nợ ngươi một lần.",
+  "Gian xảo": "He he, giao dịch sòng phẳng — ta thích ngươi rồi đấy.",
+  "Trầm lặng": "…Đa tạ. Ta nhớ.",
+  "Vui tính": "Xong rồi! Tối nay ta mời ngươi một chầu ăn mừng!",
+  "Đa nghi": "Ngươi… thật sự làm xong rồi à? Đa tạ, đa tạ.",
+  "Trượng nghĩa": "Nghĩa khí ngút trời! Việc này ta sẽ kể khắp trấn!"
+};
+const SOC_WITNESS = {
+  "Hào sảng": "Đánh hay lắm! Có khí phách!", "Trầm lặng": "…Ừm. Tay chân gọn gàng.",
+  "Gian xảo": "He he, trận vừa rồi ta xem hết đấy…", "Nhân hậu": "Ngươi không sao chứ? Đánh nhau nguy hiểm lắm.",
+  "Kiêu ngạo": "Hừ, cũng tàm tạm.", "Vui tính": "Hay! Hay hơn xem hát tuồng!",
+  "Đa nghi": "Ngươi… ra tay nặng thật đấy.", "Trượng nghĩa": "Hay! Đúng chất hiệp khách!"
+};
+
+/* ---------- Trí nhớ & trạng thái runtime ---------- */
+function socMem(name) { let m = SOC.mem[name];
+  if (!m) { m = { talks: 0, helped: 0, refused: 0, failed: 0, accepted: 0, firstDay: G ? G.day : 1, lastDay: 0, lastTopic: "", thanksDay: 0, refuseDay: 0 }; SOC.mem[name] = m; }
+  return m; }
+function socSt(n) { let s = SOC.st.get(n);
+  if (!s) { s = { approach: null, pendingTalk: null, pendingReason: null, lastApproach: -999, rumorTick: -999, visit: null }; SOC.st.set(n, s); }
+  return s; }
+function socRumor(txt) { if (!G) return;
+  if (SOC.rumors.length && SOC.rumors[SOC.rumors.length - 1].txt === txt) return;
+  SOC.rumors.push({ txt, day: G.day, tick: OV.tick.total });
+  if (SOC.rumors.length > 8) SOC.rumors.shift(); }
+function socNpcByName(name) { return NPCS.find(x => x.name === name) || null; }
+
+/* ================= TẦNG 2 — ỦY THÁC ĐỘNG ================= */
+const SOC_BUY_ITEMS = ["Kim Sang Dược", "Nội Lực Đan", "Trâm Ngọc", "Bánh Quế Hoa", "Rượu Nữ Nhi Hồng", "Thảo Dược", "Tập Thơ"];
+const SOC_BUY_PRICE = { "Kim Sang Dược": 30, "Nội Lực Đan": 45, "Trâm Ngọc": 60, "Bánh Quế Hoa": 25, "Rượu Nữ Nhi Hồng": 35, "Thảo Dược": 15, "Tập Thơ": 40 };
+function socZoneDist(za, zb) { const A = ZONES[za], B = ZONES[zb]; if (!A || !B) return 1; return Math.abs(A.cx - B.cx) + Math.abs(A.cy - B.cy); }
+function socPickTargetNpc(giver, minD, maxD) {
+  const cands = NPCS.filter(o => o !== giver && o.name !== giver.name && G.spouse !== o.name);
+  const inRange = cands.map(o => ({ o, d: socZoneDist(giver.zone, o.zone) })).filter(x => x.d >= minD && x.d <= maxD);
+  const pool = inRange.length ? inRange : cands.map(o => ({ o, d: socZoneDist(giver.zone, o.zone) }));
+  if (!pool.length) return null;
+  const p = pool[(Math.random() * pool.length) | 0]; return { npc: p.o, dist: p.d };
+}
+function socGenErrand(giver) {
+  if (!giver || !G || giver.act === "Ngủ") return null;
+  const old = SOC.offers[giver.name];
+  if (old && old.deadline >= G.day) return old;
+  if (old) delete SOC.offers[giver.name];
+  if (SOC.errands.some(e => e.giver === giver.name)) return null;
+  if (SOC.errands.length >= 5) return null;
+  const m = socMem(giver.name);
+  if (m.refuseDay === G.day) return null; // hôm nay đã bị từ chối khéo -> không nhờ lại ngay
+  const job = giver.job, master = npcIsMaster(giver);
+  let types;
+  if (job === "Thương nhân") types = ["deliver", "buy", "deliver"];
+  else if (job === "Lang y") types = ["gather", "gather", "find"];
+  else if (job === "Thợ rèn") types = ["gather", "deliver"];
+  else if (job === "Thư sinh") types = ["deliver", "find"];
+  else if (job === "Đầu bếp") types = ["gather", "buy"];
+  else if (job === "Ngư dân" || job === "Nông dân" || job === "Thợ săn") types = ["kill", "gather"];
+  else if (master) types = ["kill", "kill", "find"];
+  else types = ["deliver", "kill", "gather", "find", "buy"];
+  let type = types[(Math.random() * types.length) | 0];
+  const canEscort = !giver.isLeader && !giver.isElder && G.spouse !== giver.name && !SOC.errands.some(e => e.type === "escort");
+  if (canEscort && Math.random() < 0.14) type = "escort";
+  const e = { id: "e" + G.day + "-" + ((Math.random() * 1e6) | 0), type, giver: giver.name, giverZone: giver.zone,
+    item: null, need: 0, prog: 0, targetName: null, targetZone: -1, destZone: -1, found: false,
+    gold: 0, affR: 7, fameR: 0, itemR: null, deadline: G.day + 2, state: "offered", desc: "", flavor: "" };
+  const itemReward = () => { if (Math.random() < 0.35) e.itemR = Math.random() < 0.6 ? "Kim Sang Dược" : socPick(["Trâm Ngọc", "Bánh Quế Hoa", "Linh Thảo"]); };
+  if (type === "deliver") {
+    const t = socPickTargetNpc(giver, 1, 4); if (!t) return null;
+    const parcel = socPick(["Lá thư tay", "Gói hàng nhỏ", "Hộp quà"]);
+    e.item = parcel + " — " + giver.name; e.targetName = t.npc.name; e.targetZone = t.npc.zone;
+    e.gold = 24 + t.dist * 16 + ((Math.random() * 10) | 0); e.deadline = G.day + (t.dist >= 3 ? 3 : 2);
+    e.desc = "Chuyển " + e.item + " tới " + t.npc.name + " ở " + ZONES[t.npc.zone].name;
+    e.flavor = "Ta có " + parcel.toLowerCase() + " cần chuyển gấp tới " + t.npc.name + " ở " + ZONES[t.npc.zone].name + ". Ta không rời đi được — ngươi giúp ta chuyến này nhé?";
+    itemReward();
+  } else if (type === "buy") {
+    e.item = socPick(SOC_BUY_ITEMS); e.need = 1;
+    const pr = (typeof itemPrice === "function") ? itemPrice(e.item, giver.zone) : (SOC_BUY_PRICE[e.item] || 30);
+    e.gold = Math.round(pr * 1.7) + 8;
+    e.desc = "Mua giúp 1 " + e.item + " ở tiệm rồi mang về cho " + giver.name;
+    e.flavor = "Ta đang cần " + e.item + " mà quanh đây hết hàng. Ngươi mua giúp ta một món ở tiệm nào cũng được, mang về đây — ta trả hậu hơn giá chợ.";
+  } else if (type === "gather") {
+    if (job === "Lang y") { e.item = "Thảo Dược"; e.need = 2 + ((Math.random() * 2) | 0); }
+    else if (job === "Thợ rèn") { e.item = "Quặng Sắt"; e.need = 2 + ((Math.random() * 2) | 0); }
+    else if (job === "Đầu bếp") { e.item = socPick(["Thịt Thú", "Cá Chép", "Gạo"]); e.need = 2 + ((Math.random() * 2) | 0); }
+    else { e.item = socPick(["Thảo Dược", "Thịt Thú", "Linh Thảo"]); e.need = 2 + ((Math.random() * 2) | 0); }
+    e.gold = 12 * e.need + 10 + ((Math.random() * 8) | 0);
+    e.desc = "Thu thập " + e.need + " " + e.item + " mang về cho " + giver.name;
+    e.flavor = job === "Lang y" ? "Thuốc trong tiệm sắp cạn. Ngươi kiếm giúp ta " + e.need + " phần " + e.item + " nhé — hái ở Vườn Thuốc, nhặt khi đánh quái, hay mua ở tiệm đều được."
+      : job === "Thợ rèn" ? "Ta đang thiếu " + e.item + " để rèn đồ cho khách. Kiếm giúp ta " + e.need + " phần — tiệm ở mấy trấn lớn có bán đấy."
+      : "Ta đang cần gấp " + e.need + " phần " + e.item + " mà không rời đi được. Ngươi kiếm giúp ta nhé?";
+    itemReward();
+  } else if (type === "kill") {
+    let kz = giver.zone;
+    if (!ZONES[kz] || (ZONES[kz].danger || 0) < 2) { // vùng an toàn không có quái -> chọn vùng nguy hiểm gần nhất
+      let bd = 99; for (let zi = 0; zi < ZONES.length; zi++) { if ((ZONES[zi].danger || 0) >= 2) { const d = socZoneDist(giver.zone, zi); if (d < bd) { bd = d; kz = zi; } } } }
+    e.targetZone = kz; e.need = 3 + ((Math.random() * 3) | 0);
+    e.gold = 14 * e.need + (ZONES[kz].danger || 1) * 8; e.affR = 9; e.fameR = 2;
+    e.desc = "Dọn " + e.need + " quái đang quấy nhiễu ở " + ZONES[kz].name;
+    e.flavor = master ? "Dạo này quái ở " + ZONES[kz].name + " lộng hành, đệ tử ta bận trấn phái. Ngươi dọn giúp ta " + e.need + " con — coi như thay mặt giang hồ trừ hại."
+      : "Dạo này quái ở " + ZONES[kz].name + " quấy nhiễu dân tình quá, đêm nào cũng mất gà mất vịt. Ngươi dọn giúp ta " + e.need + " con, ta hậu tạ.";
+    itemReward();
+  } else if (type === "find") {
+    const t = socPickTargetNpc(giver, 0, 5); if (!t) return null;
+    e.targetName = t.npc.name; e.targetZone = t.npc.zone;
+    e.gold = 28 + t.dist * 10; e.deadline = G.day + 3;
+    e.desc = "Tìm gặp " + t.npc.name + " hỏi thăm tin tức, rồi quay về báo cho " + giver.name;
+    e.flavor = "Ta mất liên lạc với " + t.npc.name + " đã lâu, lòng cứ bồn chồn. Ngươi đi tìm gặp họ, hỏi thăm sức khỏe giúp ta rồi quay về báo tin — ta trọng thưởng.";
+  } else if (type === "escort") {
+    const dests = []; for (let zi = 0; zi < ZONES.length; zi++) { const d = socZoneDist(giver.zone, zi); if (d >= 1 && d <= 2) dests.push(zi); }
+    if (!dests.length) return null;
+    e.destZone = dests[(Math.random() * dests.length) | 0];
+    e.gold = 55 + socZoneDist(giver.zone, e.destZone) * 22; e.affR = 9; e.fameR = 1; e.deadline = G.day + 3;
+    e.desc = "Hộ tống " + giver.name + " tới " + ZONES[e.destZone].name;
+    e.flavor = "Ta cần tới " + ZONES[e.destZone].name + " mà đường xa, quái thú rình rập. Ngươi hộ tống ta đi — ta sẽ theo sát ngươi từng ô, tới nơi ta hậu tạ xứng đáng.";
+    itemReward();
+  }
+  SOC.offers[giver.name] = e;
+  return e;
+}
+function socErrandStatus(e) {
+  if (e.type === "kill") return e.state === "ready" ? "Đã dọn đủ " + e.need + " quái ở " + ZONES[e.targetZone].name + " — quay lại gặp " + e.giver + " nhận thưởng" : "Đã hạ " + e.prog + "/" + e.need + " quái tại " + ZONES[e.targetZone].name;
+  if (e.type === "gather" || e.type === "buy") return "Đang có " + (G.items[e.item] || 0) + "/" + e.need + " " + e.item + " — mang về cho " + e.giver + " ở " + ZONES[e.giverZone].name;
+  if (e.type === "deliver") return "Mang " + e.item + " tới " + e.targetName + " ở " + ZONES[e.targetZone].name + " (mở thoại với họ để giao)";
+  if (e.type === "find") { if (e.found) return "Đã gặp được " + e.targetName + " — quay về báo tin cho " + e.giver; const t = socNpcByName(e.targetName); if (t) { const s = OV.tickNpc.get(t); const zn = zoneAt(s ? s.px : t.x, s ? s.py : t.y).name; return "Tìm " + e.targetName + " — gần đây nhất thấy ở vùng " + zn; } return "Tìm " + e.targetName; }
+  if (e.type === "escort") return e.giver + " đang theo ngươi — hãy tới " + ZONES[e.destZone].name;
+  return e.desc;
+}
+function socErrandDest(e) {
+  if (e.type === "deliver" || e.type === "find") { const t = socNpcByName(e.targetName); if (t) { const s = OV.tickNpc.get(t); return { x: s ? s.px : t.x, y: s ? s.py : t.y }; } return null; }
+  if (e.type === "kill") { const z = ZONES[e.targetZone]; return z ? { x: z.x + z.w / 2, y: z.y + z.h / 2 } : null; }
+  if (e.type === "escort") { const z = ZONES[e.destZone]; return z ? { x: z.x + z.w / 2, y: z.y + z.h / 2 } : null; }
+  const g = socNpcByName(e.giver); if (g) { const s = OV.tickNpc.get(g); return { x: s ? s.px : g.x, y: s ? s.py : g.y }; } return null;
+}
+function socErrandReady(e) {
+  if (e.type === "kill") return e.state === "ready";
+  if (e.type === "gather" || e.type === "buy") return (G.items[e.item] || 0) >= e.need;
+  if (e.type === "find") return !!e.found;
+  return false;
+}
+function socCompleteErrand(e, remote) {
+  const gi = SOC.errands.indexOf(e); if (gi >= 0) SOC.errands.splice(gi, 1);
+  if (SOC.offers[e.giver] === e) delete SOC.offers[e.giver];
+  G.gold += e.gold; if (e.itemR) addItem(e.itemR, 1);
+  G.aff[e.giver] = (G.aff[e.giver] || 0) + e.affR;
+  if (e.fameR) fameChange(e.fameR, 0);
+  const m = socMem(e.giver); m.helped++; m.thanksDay = G.day;
+  toast("🧾 Hoàn thành ủy thác của " + e.giver + "! +" + e.gold + " vàng · Thiện cảm +" + e.affR + (e.fameR ? " · Danh tiếng +" + e.fameR : "") + (e.itemR ? " · Nhận " + e.itemR : ""));
+  if (!remote) toast("💬 " + e.giver + ": “" + (SOC_THANKS[socPersOf(e.giver)] || "Đa tạ ngươi nhiều lắm!") + "”");
+  else toast("📨 Tin tốt đã truyền về cho " + e.giver + " — họ ghi ơn ngươi.");
+  try { sfxCoin(); } catch (_) {}
+  updateHud(); saveGame();
+}
+function socExpireSweep() {
+  if (!G) return; let changed = false;
+  for (let i = SOC.errands.length - 1; i >= 0; i--) { const e = SOC.errands[i];
+    if (e.deadline < G.day) { SOC.errands.splice(i, 1);
+      G.aff[e.giver] = (G.aff[e.giver] || 0) - 3; socMem(e.giver).failed++;
+      if (e.type === "deliver" && (G.items[e.item] || 0) > 0) G.items[e.item]--;
+      toast("⏳ Ủy thác của " + e.giver + " đã quá hạn (hết ngày " + e.deadline + ") — thất bại, thiện cảm với " + e.giver + " -3.");
+      changed = true; } }
+  for (const nm in SOC.offers) if (SOC.offers[nm].deadline < G.day) delete SOC.offers[nm];
+  if (changed) saveGame();
+}
+
+/* ================= TẦNG 3 — CHỦ ĐỀ HỘI THOẠI THEO NGỮ CẢNH ================= */
+function socChatText(npc) {
+  const pers = socPers(npc), m = socMem(npc.name), night = dayHour >= 21 || dayHour < 5;
+  const pool = SOC_CHAT[pers] || SOC_CHAT["Nhân hậu"];
+  let t = pool[hash(npc.name + OV.tick.total + m.talks) % pool.length].replace("{zone}", ZONES[npc.zone].name);
+  if (m.helped > 0 && Math.random() < 0.45) t = "À mà nhắc mới nhớ — ngươi đã giúp ta " + m.helped + " việc, ta vẫn ghi lòng. " + t;
+  else if (m.failed > 0 && m.helped === 0 && Math.random() < 0.4) t = "Lần trước việc ta nhờ bị quá hạn… thôi, bỏ qua đi. " + t;
+  if (G.infamy >= 30 && npc.atk < 16) t = "Ngươi… thôi được, nói nhanh: " + t;
+  if (night) t = "(ngáp) Khuya rồi mà ngươi còn thức à… " + t;
+  return t;
+}
+function socRumorText(npc) {
+  const frame = SOC_RUMOR_FRAME[socPers(npc)] || SOC_RUMOR_FRAME["Nhân hậu"];
+  const fresh = SOC.rumors.filter(r => G.day - r.day <= 1);
+  if (fresh.length) return frame.replace("{r}", fresh[fresh.length - 1].txt);
+  const z = ZONES[npc.zone].name;
+  const pool = ["Nghe nói vùng " + z + " dạo này quái xuất hiện nhiều hơn về đêm — đi đường cẩn thận.",
+    "Thương đội hay qua lại vùng " + z + ", mang theo hàng quý — ai nhanh chân thì có lộc.",
+    "Dạo này cao thủ các phái hay tụ ở tửu lâu bàn chuyện võ lâm, nghe mà mở mang.",
+    "Nghe đâu có rương báu chôn quanh vùng " + z + " từ thời chiến loạn, đầy lại mỗi ngày."];
+  return frame.replace("{r}", pool[hash(npc.name + G.day) % pool.length]);
+}
+function socSectText(npc) {
+  const ns = (typeof npcSectOf === "function") ? npcSectOf(npc) : null, pers = socPers(npc);
+  if (!ns) return "Ta là " + npc.job + " ở " + ZONES[npc.zone].name + ", không thuộc môn phái nào. " + ((PERS_LINES[pers] || [])[hash(npc.name) % 3] || "");
+  const sd = SECTS[ns], leader = CHARS[sd.leader] ? CHARS[sd.leader].name : "chưởng môn";
+  let t = ns + " trấn tại " + ZONES[sd.zone].name + ", chưởng môn là " + leader + ". Môn quy: “" + sd.rule + "” Võ học sở trường: " + sd.style;
+  if (G.sect === ns) t += " Ngươi là đồng môn — có gì cứ hỏi thẳng, người nhà cả.";
+  else if (G.sect) t += " Ngươi thuộc " + G.sect + " — hai phái ta xưa nay " + (hash(ns + G.sect) % 2 ? "vẫn qua lại hòa khí, gặp nhau còn chào hỏi." : "ít qua lại, nhưng không thù oán gì.");
+  else t += " Ngươi chưa có môn phái — nếu muốn bái sư, cứ tới tổng đàn " + ns + " gặp chưởng môn.";
+  return t;
+}
+function socFindText(npc) {
+  const fe = SOC.errands.find(e => e.type === "find" && e.state === "active");
+  if (fe) { const t = socNpcByName(fe.targetName);
+    if (t) { const s = OV.tickNpc.get(t); const zn = zoneAt(s ? s.px : t.x, s ? s.py : t.y).name;
+      return "Ngươi đang tìm " + fe.targetName + " à? Theo tin ta nghe ngóng được — là vị trí thật trong mô phỏng giang hồ này — giờ này họ đang ở vùng " + zn + ". Cứ tới đó mà tìm."; } }
+  const masters = NPCS.filter(o => o !== npc && npcIsMaster(o));
+  if (masters.length) { const t = masters[hash(npc.name + G.day) % masters.length];
+    return "Muốn tìm cao thủ thì ta chỉ cho: " + t.name + " thường trú ở vùng " + ZONES[t.zone].name + ". Tới quanh tổng đàn/thôn trấn ở đó là gặp."; }
+  return "Ta cũng không rõ tung tích ai lúc này.";
+}
+function socErrandTopic(npc, out) {
+  const mine = SOC.errands.find(e => e.giver === npc.name);
+  if (mine) { if (out) out.innerHTML = "🧾 Việc ngươi đang làm cho ta: <b>" + mine.desc + "</b> — " + socErrandStatus(mine) + ". Xong việc thì quay lại đây, ta trả thưởng ngay."; return; }
+  let offer = SOC.offers[npc.name];
+  if (!offer) {
+    if (SOC.errands.length >= 5) { if (out) out.innerHTML = "Ngươi đang ôm tới 5 ủy thác rồi — làm bớt đi đã, ta không nỡ giao thêm việc."; return; }
+    if (Math.random() < 0.7) offer = socGenErrand(npc);
+  }
+  if (offer) { socRenderErrandSection(npc);
+    if (out) out.innerHTML = "🙋 Ta có việc này muốn nhờ — xem khung <b>Ủy thác</b> ngay bên dưới: ưng thì bấm <b>Nhận việc</b>, bận thì <b>Từ chối khéo</b> cũng chẳng sao, ta không giận đâu."; }
+  else if (out) out.innerHTML = "Hiện tại ta không có việc gì cần nhờ cả. Ngươi cứ hành tẩu — khi khác ghé lại, biết đâu lúc đó ta lại đang cần một tay.";
+}
+function socErrandHTML(npc) {
+  let h = "";
+  const mine = SOC.errands.find(e => e.giver === npc.name);
+  const offer = SOC.offers[npc.name];
+  const deliv = SOC.errands.find(e => e.type === "deliver" && e.state === "active" && e.targetName === npc.name);
+  if (deliv) h += "<div class=\"dt\">📦 Ngươi mang theo <b>" + deliv.item + "</b> của " + deliv.giver + " cần giao tận tay " + npc.name + ".</div><div class=\"dBtns\"><button class=\"btn\" id=\"ovErrDeliver\">📦 Giao đồ cho " + npc.name + "</button></div>";
+  if (mine) {
+    h += "<div class=\"dt\">🧾 <b>Ủy thác của " + npc.name + ":</b> " + mine.desc + "<br><span style=\"color:var(--dim)\">" + socErrandStatus(mine) + " · ⏳ Hạn: hết ngày " + mine.deadline + " · 🎁 " + mine.gold + " vàng, thiện cảm +" + mine.affR + (mine.fameR ? ", danh tiếng +" + mine.fameR : "") + "</span></div>";
+    if (socErrandReady(mine)) h += "<div class=\"dBtns\"><button class=\"btn\" id=\"ovErrTurn\">✅ Trả việc &amp; nhận thưởng</button></div>";
+  } else if (offer) {
+    h += "<div class=\"dt\" style=\"border:1px solid var(--gold2);padding:6px 8px;border-radius:8px\">🙋 <b>" + npc.name + " có việc muốn nhờ:</b> “" + offer.flavor + "”<br><span style=\"color:var(--dim)\">🎁 Thù lao: " + offer.gold + " vàng · Thiện cảm +" + offer.affR + (offer.fameR ? " · Danh tiếng +" + offer.fameR : "") + (offer.itemR ? " · Vật phẩm: " + offer.itemR : "") + " · ⏳ Hạn: hết ngày " + offer.deadline + "</span></div>"
+      + "<div class=\"dBtns\"><button class=\"btn\" id=\"ovErrAccept\">✅ Nhận việc</button><button class=\"btn ghost\" id=\"ovErrRefuse\">🙏 Từ chối khéo (không mất thiện cảm)</button></div>";
+  }
+  return h;
+}
+function socRenderErrandSection(npc) {
+  const sec = document.getElementById("ovErrandSec"); if (!sec) return;
+  sec.innerHTML = socErrandHTML(npc);
+  const out = document.getElementById("ovTopicOut");
+  const acc = document.getElementById("ovErrAccept");
+  if (acc) acc.onclick = () => { const e = SOC.offers[npc.name]; if (!e) return;
+    if (SOC.errands.length >= 5) { toast("🧾 Đang ôm tối đa 5 ủy thác — hoàn thành bớt rồi hãy nhận thêm."); return; }
+    e.state = "active"; SOC.errands.push(e); delete SOC.offers[npc.name];
+    const m = socMem(npc.name); m.accepted++;
+    if (e.type === "deliver") { addItem(e.item, 1); toast("📦 " + npc.name + " trao ngươi " + e.item + " — mang tới " + e.targetName + " ở " + ZONES[e.targetZone].name + "."); }
+    else if (e.type === "escort") toast("🚶 " + npc.name + " bắt đầu đi theo ngươi — hãy tới " + ZONES[e.destZone].name + " trước hết ngày " + e.deadline + ".");
+    else toast("🧾 Đã nhận ủy thác của " + npc.name + ": " + e.desc + " (xem Nhật ký — phím Q)");
+    saveGame(); openDialog(npc); };
+  const ref = document.getElementById("ovErrRefuse");
+  if (ref) ref.onclick = () => { const e = SOC.offers[npc.name]; if (e) delete SOC.offers[npc.name];
+    const m = socMem(npc.name); m.refused++; m.refuseDay = G.day;
+    sec.innerHTML = "";
+    if (out) out.innerHTML = "💬 <b>" + npc.name + ":</b> “" + (SOC_REFUSAL[socPers(npc)] || "Không sao, khi khác vậy.") + "” <span style=\"color:var(--dim)\">(Từ chối khéo: thiện cảm không đổi — hiện " + (G.aff[npc.name] || 0) + ")</span>";
+    saveGame(); };
+  const turn = document.getElementById("ovErrTurn");
+  if (turn) turn.onclick = () => { const e = SOC.errands.find(x => x.giver === npc.name); if (!e || !socErrandReady(e)) return;
+    if (e.type === "gather" || e.type === "buy") G.items[e.item] = Math.max(0, (G.items[e.item] || 0) - e.need);
+    socCompleteErrand(e); openDialog(npc); };
+  const dlv = document.getElementById("ovErrDeliver");
+  if (dlv) dlv.onclick = () => { const e = SOC.errands.find(x => x.type === "deliver" && x.state === "active" && x.targetName === npc.name); if (!e) return;
+    if ((G.items[e.item] || 0) > 0) G.items[e.item]--;
+    G.aff[npc.name] = (G.aff[npc.name] || 0) + 2;
+    toast("📦 " + npc.name + " nhận được " + e.item + ": “Đa tạ! Ta sẽ hồi âm cho " + e.giver + " ngay.” (Thiện cảm với " + npc.name + " +2)");
+    socCompleteErrand(e, true); openDialog(npc); };
+}
+function socDialogEnhance(npc) {
+  const dlg = document.getElementById("dialog"); if (!dlg) return;
+  const s = socSt(npc), m = socMem(npc.name);
+  // Tìm người: mở thoại với đúng người cần tìm -> ghi nhận đã gặp
+  for (const e of SOC.errands) { if (e.type === "find" && e.state === "active" && !e.found && e.targetName === npc.name) {
+    e.found = true; toast("🔍 Đã gặp được " + npc.name + "! Quay về báo tin cho " + e.giver + " để nhận thưởng."); saveGame(); } }
+  // Banner lý do NPC chủ động bắt chuyện + trí nhớ
+  const reason = s.pendingReason || (s.pendingTalk ? s.pendingTalk.kind : null);
+  s.pendingReason = null; s.pendingTalk = null; if (s.approach) s.approach = null;
+  const bits = [];
+  if (reason === "errand") bits.push("🗣️ " + npc.name + " vừa chủ động tìm ngươi vì có việc muốn nhờ — xem mục <b>Việc cần giúp</b> / khung Ủy thác bên dưới.");
+  else if (reason === "rumor") bits.push("🗣️ " + npc.name + " vừa kéo ngươi lại để kể một tin giang hồ nóng hổi — bấm [📰 Tin giang hồ] mà nghe.");
+  else if (reason === "greet") bits.push("🗣️ " + npc.name + " thấy ngươi đi ngang nên chạy lại chào hỏi thăm.");
+  if (m.helped > 0) bits.push("🤝 " + npc.name + " vẫn nhớ ngươi đã giúp " + m.helped + " việc" + (m.thanksDay ? " (gần nhất ngày " + m.thanksDay + ")" : "") + ".");
+  if (m.failed > 0 && m.helped === 0) bits.push("😔 " + npc.name + " có vẻ còn buồn chuyện việc nhờ lần trước bị quá hạn.");
+  else if (m.refused > 0 && m.helped === 0) bits.push(npc.name + " nhớ lần trước ngươi đã từ chối khéo — họ không giận, chỉ hơi tiếc.");
+  if (m.talks <= 1 && !reason) bits.push("Lần đầu ngươi nói chuyện với " + npc.name + " — tính tình: " + socPers(npc) + ".");
+  const head = dlg.querySelector(".dn");
+  if (head && bits.length) { const d = document.createElement("div");
+    d.className = "dt ovMem"; d.style.color = "var(--gold2)"; d.innerHTML = bits.join("<br>");
+    head.parentNode.insertBefore(d, head.nextSibling); }
+  // Thanh chủ đề + khung trả lời + mục ủy thác (chèn trước hàng nút gốc)
+  const anchor = dlg.querySelector(".dBtns");
+  if (anchor) {
+    const bar = document.createElement("div"); bar.className = "dBtns"; bar.id = "ovTopicBar";
+    bar.innerHTML = "<button class=\"btn\" data-ovtopic=\"chat\">💬 Chuyện trò</button>"
+      + "<button class=\"btn\" data-ovtopic=\"rumor\">📰 Tin giang hồ</button>"
+      + "<button class=\"btn\" data-ovtopic=\"sect\">🏯 Hỏi về phái</button>"
+      + "<button class=\"btn\" data-ovtopic=\"find\">🔍 Hỏi thăm người</button>"
+      + "<button class=\"btn\" data-ovtopic=\"errand\">🙋 Việc cần giúp</button>";
+    anchor.parentNode.insertBefore(bar, anchor);
+    const out = document.createElement("div"); out.className = "dt"; out.id = "ovTopicOut";
+    out.innerHTML = "<span style=\"color:var(--dim)\">Chọn một chủ đề ở trên để trò chuyện sâu hơn — đào sâu trong cùng lần nói chuyện này không tốn thêm thể lực.</span>";
+    anchor.parentNode.insertBefore(out, anchor);
+    const sec = document.createElement("div"); sec.id = "ovErrandSec";
+    anchor.parentNode.insertBefore(sec, anchor);
+    bar.querySelectorAll("[data-ovtopic]").forEach(b => b.onclick = () => {
+      const t = b.dataset.ovtopic; m.lastTopic = t;
+      if (t === "errand") { socErrandTopic(npc, out); return; }
+      const txt = t === "chat" ? socChatText(npc) : t === "rumor" ? socRumorText(npc) : t === "sect" ? socSectText(npc) : socFindText(npc);
+      out.innerHTML = "💬 <b>" + npc.name + ":</b> “" + txt + "”";
+    });
+    socRenderErrandSection(npc);
+    if (reason === "rumor") out.innerHTML = "💬 <b>" + npc.name + ":</b> “" + socRumorText(npc) + "”";
+    else if (reason === "greet") out.innerHTML = "💬 <b>" + npc.name + ":</b> “" + socChatText(npc) + "”";
+  }
+}
+/* Gói openDialog: đếm lượt trò chuyện vào trí nhớ + gắn tầng 3 (chạy NGOÀI wrapper của OV3:
+   mở thoại mới vẫn tốn 1 thể lực như đã chốt; đào sâu chủ đề trong phiên không tốn thêm) */
+const _socOpenDialog = openDialog;
+openDialog = function (npc) {
+  const dlg0 = document.getElementById("dialog");
+  const wasSession = !!(npc && dlg0 && !dlg0.classList.contains("hidden") && typeof dlgNPC !== "undefined" && dlgNPC === npc);
+  SOC.opening = true;
+  try { _socOpenDialog(npc); } finally { SOC.opening = false; }
+  const dlg = document.getElementById("dialog");
+  if (!npc || !dlg || dlg.classList.contains("hidden")) return;
+  if (typeof dlgNPC !== "undefined" && dlgNPC !== npc) return;
+  if (!wasSession) { const m = socMem(npc.name); m.talks++; m.lastDay = G.day; }
+  try { socDialogEnhance(npc); } catch (e) {}
+};
+
+/* ================= TẦNG 1 + 4 — HÀNH VI TRÊN LƯỚI Ô (qua ovNpcAnchor) ================= */
+const _socAnchor = ovNpcAnchor;
+ovNpcAnchor = function (n) {
+  if (G && !ovNpcBusy(n)) {
+    const s = SOC.st.get(n);
+    const esc = SOC.errands.find(e => e.type === "escort" && e.state === "active" && e.giver === n.name);
+    if (esc) { n.act = "🚶 Đang được hộ tống"; return [G.p.x - 34, G.p.y + 12]; }
+    if (s && s.approach) { n.act = "🏃 Đang tới gặp ngươi"; return [G.p.x + 30, G.p.y + 8]; }
+    const foe = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead) ? BOSS : ((typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead) ? BOSSX : null);
+    if (foe && !npcIsMaster(n) && Math.hypot(n.x - foe.x, n.y - foe.y) < 170) {
+      n.act = "🏃 Tránh boss!"; return [n.x + (n.x - foe.x) * 1.6 + 60, n.y + (n.y - foe.y) * 1.6]; }
+    if ((G.aff[n.name] || 0) <= -20 && OV.cell) { const os = OV.tickNpc.get(n);
+      if (os && Math.max(Math.abs(os.gx - OV.cell.gx), Math.abs(os.gy - OV.cell.gy)) <= 3) {
+        n.act = "Né tránh ngươi"; if (n.bubbleT <= 0) { n.bubble = "Ngươi… tránh xa ta ra!"; n.bubbleT = 2.4; }
+        return [n.x + (n.x - G.p.x) * 2, n.y + (n.y - G.p.y) * 2]; } }
+    if (s && s.visit) { const v = s.visit;
+      if (v.other) { const os = OV.tickNpc.get(v.other); if (os) { n.act = "💬 Thăm hỏi bạn bè"; return [os.px + 34, os.py + 10]; } }
+      else if (v.tavern) { n.act = "🍶 Ra tửu lâu nghe ngóng"; return [n.tavx, n.tavy]; } }
+  }
+  return _socAnchor(n);
+};
+/* ---------- Theo dõi sự kiện giang hồ (cho tin đồn + lý do bắt chuyện) ---------- */
+function socWatchPoll() {
+  if (!G) return; const w = SOC.watch;
+  if (SOC.pendingEventTitle) { socRumor("Giang hồ đang bàn tán: " + SOC.pendingEventTitle); SOC.pendingEventTitle = ""; }
+  if (w.lv && G.lv > w.lv) socRumor("Nghe nói hiệp khách " + CHARS[G.charIdx].name + " vừa đột phá lên cấp " + G.lv + " — giang hồ lại thêm một cao thủ!");
+  if (G.lv) w.lv = G.lv;
+  if (G.sect && w.sect !== G.sect) { socRumor(CHARS[G.charIdx].name + " đã bái nhập " + G.sect + " — các phái đang bàn tán xôn xao!"); w.sect = G.sect; }
+  const bAlive = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead), bxAlive = (typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead);
+  if (w.boss === true && !bAlive) socRumor("Chấn động giang hồ: Đông Phương Bất Bại đã bại trận! Khắp các tửu lâu người người bàn tán.");
+  if (w.bossx === false && bxAlive) socRumor("Có cao thủ đáng sợ vừa xuất hiện — khí tức khiến chim thú quanh vùng bỏ chạy tán loạn!");
+  w.boss = bAlive; w.bossx = bxAlive;
+}
+if (typeof pickEvent === "function") { const _socPickEv = pickEvent;
+  pickEvent = function () { const ev = _socPickEv(); if (ev && ev.title && G) SOC.pendingEventTitle = ev.title; return ev; }; }
+/* ---------- Quét chủ động (mỗi 3 nhịp): sinh việc gần, thăm hỏi, bắt chuyện ---------- */
+function socApproachReason(n) {
+  const aff = G.aff[n.name] || 0;
+  if (SOC.offers[n.name]) return { kind: "errand", call: socPick(SOC_CALLS.errand) };
+  const s = socSt(n);
+  if (SOC.rumors.some(r => G.day - r.day <= 1) && aff >= 10 && OV.tick.total - s.rumorTick > 50) return { kind: "rumor", call: socPick(SOC_CALLS.rumor) };
+  if (aff >= 60) return { kind: "greet", call: socPick(SOC_CALLS.greet) };
+  return null;
+}
+function socStartVisit() {
+  const near = NPCS.filter(n => { if (ovNpcBusy(n) || n.act === "Ngủ" || n.hp < n.maxhp * 0.45) return false;
+    const s = socSt(n); if (s.visit || s.approach) return false;
+    const os = ovNpcState2(n); return Math.hypot(os.px - G.p.x, os.py - G.p.y) < 1100; });
+  if (!near.length) return;
+  const a = near[(Math.random() * near.length) | 0], sa = socSt(a);
+  if (Math.random() < 0.45) { sa.visit = { tavern: true, until: OV.tick.total + 9 }; return; }
+  const others = NPCS.filter(o => o !== a && o.zone === a.zone && !ovNpcBusy(o) && o.act !== "Ngủ" && Math.hypot(o.x - a.x, o.y - a.y) < 750);
+  if (!others.length) return;
+  sa.visit = { other: others[(Math.random() * others.length) | 0], until: OV.tick.total + 11, chatT: 0 };
+}
+function socScan() {
+  if (!G || OV.battle || ovInCave() || ovUiPaused() || SOC.opening || !OV.cell) return;
+  for (const n of NPCS) { const os = ovNpcState2(n);
+    if (Math.max(Math.abs(os.gx - OV.cell.gx), Math.abs(os.gy - OV.cell.gy)) > 8) continue;
+    if (ovNpcBusy(n) || n.act === "Ngủ") continue;
+    if (!SOC.offers[n.name] && Math.random() < 0.05) socGenErrand(n); }
+  if (Math.random() < 0.10) socStartVisit();
+  if (SOC.approaches >= 3) return;
+  let best = null, bestScore = -1;
+  for (const n of NPCS) { const s = socSt(n);
+    if (s.approach || s.pendingTalk) continue;
+    if (OV.tick.total - s.lastApproach < 26) continue;
+    if (ovNpcBusy(n) || n.act === "Ngủ" || n.hp < n.maxhp * 0.45) continue;
+    if (G.spouse === n.name) continue;
+    const os = ovNpcState2(n);
+    const d = Math.max(Math.abs(os.gx - OV.cell.gx), Math.abs(os.gy - OV.cell.gy));
+    if (d > 7 || d <= 1) continue;
+    const r = socApproachReason(n); if (!r) continue;
+    const score = (r.kind === "errand" ? 100 : r.kind === "rumor" ? 50 : 30) - d;
+    if (score > bestScore) { bestScore = score; best = { n, r }; } }
+  if (best) { const s = socSt(best.n);
+    s.approach = { kind: best.r.kind, tick: OV.tick.total }; s.lastApproach = OV.tick.total; SOC.approaches++;
+    best.n.bubble = best.r.call; best.n.bubbleT = 3.2;
+    toast("💬 " + best.n.name + ": “" + best.r.call + "” — đang tiến lại phía ngươi."); }
+}
+function socApproachTick() {
+  if (!OV.cell) return;
+  for (const n of NPCS) { const s = SOC.st.get(n); if (!s) continue;
+    if (s.approach) { const os = ovNpcState2(n);
+      const d = Math.max(Math.abs(os.gx - OV.cell.gx), Math.abs(os.gy - OV.cell.gy));
+      if (d <= 1) { const kind = s.approach.kind; s.approach = null;
+        if (!OV.battle && !ovUiPaused() && !SOC.opening && !OV.anim && !(OV.path && OV.path.length)) {
+          s.pendingReason = kind; if (kind === "rumor") s.rumorTick = OV.tick.total;
+          OV.stepsLeft++; // NPC chủ động bắt chuyện: lần mở thoại này không trừ thể lực của người chơi
+          openDialog(n);
+          const fx = document.getElementById("ovTickFx"); if (fx) fx.textContent = ""; // mở thoại do NPC chủ động: không hiện "-1 ⚡"
+        } else { s.pendingTalk = { kind, tick: OV.tick.total };
+          n.bubble = "❗ Ta có chuyện muốn nói!"; n.bubbleT = 3;
+          toast("💬 " + n.name + " muốn nói chuyện với ngươi — lại gần bấm E khi rảnh."); } }
+      else if (d > 12 || OV.tick.total - s.approach.tick > 40) s.approach = null;
+      else if (n.bubbleT <= 0.4) { n.bubble = "❗ " + (s.approach.kind === "errand" ? "Ta có việc muốn nhờ!" : "Chờ ta một chút!"); n.bubbleT = 2.2; } }
+    if (s.pendingTalk) { if (OV.tick.total - s.pendingTalk.tick > 60) s.pendingTalk = null;
+      else if (n.bubbleT <= 0.4 && !ovNpcBusy(n)) { n.bubble = "❗"; n.bubbleT = 2; } } }
+}
+function socVisitTick() {
+  for (const n of NPCS) { const s = SOC.st.get(n); if (!s || !s.visit) continue; const v = s.visit;
+    if (OV.tick.total > v.until) { s.visit = null; continue; }
+    if (v.other) { const os = ovNpcState2(n), bs = ovNpcState2(v.other);
+      if (Math.max(Math.abs(os.gx - bs.gx), Math.abs(os.gy - bs.gy)) <= 1) { v.chatT++;
+        if (v.chatT % 3 === 0) { const who = ((v.chatT / 3) | 0) % 2 === 0 ? n : v.other;
+          const lines = PERS_LINES[who.pers] || NPC_LINES;
+          who.bubble = lines[(Math.random() * lines.length) | 0]; who.bubbleT = 2.6;
+          if (OV.cell && Math.max(Math.abs(os.gx - OV.cell.gx), Math.abs(os.gy - OV.cell.gy)) <= 5 && OV.tick.total - SOC.lastOverhear >= 12) {
+            SOC.lastOverhear = OV.tick.total; toast("🗣️ Nghe lỏm " + who.name + ": “" + who.bubble + "”"); } } } } }
+}
+function socEscortTick() {
+  const e = SOC.errands.find(x => x.type === "escort" && x.state === "active"); if (!e || !OV.cell) return;
+  const n = socNpcByName(e.giver); if (!n) return;
+  const s = ovNpcState2(n);
+  if (Math.hypot(s.px - G.p.x, s.py - G.p.y) > 1300) { // người chơi đi xa phu/thuyền: NPC theo kịp bằng đường tắt
+    const c = ovNearestWalkable(OV.cell.gx - 1, OV.cell.gy, false);
+    s.gx = c.gx; s.gy = c.gy; const ctr = ovCenter(c.gx, c.gy);
+    s.px = ctr.x; s.py = ctr.y; s.rx = ctr.x; s.ry = ctr.y; n.x = ctr.x; n.y = ctr.y; }
+  if (ZONES.indexOf(zoneAt(G.p.x, G.p.y)) === e.destZone) {
+    n.bubble = "Tới nơi rồi! Đa tạ ngươi hộ tống!"; n.bubbleT = 3;
+    toast("🚶 Đã hộ tống " + e.giver + " tới " + ZONES[e.destZone].name + " an toàn!");
+    socCompleteErrand(e); }
+}
+function socTickOnce() {
+  if (!G) return;
+  if (G.day !== SOC.lastDay) { SOC.lastDay = G.day; SOC.approaches = 0; socExpireSweep(); }
+  socWatchPoll();
+  if (OV.tick.total % 3 === 0) socScan();
+  socApproachTick(); socVisitTick(); socEscortTick();
+}
+const _socTickOnce = ovTickOnce;
+ovTickOnce = function () { _socTickOnce(); socTickOnce(); };
+/* ---------- Tiến độ ủy thác dọn quái + NPC chứng kiến trận thắng ---------- */
+const _socKill = killEnemy;
+killEnemy = function (e) { const wasDead = e.dead; _socKill(e);
+  if (!wasDead && e.dead && G && !(e.killedByNpc && !(e.pDmg > 0))) {
+    const zi = e.home >= 0 ? e.home : ZONES.indexOf(zoneAt(e.x, e.y));
+    for (const er of SOC.errands) { if (er.type === "kill" && er.state === "active" && er.targetZone === zi) {
+      er.prog++;
+      if (er.prog >= er.need) { er.state = "ready"; toast("📜 Ủy thác của " + er.giver + ": đã dọn đủ quái ở " + ZONES[zi].name + " — quay lại gặp " + er.giver + " nhận thưởng!"); }
+      else toast("📜 Ủy thác dọn quái (" + er.giver + "): " + er.prog + "/" + er.need); } } } };
+const _socEndBattle = ovEndBattle;
+ovEndBattle = function (result) { _socEndBattle(result);
+  if (result === "win" && G && OV.cell) { SOC.watch.lastWinTick = OV.tick.total;
+    SOC.watch.lastWinZone = (typeof curZone !== "undefined" && curZone) ? curZone.name : "";
+    if (SOC.watch.lastWinZone) socRumor("Nghe nói vừa có trận đánh dữ dội ở " + SOC.watch.lastWinZone + " — một hiệp khách thắng lớn, quái thú tháo chạy tán loạn!");
+    for (const n of NPCS) { const s = OV.tickNpc.get(n); if (!s || ovNpcBusy(n)) continue;
+      if (Math.max(Math.abs(s.gx - OV.cell.gx), Math.abs(s.gy - OV.cell.gy)) <= 5) {
+        n.bubble = (G.infamy >= 30 && n.atk < 16) ? "Đừng… đừng qua đây!" : (SOC_WITNESS[socPers(n)] || "Đánh hay lắm!");
+        n.bubbleT = 3; } } } };
+/* ---------- Nhật ký (Q) + minimap + Trợ giúp ---------- */
+const _socQuest = renderQuestPanel;
+renderQuestPanel = function () { _socQuest(); const b = document.getElementById("questBox"); if (!b || !G) return;
+  let h = "<h4>🧾 Ủy thác giang hồ</h4>";
+  if (!SOC.errands.length) h += "<p class=\"dim\">Chưa nhận ủy thác nào. NPC có việc cần nhờ sẽ chủ động bắt chuyện khi ngươi đi ngang, hoặc mở thoại chọn [🙋 Việc cần giúp].</p>";
+  for (const e of SOC.errands) h += "<p>🧾 <b>" + e.giver + "</b>: " + e.desc + "<br><span class=\"dim\">" + socErrandStatus(e) + " · ⏳ Hạn: hết ngày " + e.deadline + " · 🎁 " + e.gold + " vàng, thiện cảm +" + e.affR + (e.fameR ? ", danh tiếng +" + e.fameR : "") + (e.itemR ? ", " + e.itemR : "") + "</span></p>";
+  const done = Object.values(SOC.mem).reduce((a, m) => a + (m.helped || 0), 0);
+  if (done) h += "<p class=\"dim\">🤝 Tổng số việc đã giúp giang hồ: " + done + " việc — các NPC vẫn nhớ và nhắc lại khi gặp.</p>";
+  b.innerHTML += h; };
+const _socMM = drawMinimap;
+drawMinimap = function () { _socMM();
+  if (!G || !SOC.errands.length) return;
+  const m = document.getElementById("minimap"); if (!m || m.offsetParent === null) return;
+  const g = m.getContext("2d"), sx = m.width / WORLD_W, sy = m.height / WORLD_H;
+  const pl = 1 + Math.sin(performance.now() / 300) * 0.3;
+  for (const e of SOC.errands) { const pt = socErrandDest(e); if (!pt) continue;
+    g.strokeStyle = "#ffd23e"; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(pt.x * sx, pt.y * sy, 4.5 * pl, 0, 6.29); g.stroke();
+    g.fillStyle = "#ffd23e"; g.fillRect(pt.x * sx - 1, pt.y * sy - 1, 2, 2); } };
+const _socHelp = renderHelpPanel;
+renderHelpPanel = function () { _socHelp(); const b = document.getElementById("helpBox");
+  if (b && !b.querySelector(".ovSocHelp")) { const d = document.createElement("div"); d.className = "ovSocHelp";
+    d.innerHTML = "<h4>🧑‍🤝‍🧑 NPC như người thật — bắt chuyện, nhờ việc, đối đáp</h4>"
+      + "<p><b>Bắt chuyện:</b> NPC có việc nhờ, có tin nóng hoặc thân thiết sẽ <b>chủ động bước tới</b> gọi ngươi. Nếu ngươi đang bận, họ để lại dấu <b>!</b> chờ — lại gần bấm E là nói chuyện. NPC chủ động bắt chuyện thì lần mở thoại đó <b>không trừ thể lực</b> của ngươi.</p>"
+      + "<p><b>Ủy thác giang hồ:</b> trong hội thoại chọn [🙋 Việc cần giúp] để nghe việc NPC cần nhờ: giao đồ/thư, mua giúp đồ ở tiệm, thu thập nguyên liệu, dọn quái, tìm người, hộ tống. Mỗi việc có thù lao (vàng/thiện cảm/danh tiếng/vật phẩm) và <b>hạn theo ngày</b>: xong hạn mà chưa làm xong là thất bại, thiện cảm -3. <b>Từ chối khéo không bị phạt gì.</b> Tối đa nhận 5 ủy thác cùng lúc; tiến độ xem ở Nhật ký (Q), đích đến có vòng vàng trên minimap.</p>"
+      + "<p><b>Đối đáp:</b> mỗi lần mở thoại tốn 1 thể lực như cũ, nhưng bấm các chủ đề [💬 Chuyện trò] [📰 Tin giang hồ] [🏯 Hỏi về phái] [🔍 Hỏi thăm người] đào sâu thêm trong cùng lần nói chuyện thì <b>không tốn thêm</b>. NPC trả lời theo tính cách, thiện cảm, môn phái, danh tiếng và chuyện vừa xảy ra — và họ <b>nhớ</b> những việc ngươi từng giúp, từng từ chối hay để quá hạn.</p>";
+    b.appendChild(d); } };
+/* ---------- Save / nạp game: field riêng "ovSoc" (save cũ tự migrate rỗng) ---------- */
+const _socSave = saveGame;
+saveGame = function () { _socSave();
+  try { if (!G) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const j = JSON.parse(raw);
+    j.ovSoc = { errands: SOC.errands, offers: SOC.offers, mem: SOC.mem, rumors: SOC.rumors.slice(-6), approaches: SOC.approaches, day: G.day };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _socStart = startGame;
+startGame = function (ci, fs) {
+  SOC.errands = []; SOC.offers = {}; SOC.mem = {}; SOC.rumors = []; SOC.st.clear(); SOC.approaches = 0;
+  SOC.watch = { lv: 0, sect: null, boss: null, bossx: null, lastWinTick: -999, lastWinZone: "" };
+  _socStart(ci, fs);
+  if (typeof NPCS !== "undefined") for (const n of NPCS) { const ov = SOC_PERS_OVERRIDE[n.name]; if (ov) n.pers = ov; }
+  if (fs && G) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+      if (j && j.ovSoc) { SOC.errands = Array.isArray(j.ovSoc.errands) ? j.ovSoc.errands.filter(e => e && e.giver && e.type) : [];
+        SOC.offers = j.ovSoc.offers || {}; SOC.mem = j.ovSoc.mem || {}; SOC.rumors = j.ovSoc.rumors || [];
+        if (j.ovSoc.day === G.day) SOC.approaches = j.ovSoc.approaches || 0; } } catch (e) {} }
+  SOC.lastDay = G ? G.day : 0;
+  if (G) { SOC.watch.lv = G.lv; SOC.watch.sect = G.sect;
+    SOC.watch.boss = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead);
+    SOC.watch.bossx = (typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead);
+    socExpireSweep(); }
+};
+/* ---------- API kiểm chứng cho probe ---------- */
+if (window.__OV) { window.__OV.soc = {
+    state: SOC,
+    genOffer: name => { const n = socNpcByName(name); return n ? socGenErrand(n) : null; },
+    mem: name => SOC.mem[name] || null,
+    pers: name => { const n = socNpcByName(name); return n ? socPers(n) : null; },
+    topic: (name, t) => { const n = socNpcByName(name); if (!n) return null;
+      return t === "chat" ? socChatText(n) : t === "rumor" ? socRumorText(n) : t === "sect" ? socSectText(n) : socFindText(n); },
+    approach: name => { const n = socNpcByName(name); if (!n) return false;
+      const s = socSt(n); s.approach = { kind: SOC.offers[n.name] ? "errand" : "greet", tick: OV.tick.total }; return true; },
+    expireSweep: socExpireSweep, complete: socCompleteErrand, status: socErrandStatus };
+  window.__OV.version = "ov4-social-npc"; }
+</script>
 </body>
 </html>
