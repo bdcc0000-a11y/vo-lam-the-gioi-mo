@@ -6722,6 +6722,640 @@ if (window.__OV) { window.__OV.soc = {
 </script>
 <script>
 "use strict";
+/* =====================================================================================
+   OV5 — NPC SỐNG NHƯ NGƯỜI THẬT · TẦNG 2 (xây trên OV4: bắt chuyện / ủy thác / trí nhớ)
+   1) BẮT CHUYỆN DÀY + ĐA DẠNG: thêm loại khởi xướng hurt (xin thuốc khi bị thương),
+      trade (thương nhân chào mua/bán giá riêng), join (rủ đi cùng), secret (tiết lộ vị
+      trí rương thật -> ghim bản đồ), spar (cao thủ rủ tỉ thí), warn (cảnh báo boss phía
+      trước), tea (mời trà ở tửu lâu — đi thật tới quán, ngồi vài nhịp). Nới chống spam
+      theo MỨC TƯƠNG TÁC (panel Trợ giúp): Ít / Thường / Nhiều — mặc định NHIỀU.
+   2) ĐỒNG HÀNH THẬT: NPC thiện cảm >= 40 (25-39: 50%) đồng ý đi cùng (tối đa 1, ngoài
+      vợ/chồng/đệ tử): theo ô thật, VÀO TRẬN đánh thật bằng chiêu phái của họ kèm trình
+      diễn skill như người chơi; người được HỘ TỐNG nay cũng vào trận đánh phụ. Hết ngày
+      / quá lâu / bị thương nặng -> chào tạm biệt về lịch trình. Đi cùng tăng thiện cảm.
+   3) HỘI THOẠI CÓ LỰA CHỌN & HẬU QUẢ: mọi cuộc bắt chuyện quan trọng có 2-3 lựa chọn
+      với kết quả khác nhau. Thêm chủ đề: [📖 Kể chuyện đời] (tích nguyên tác Kim Dung,
+      mở dần theo thiện cảm), [🎓 Xin chỉ giáo] (tốn 1 thể lực, nhận EXP/chỉ điểm),
+      [👥 Hỏi thăm người quen] (vị trí thật + quan hệ của NPC khác).
+   4) QUÀ CÓ GU + CỘT MỐC QUAN HỆ: mỗi NPC có món THÍCH (npcLikes + nghề) và món GHÉT
+      (suy từ tên). Tặng món thích: +14 thiện cảm (hơn gấp đôi mức thường +6) + thoại
+      riêng; món thường +6; món ghét: +1 (hoặc -2 với người Kiêu ngạo/Gian xảo). Thang
+      bậc hiển thị: Xa lạ -> Quen biết -> Thân thiết -> Tri kỷ. Đạt TRI KỶ với cao thủ:
+      sự kiện 1 lần — chọn KẾT NGHĨA (ghi Nhật ký; khi họ đồng hành cùng ngươi, công lực
+      +8%) hoặc XIN TRUYỀN BIẾN CHIÊU (ngộ biến chiêu của 1 chiêu phái họ mà ngươi đã
+      học; không có thì +1 điểm lĩnh ngộ + EXP).
+   5) PHỐ THỊ & TIẾNG ĐỒN: ambient diễn thật trong tầm nhìn — rao hàng, sư phụ dạy đệ
+      tử, hai NPC khẩu chiến (lại gần can hòa: lựa chọn + hậu quả 2 phía), người say
+      loạng choạng, NPC đánh rơi đồ (bước lên nhặt: trả lại -> thiện cảm + danh tiếng,
+      giữ luôn -> vàng/đồ nhưng ác danh nếu có người thấy). VIỆC LỚN LAN TRUYỀN: hạ boss,
+      giúp giang hồ nhiều việc, kết nghĩa... ghi thành "tiếng đồn" kèm vùng gốc — NPC ở
+      VÙNG KHÁC gặp ngươi sẽ nhắc đúng việc đó (banner trong thoại + tin giang hồ).
+   6) PHẢN ỨNG THEO TRẠNG THÁI NGƯỜI CHƠI: ngươi bị thương nặng -> NPC nhân hậu gần đó
+      tặng Kim Sang Dược; mang thần binh/mảnh thần binh -> cao thủ trầm trồ; mưa/đêm/sự
+      kiện thế giới -> bình luận đúng cảnh.
+   Hiệu năng: ambient/chủ động chỉ xét NPC trong ~8 ô; bong bóng là field sẵn có của
+   NPC nên không tràn log. Mọi state mới lưu vào field "ov5" của save ô vuông (save cũ
+   tự migrate rỗng). API kiểm chứng: window.__OV.s5
+   ===================================================================================== */
+const S5 = {
+  level: 3, // 1 Ít · 2 Thường · 3 Nhiều (mặc định Nhiều theo ý người chơi)
+  comp: null, // {name, day, startTick, lastAffTick}
+  deeds: [], deedSeen: {}, dayCount: 0, lastDay: 0,
+  triki: {}, marks: [], drop: null, tea: null, arg: null, drunk: {},
+  trade: {}, react: {}, counters: { approach: 0, ambient: 0, choice: 0, gift: 0, comp: 0, deed: 0 },
+  lastAmb: -99, _boss: null, _bossx: null, _helpDeed: 0, _reason: null, _flash: null
+};
+const S5_LVL_NAME = { 1: "Ít", 2: "Thường", 3: "Nhiều" };
+const S5_CAPS = { 1: 2, 2: 5, 3: 12 }; // trần số lần NPC chủ động bắt chuyện / ngày theo mức
+function s5Npc(name) { return (typeof socNpcByName === "function") ? socNpcByName(name) : null; }
+function s5Aff(n) { return (G && G.aff[n.name]) || 0; }
+function s5Tier(aff) { if (aff < 0) return "Xa lạ (mất thiện cảm)"; if (aff < 10) return "Xa lạ"; if (aff < 30) return "Quen biết"; if (aff < 60) return "Thân thiết"; return "Tri kỷ"; }
+function s5CellDist(n) { if (!OV.cell) return 99; const s = OV.tickNpc.get(n); if (!s) return 99;
+  return Math.max(Math.abs(s.gx - OV.cell.gx), Math.abs(s.gy - OV.cell.gy)); }
+function s5Out(html) { const o = document.getElementById("ovTopicOut"); if (o) o.innerHTML = html; }
+/* ---------- Lựa chọn trong hội thoại: 2-3 nhánh, hậu quả khác nhau ---------- */
+function s5Choices(npc, prompt, opts) {
+  const o = document.getElementById("ovTopicOut"); if (!o) return;
+  o.innerHTML = "<div>💬 <b>" + npc.name + ":</b> “" + prompt + "”</div>";
+  const row = document.createElement("div"); row.className = "dBtns";
+  opts.forEach(op => { const b = document.createElement("button"); b.className = "btn"; b.textContent = op.label;
+    b.onclick = () => { S5.counters.choice++;
+      let res = ""; try { res = op.run ? op.run() : ""; } catch (e) {}
+      const o2 = document.getElementById("ovTopicOut");
+      if (o2 && res) o2.innerHTML = "💬 <b>" + npc.name + ":</b> “" + res + "”";
+      try { updateHud(); } catch (e) {} saveGame(); };
+    row.appendChild(b); });
+  o.appendChild(row);
+}
+/* ---------- Panel lựa chọn độc lập (sự kiện phố thị, không qua hộp thoại NPC) ---------- */
+function s5Panel(title, body, opts) {
+  const eb = document.getElementById("eventBox"); if (!eb || !eb.classList.contains("hidden")) return false;
+  eb.innerHTML = "<h3>" + title + "</h3><p>" + body + "</p><div class=\"dBtns\"></div>";
+  const box = eb.querySelector(".dBtns");
+  opts.forEach(op => { const b = document.createElement("button"); b.className = "btn"; b.textContent = op.label;
+    b.onclick = () => { S5.counters.choice++; let res = ""; try { res = op.run ? op.run() : ""; } catch (e) {}
+      eb.innerHTML = "<h3>" + title + "</h3><p>" + (res || "") + "</p><div class=\"dBtns\"><button class=\"btn\" data-close=\"eventBox\">Đóng</button></div>";
+      try { updateHud(); } catch (e) {} saveGame(); };
+    box.appendChild(b); });
+  eb.classList.remove("hidden"); return true;
+}
+/* ================= 4) QUÀ CÓ GU + THANG BẬC QUAN HỆ ================= */
+function s5Likes(npc) { const L = npcLikes(npc.name).slice();
+  if (npc.job === "Lang y" && !L.includes("Linh Thảo")) L.push("Linh Thảo");
+  if (npc.job === "Đầu bếp" && !L.includes("Cá Nướng")) L.push("Cá Nướng");
+  if (npc.job === "Thợ rèn" && !L.includes("Trâm Ngọc")) L.push("Trâm Ngọc");
+  return L; }
+function s5Dislike(npc) { const L = s5Likes(npc);
+  const pool = GIFT_POOL.filter(x => !L.includes(x));
+  return pool.length ? pool[hash(npc.name + "hate") % pool.length] : null; }
+const S5_GIFT_LIKE = { "Nhân hậu": "Ôi… đúng món ta thích nhất! Ngươi hiểu ta quá, đa tạ!", "Hào sảng": "Ha ha! Đúng gu ta! Món này ta mê từ lâu rồi!", "Kiêu ngạo": "Hừ… cũng biết chọn quà đấy. Món này — ta thích.", "Trầm lặng": "…Đúng món ta thích. Đa tạ, ta nhớ tấm lòng này.", "Vui tính": "Ái chà! Đúng món ta mê! Ngươi tặng quà có gu thật!", "Gian xảo": "He he… đúng món ta khoái. Ngươi biết lấy lòng người ta đấy.", "Đa nghi": "Ngươi… sao biết ta thích món này? Thôi, ta nhận, đa tạ.", "Trượng nghĩa": "Đúng món ta yêu thích! Nghĩa khí của ngươi, ta ghi nhận!" };
+const S5_GIFT_HATE = { "Nhân hậu": "À… cảm ơn ngươi. (Món này ta không hợp lắm, nhưng tấm lòng là chính.)", "Hào sảng": "Ờ… món này ta hơi kỵ, nhưng ngươi có lòng là được!", "Kiêu ngạo": "Hừ! Tặng ta món này à? Ngươi chẳng hiểu ta chút nào.", "Trầm lặng": "…Ta không dùng món này. Thôi, để đó.", "Vui tính": "Ơ, món này ta ghét cay ghét đắng đó! Ha ha, thôi bỏ qua!", "Gian xảo": "He he… tặng món ta ghét — ngươi cố ý chọc ta đấy à?", "Đa nghi": "Món này… ngươi tặng là có ý gì? Ta không nhận vui đâu.", "Trượng nghĩa": "Món này ta không hợp. Lần sau hỏi trước khi tặng nhé." };
+function s5Gift(npc, item) { // trả {delta, kind} hoặc null nếu không tặng được
+  if (!G || (G.items[item] || 0) <= 0) return null;
+  const liked = s5Likes(npc).includes(item), hate = s5Dislike(npc) === item, pers = socPers(npc);
+  let delta, kind;
+  if (liked) { delta = 14; kind = "like"; }
+  else if (hate) { delta = (pers === "Kiêu ngạo" || pers === "Gian xảo") ? -2 : 1; kind = "hate"; }
+  else { delta = 6; kind = "normal"; }
+  G.items[item]--; if (G.items[item] <= 0) delete G.items[item];
+  G.aff[npc.name] = (G.aff[npc.name] || 0) + delta;
+  const m = socMem(npc.name); m.giftDay = G.day;
+  S5.counters.gift++;
+  return { delta, kind, line: kind === "like" ? (S5_GIFT_LIKE[pers] || "Đúng món ta thích! Đa tạ!") : kind === "hate" ? (S5_GIFT_HATE[pers] || "Món này ta không hợp lắm…") : "Ồ, quà cho ta à? Đa tạ ngươi!" };
+}
+/* ================= 3) KỂ CHUYỆN ĐỜI (nguyên tác, mở dần theo thiện cảm) ================= */
+const S5_STORIES = {
+  "Quách Tĩnh": ["Ta sinh ở Mông Cổ, lớn lên trên thảo nguyên cùng mẹ. Sáu vị sư phụ Giang Nam Thất Quái dạy ta võ công và hai chữ 'trung nghĩa' — dốt thì dốt, nhưng lời hứa với người ta không bao giờ nuốt.", "Năm xưa ở Ngưu Gia Thôn, cha ta và Dương thúc thúc kết nghĩa, đặt tên hai đứa nhỏ là Tĩnh — Khang. Ai ngờ nhà tan cửa nát, mỗi người một phương… Ta chỉ mong giang hồ bớt một phần tranh đấu."],
+  "Hoàng Dung": ["Cha ta là Hoàng Dược Sư, đảo chủ Đào Hoa Đảo. Ta trốn nhà đi chơi, giả trai ăn xin ở Trương Gia Khẩu thì gặp ngay tên ngốc Quách Tĩnh — hắn đãi ta một bữa mà móc hết gia tài, ha ha!", "Ta học được Đả Cẩu Bổng Pháp và làm bang chủ Cái Bang đời thứ mười chín. Người ta bảo ta quỷ kế đa đoan — ừ thì thông minh có tội gì đâu?"],
+  "Dương Quá": ["Cha ta là Dương Khang, chết ở miếu Thiết Thương. Ta lớn lên như đứa trẻ mồ côi hoang dại, được Quách bá bá đưa lên Toàn Chân Giáo — ở đó chẳng ai thương ta thật lòng.", "Ta bái Cô Cô làm sư phụ ở Cổ Mộ. Người đời chê cười chuyện sư đồ — nhưng tình cảm của ta với Cô Cô, trời đất chứng giám."],
+  "Tiểu Long Nữ": ["Ta lớn lên trong Cổ Mộ, luyện Ngọc Nữ Tâm Kinh, tâm như nước lặng. Sư tỷ Lý Mạc Sầu vì một chữ tình mà hóa điên dại — ta từng nghĩ mình sẽ không bao giờ như thế.", "Quá nhi là người đầu tiên khiến ta cười. Mười sáu năm chia cách ở Tuyệt Tình Cốc… may mà cuối cùng vẫn tìm lại được nhau."],
+  "Trương Vô Kỵ": ["Cha mẹ ta mất ở Võ Đang Sơn ngay trước mặt ta. Ta trúng Huyền Minh Thần Chưởng, sống dở chết dở nhiều năm, may gặp Hồ Thanh Ngưu và Trương chân nhân cứu mạng.", "Ta luyện thành Cửu Dương Thần Công và Càn Khôn Đại Na Di, làm giáo chủ Minh Giáo. Ta không ham quyền lực — chỉ muốn hai phe chính tà bớt đổ máu."],
+  "Tiêu Phong": ["Ta là Kiều Phong, bang chủ Cái Bang — rồi một ngày thân thế Khiết Đan bị phanh phui, huynh đệ quay lưng, A Châu chết dưới tay ta trong đêm mưa ở Thanh Trúc Lâm.", "Ta chỉ muốn một đời yên ổn chăn cừi ở Nhạn Môn Quan. Giang hồ nợ ta một lời công bằng — nhưng thôi, oán thù nên dứt ở thế hệ ta."],
+  "Đoàn Dự": ["Ta là thế tử Đại Lý, mê kinh Phật, ghét học võ — vậy mà chạy trốn lung tung lại học được Lăng Ba Vi Bộ và Lục Mạch Thần Kiếm lúc linh lúc không.", "Ta si mê Vương cô nương tới mức người ta gọi là 'đoạn si'. Về sau mới hiểu: tình cảm không cưỡng cầu được, chân thành mới là quý nhất."],
+  "Hư Trúc": ["Ta là tiểu hòa thượng Thiếu Lâm, giữ giới luật, chỉ mong tụng kinh qua ngày. Ai ngờ phá được trân lung kỳ cuộc, vô tình nhận bảy mươi năm công lực của Vô Nhai Tử tiền bối.", "Ta thành chủ nhân Linh Thứu Cung rồi lại hoàn tục vì Mộng Cô. Đời ta như giấc mộng — tỉnh dậy thấy mình chẳng còn là tiểu hòa thượng xưa nữa."],
+  "Lệnh Hồ Xung": ["Ta là đại đệ tử Hoa Sơn, mê rượu và kiếm. Bị phạt lên Tư Quá Nhai, ta gặp Phong thái sư thúc tổ và học được Độc Cô Cửu Kiếm — kiếm pháp vô chiêu thắng hữu chiêu.", "Ta bị trục xuất khỏi Hoa Sơn, kết giao Doanh Doanh và bao bằng hữu ma giáo. Chính — tà, ta chỉ nhìn lòng người mà kết bạn."],
+  "Đông Phương Bất Bại": ["Ta tu luyện Quỳ Hoa Bảo Điển, tốc độ thêu hoa cũng giết được người. Trong Nhật Nguyệt Thần Giáo, chỉ có ta là 'văn thành võ đức, thiên thu vạn tải'.", "Quyền lực cao nhất rồi cũng cô độc. Người hiểu ta nhất… lại là kẻ địch của ta. Thôi, chuyện cũ không nhắc nữa."],
+  "Trương Tam Phong": ["Ta vốn là tiểu đồng Giác Viễn đại sư ở Thiếu Lâm, nghe lén được mấy phần Cửu Dương. Sau lập Võ Đang, trăm tuổi mới ngộ ra Thái Cực — cương nhu vốn là một.", "Đệ tử Thúy Sơn của ta mất sớm, Vô Kỵ cháu ta khổ từ nhỏ. Ta già rồi, chỉ mong đám nhỏ bình an — giang hồ tranh đoạt, đến cuối cũng là cát bụi."],
+  "Độc Cô Cầu Bại": ["Ta hai mươi tuổi cầm lợi kiếm tung hoành Hà Sóc, ba mươi dùng trọng kiếm vô phong, bốn mươi cỏ cây đều là kiếm. Sau cùng… ta chỉ còn lại một mình với con thần điêu.", "Cả đời ta cầu một trận bại mà không được. Kiếm mộ ở thâm sơn, ta chôn kiếm cùng lời thề: ' Tung hoành giang hồ ba mươi năm, giết hết thù khấu, bại hết anh hùng — thiên hạ vô địch thủ.' Cô độc lắm, tiểu hữu ạ."],
+  "Hồng Thất Công": ["Ta là Bắc Cái, bang chủ Cái Bang, mê ăn ngon hơn mê võ công — ngón tay trỏ tay phải của ta bị chính ta chặt vì một lần ham ăn lỡ việc!", "Hàng Long Thập Bát Chưởng của ta cương mãnh đệ nhất. Ta dạy Quách Tĩnh vì thấy nó ngốc mà thật — võ công cao không bằng lòng người ngay thẳng."],
+  "Hoàng Dược Sư": ["Ta là Đông Tà, chủ đảo Đào Hoa. Cầm kỳ thư họa, kỳ môn độn giáp — ta học hết, và ta coi thường lễ giáo thối nát của thiên hạ.", "Nội tử Phùng Hành mất vì kiệt sức chép Cửu Âm Chân Kinh cho ta. Cả đời ta lạnh lùng, chỉ mềm lòng trước một mình Dung nhi."],
+  "Chu Bá Thông": ["Ta là Lão Ngoan Đồng! Sư huynh Vương Trùng Dương bắt ta giữ Cửu Âm Chân Kinh, ta bị Hoàng Dược Sư giam mười lăm năm ở Đào Hoa Đảo — giam thì giam, ta tự nghĩ ra Song Thủ Hỗ Bác chơi một mình!", "Ta sợ nhất là gặp Anh Cô… chuyện năm xưa với Đoàn hoàng gia, ta trốn cả đời. Thôi đừng hỏi nữa, lại đây đánh cờ với ta đi!"],
+  "Tạ Tốn": ["Ta là Kim Mao Sư Vương của Minh Giáo. Thành Côn giết cả nhà ta, ta phát điên giết người vô tội để ép hắn ra mặt — tội nghiệt này ta không chối.", "Đồ Long Đao ta giữ bao năm, cuối cùng ngộ ra 'võ lâm chí tôn' chỉ là hư danh. Ta quy y cửa Phật, ân oán đời này xin dứt ở đây."],
+  "Nhậm Ngã Hành": ["Ta là giáo chủ Nhật Nguyệt Thần Giáo, luyện Hấp Tinh Đại Pháp hút nội lực thiên hạ. Bị Đông Phương Bất Bại phản, giam mười hai năm dưới đáy Tây Hồ!", "Ta thoát ra được nhờ Lệnh Hồ Xung. Giang hồ này, ta phải lấy lại từng tấc — kẻ nào cản đường, kẻ đó chết."],
+  "Phong Thanh Dương": ["Ta là trưởng bối Hoa Sơn kiếm tông. Nội chiến kiếm — khí hai tông khiến Hoa Sơn suy tàn, ta ẩn cư Tư Quá Nhai, thề không hỏi chuyện giang hồ.", "Ta truyền Độc Cô Cửu Kiếm cho Lệnh Hồ Xung vì thấy nó không bị chiêu thức trói buộc. Kiếm thuật tới đỉnh cao là: vô chiêu."],
+  "Âu Dương Phong": ["Ta là Tây Độc, chủ nhân Bạch Đà Sơn, giỏi dùng độc và Cáp Mô Công. Cả đời ta chỉ thua Vương Trùng Dương một bậc — một bậc đó, ta không phục!", "Ta bị Hoàng Dung lừa tới phát điên, quên cả mình là ai… Nhưng điên rồi lại thấy nhẹ nhõm — hóa ra danh vọng đệ nhất mới là thứ độc nhất."],
+  "Lý Mạc Sầu": ["Ta là Xích Luyện Tiên Tử. Lục Triển Nguyên phụ ta — mười năm hẹn ước hóa thành tro, từ đó ta thề giết hết kẻ bạc tình trong thiên hạ.", "Người ta sợ ta như sợ cọp, nhưng chẳng ai hỏi ta đã khóc bao nhiêu đêm. Thôi… 'Hỏi thế gian, tình là vật gì' — ta đến chết vẫn không hiểu."]
+};
+function s5StoryText(npc) {
+  const m = socMem(npc.name), aff = s5Aff(npc);
+  const pool = S5_STORIES[npc.name];
+  if (pool) { const seen = m.storySeen || 0;
+    if (seen >= pool.length) return "Chuyện đời ta, ta kể ngươi nghe gần hết rồi. Có ngươi chịu ngồi nghe — ta quý lắm.";
+    if (aff < seen * 30 + 10) return "Chuyện sâu hơn… để khi nào ta với ngươi thân thêm chút nữa hẵng kể. (Cần thiện cảm ≥ " + (seen * 30 + 10) + ")";
+    m.storySeen = seen + 1;
+    return pool[seen] + (seen + 1 < pool.length ? " (Còn nữa — thân thêm chút, ta kể tiếp.)" : ""); }
+  const jobPool = {
+    "Thương nhân": "Ta buôn bán khắp các trấn, thấy đủ mặt người. Giàu nghèo cũng tại cái duyên — nhưng chữ tín thì không bán được, mất là mất cả đời.",
+    "Lang y": "Ta hành y cứu người từ năm mười tám tuổi. Thuốc chữa được bệnh, không chữa được mệnh — nhưng cứu thêm được một người là ta mừng một ngày.",
+    "Thợ rèn": "Ta rèn sắt từ bé, tay chai hết cả. Kiếm tốt không nằm ở thép — nằm ở người thợ có đặt tâm vào từng nhát búa hay không.",
+    "Đầu bếp": "Ta nấu ăn cho cả trấn này bao năm. Món ngon nhất không phải sơn hào — là bát cơm nóng lúc người ta đói và mệt.",
+    "Ngư dân": "Ta sống nhờ mặt nước này. Bão tố lấy đi của ta một người anh — từ đó ta chỉ mong mỗi chuyến ra khơi đều về đủ người.",
+    "Nông dân": "Ta cày ruộng cả đời, lưng còng theo luống cày. Đất không phụ người chăm — năm nào mưa thuận là cả nhà ta cười.",
+    "Thư sinh": "Ta đọc sách thánh hiền, thi mãi chưa đỗ. Nhưng sách dạy ta một điều: làm người ngay thẳng còn khó hơn làm quan."
+  };
+  return jobPool[npc.job] || "Đời ta bình dị thôi — sinh ra ở vùng này, lớn lên, làm việc, già đi. Giang hồ của các ngươi xa lắm, ta chỉ nghe kể qua chén trà.";
+}
+
+/* ---------- Xin chỉ giáo + Hỏi thăm người quen ---------- */
+function s5TeachText(npc) {
+  const m = socMem(npc.name);
+  if (m.teachDay === G.day) return "Hôm nay ta chỉ điểm cho ngươi đủ rồi — tham nhiều hóa loãng. Mai quay lại, ta dạy tiếp.";
+  if (!ovChargeTicks(1, "Xin chỉ giáo")) return "Ngươi mệt lử rồi (hết Thể lực) — nghỉ một đêm, mai ta chỉ điểm tiếp.";
+  m.teachDay = G.day;
+  const master = npcIsMaster(npc), ns = (typeof npcSectOf === "function") ? npcSectOf(npc) : null;
+  if (master) { const xp = 14 + npc.atk; gainXP(xp);
+    let extra = "";
+    if (ns && G.sect === ns) extra = " Ngươi là đồng môn " + ns + " — nhớ kỹ: " + (SECTS[ns] ? SECTS[ns].style : "") + ", luyện tới nơi là ở chữ 'tĩnh'.";
+    else if (ns) extra = " Võ học " + ns + " trọng " + (SECTS[ns] ? SECTS[ns].style : "") + " — ngươi quan sát chiêu của ta mà ngộ.";
+    if (Math.random() < 0.18) { G.insight = (G.insight || 0) + 1; extra += " Ngươi ngộ tính không tệ — ta tặng thêm 1 điểm lĩnh ngộ (mở Võ Học — V)."; }
+    return "Nghe đây: ra chiêu đừng ham nhanh, giữ hơi ở đan điền, mắt nhìn vai đối thủ trước khi nhìn tay. (Chỉ điểm của " + npc.name + ": +" + xp + " EXP)" + extra; }
+  gainXP(6);
+  return "Ta không phải cao thủ, chỉ biết chút mẹo hành tẩu: đi đêm mang theo thuốc, gặp quái lạ thì né trước tính sau. (+6 EXP kinh nghiệm giang hồ)"; }
+function s5AskText(npc) {
+  const others = NPCS.filter(o => o !== npc && !o.generic && o.name !== G.spouse);
+  if (!others.length) return "Ta cũng chẳng quen biết ai đáng kể ngoài vùng này.";
+  const ns = (typeof npcSectOf === "function") ? npcSectOf(npc) : null;
+  let t = null;
+  if (ns) { const same = others.filter(o => npcSectOf(o) === ns); if (same.length) t = same[hash(npc.name + G.day) % same.length]; }
+  if (!t) t = others[hash(npc.name + "ask" + G.day) % others.length];
+  const s = OV.tickNpc.get(t); const zn = zoneAt(s ? s.px : t.x, s ? s.py : t.y).name;
+  const taff = G.aff[t.name] || 0;
+  let rel = "Quan hệ của họ với ngươi: " + s5Tier(taff) + " (" + taff + ").";
+  if (ns && npcSectOf(t) === ns) rel += " Họ là đồng môn " + ns + " với ta — người ngay thẳng, ngươi cứ yên tâm kết giao.";
+  else if (t.isLeader) rel += " Họ là chưởng môn một phái — nói năng nhớ giữ lễ.";
+  return "Ngươi hỏi " + t.name + " à? Theo ta biết, giờ này họ đang ở vùng " + zn + " (vị trí thật trong giang hồ này đấy). " + rel; }
+/* ================= 5b) TIẾNG ĐỒN LAN TRUYỀN ================= */
+function s5Deed(txt, zoneName) { if (!G) return;
+  if (S5.deeds.some(d => d.txt === txt)) return;
+  S5.deeds.push({ id: "d" + OV.tick.total + "-" + S5.deeds.length, txt, zone: zoneName || "", day: G.day });
+  if (S5.deeds.length > 6) S5.deeds.shift();
+  S5.counters.deed++;
+  socRumor(txt); }
+const _s5CompleteErrand = socCompleteErrand;
+socCompleteErrand = function (e, remote) { _s5CompleteErrand(e, remote);
+  const total = Object.values(SOC.mem).reduce((a, m) => a + (m.helped || 0), 0);
+  if (total > 0 && total % 5 === 0 && S5._helpDeed !== total) { S5._helpDeed = total;
+    s5Deed("hiệp khách " + CHARS[G.charIdx].name + " nổi tiếng hay giúp người — đã giúp giang hồ " + total + " việc lớn nhỏ", ZONES[e.giverZone] ? ZONES[e.giverZone].name : ""); } };
+const _s5RumorText = socRumorText;
+socRumorText = function (npc) { // tin giang hồ: ưu tiên tiếng đồn thật của người chơi (lan cả sang vùng khác)
+  if (S5.deeds.length && Math.random() < 0.55) { const d = S5.deeds[S5.deeds.length - 1];
+    const frame = SOC_RUMOR_FRAME[socPers(npc)] || SOC_RUMOR_FRAME["Nhân hậu"];
+    return frame.replace("{r}", "Nghe nói ở " + (d.zone || "phương xa") + ": " + d.txt + " — tiếng lành đồn xa, cả vùng này cũng đang bàn tán!"); }
+  return _s5RumorText(npc); };
+/* ================= 1) BẮT CHUYỆN ĐA DẠNG ================= */
+const S5_CALLS = {
+  tea: ["Đi ngang tửu lâu đây — vào làm chén trà với ta không?", "Chân mỏi rồi, ghé tửu lâu ngồi một lát nhé?"],
+  trade: ["Này hiệp khách! Ta có món hàng muốn trao đổi riêng với ngươi…", "Khoan đi đã — ta có vụ làm ăn hời cho ngươi đây!"],
+  secret: ["Lại đây, lại đây… ta kể ngươi nghe một bí mật.", "Ngươi có phúc đấy — ta vừa biết một chuyện hay."],
+  spar: ["Ngươi đấy à! Lại đây tỉ thí vài chiêu cho giãn gân cốt!", "Nghe danh ngươi đã lâu — dám giao thủ với ta vài chiêu không?"],
+  warn: ["Khoan đi đã! Phía trước nguy hiểm lắm!", "Dừng lại! Ta phải cảnh báo ngươi chuyện này!"],
+  hurt: ["Ngươi… có thuốc trị thương không? Ta đau quá…", "Hiệp khách… giúp ta với, vết thương này nặng quá…"],
+  join: ["Đi một mình buồn lắm — cho ta theo ngươi một đoạn đường được không?", "Ta cũng đang định lên đường — cho ta đồng hành với ngươi nhé?"]
+};
+function s5GenTrade(npc) {
+  const mode = Math.random() < 0.5 ? "sell" : "buy";
+  if (mode === "sell") { const item = socPick(["Linh Thảo", "Trâm Ngọc", "Kim Sang Dược", "Nội Lực Đan", "Tập Thơ"]);
+    const base = (typeof itemPrice === "function") ? itemPrice(item, npc.zone) : 30;
+    S5.trade[npc.name] = { day: G.day, mode, item, price: Math.max(8, Math.round(base * 0.75)) }; }
+  else { const held = Object.keys(G.items || {}).filter(k => (G.items[k] || 0) > 0 && k.indexOf("—") < 0);
+    if (!held.length) { delete S5.trade[npc.name]; return; }
+    const item = held[(Math.random() * held.length) | 0];
+    const base = (typeof itemPrice === "function") ? itemPrice(item, npc.zone) : 25;
+    S5.trade[npc.name] = { day: G.day, mode, item, price: Math.round(base * 1.5) + 5 }; } }
+const _s5Reason = socApproachReason;
+socApproachReason = function (n) {
+  const aff = s5Aff(n), s = socSt(n);
+  if (n.hp < n.maxhp * 0.7 && n.hp >= n.maxhp * 0.45 && OV.tick.total - (s.s5hurt || -999) > 80) { s.s5hurt = OV.tick.total; return { kind: "hurt", call: socPick(S5_CALLS.hurt) }; }
+  if (S5.trade[n.name] && S5.trade[n.name].day === G.day) return { kind: "trade", call: socPick(S5_CALLS.trade) };
+  if (n.job === "Thương nhân" && Math.random() < 0.30) { s5GenTrade(n); if (S5.trade[n.name]) return { kind: "trade", call: socPick(S5_CALLS.trade) }; }
+  if (!S5.comp && aff >= 40 && !n.isLeader && G.spouse !== n.name && Math.random() < 0.35) return { kind: "join", call: socPick(S5_CALLS.join) };
+  if (aff >= 30 && Math.random() < 0.30) return { kind: "secret", call: socPick(S5_CALLS.secret) };
+  if (npcIsMaster(n) && aff >= 10 && Math.random() < 0.30) return { kind: "spar", call: socPick(S5_CALLS.spar) };
+  const bossNear = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead) || (typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead);
+  if (bossNear && Math.random() < 0.40) return { kind: "warn", call: socPick(S5_CALLS.warn) };
+  if (aff >= 20 && Math.random() < 0.30) return { kind: "tea", call: socPick(S5_CALLS.tea) };
+  return _s5Reason(n);
+};
+/* ---------- Hành động cho từng loại bắt chuyện mới ---------- */
+function s5RevealSecret(npc) {
+  const ch = CHESTS[(Math.random() * CHESTS.length) | 0]; if (!ch) return "Thôi, để khi khác ta kể.";
+  const zn = zoneAt(ch.x, ch.y).name;
+  if (!S5.marks.some(mk => mk.label === ch.label)) S5.marks.push({ x: ch.x, y: ch.y, label: ch.label, day: G.day });
+  G.aff[npc.name] = (G.aff[npc.name] || 0) + 1;
+  return "Nghe cho kỹ: ở " + zn + " có " + ch.label + " — đầy lại mỗi ngày, ít người biết lắm. Ta đã ghim dấu ✦ tím trên bản đồ nhỏ cho ngươi rồi đấy. Đừng nói là ta chỉ nhé!"; }
+function s5StartTea(npc) {
+  S5.tea = { name: npc.name, start: OV.tick.total, rounds: 0, lastRound: 0 };
+  const s = socSt(npc); s.visit = { tavern: true, until: OV.tick.total + 110 };
+  return "Được! Tửu lâu ở ngay vùng này — ta đi trước chiếm bàn đẹp, ngươi theo sau nhé. Tới nơi ngồi xuống, ta kể ngươi nghe chuyện giang hồ."; }
+const S5_TEA_LINES = ["Trà ở quán này pha bằng nước suối đầu nguồn đấy — thơm không?", "Hồi trẻ ta cũng lang bạt như ngươi. Ngồi xuống uống chén trà, nghe ta kể chuyện năm xưa…", "Giang hồ hiểm ác, tìm được người ngồi uống trà nói chuyện tử tế như ngươi — hiếm lắm."];
+/* ---------- Nâng cấp hộp thoại: banner OV5 + chủ đề mới + quà có gu + sự kiện Tri kỷ ---------- */
+const _s5OpenDialog = openDialog;
+openDialog = function (npc) {
+  let reason = null;
+  if (npc) { const s = SOC.st.get(npc); if (s) reason = s.pendingReason || (s.pendingTalk ? s.pendingTalk.kind : null) || null; }
+  _s5OpenDialog(npc);
+  if (!npc || !G) return;
+  const dlg = document.getElementById("dialog");
+  if (!dlg || dlg.classList.contains("hidden") || (typeof dlgNPC !== "undefined" && dlgNPC !== npc)) return;
+  if (reason) { S5.counters.approach++; S5.dayCount++; }
+  try { s5DialogEnhance(npc, reason); } catch (e) {}
+};
+function s5DialogEnhance(npc, reason) {
+  const dlg = document.getElementById("dialog"); if (!dlg) return;
+  const aff = s5Aff(npc), m = socMem(npc.name);
+  // Banner: thang bậc + tiếng đồn từ VÙNG KHÁC mà NPC này nghe được
+  const head = dlg.querySelector(".dn");
+  if (head) { const bits = [];
+    bits.push("🏅 Quan hệ: <b>" + s5Tier(aff) + "</b> (" + aff + ") · 🎁 Thích: " + s5Likes(npc).join(", ") + " · 💔 Ghét: " + (s5Dislike(npc) || "—"));
+    if (S5.comp && S5.comp.name === npc.name) bits.push("🧭 " + npc.name + " đang ĐỒNG HÀNH cùng ngươi (tới hết ngày " + S5.comp.day + ").");
+    const myZone = (() => { const s = OV.tickNpc.get(npc); return zoneAt(s ? s.px : npc.x, s ? s.py : npc.y).name; })();
+    const seen = S5.deedSeen[npc.name] || (S5.deedSeen[npc.name] = []);
+    for (const d of S5.deeds) { if (d.zone && d.zone !== myZone && !seen.includes(d.id) && G.day - d.day <= 2) {
+      seen.push(d.id); bits.push("🗞️ " + npc.name + " nghe tiếng đồn từ " + d.zone + ": “" + d.txt + "” — việc đó đồn tới tận vùng này rồi đấy!"); break; } }
+    if (bits.length) { const d0 = document.createElement("div"); d0.className = "dt ov5Mem";
+      d0.style.color = "var(--gold2)"; d0.innerHTML = bits.join("<br>"); head.parentNode.insertBefore(d0, head.nextSibling); } }
+  // Chủ đề mới: chèn thêm nút vào thanh chủ đề của OV4
+  const bar = document.getElementById("ovTopicBar");
+  if (bar) { const add = (key, label) => { const b = document.createElement("button"); b.className = "btn"; b.dataset.ov5topic = key; b.textContent = label; bar.appendChild(b); return b; };
+    add("story", "📖 Kể chuyện đời").onclick = () => s5Out("💬 <b>" + npc.name + ":</b> “" + s5StoryText(npc) + "”");
+    add("teach", "🎓 Xin chỉ giáo (-1⚡)").onclick = () => s5Out("💬 <b>" + npc.name + ":</b> “" + s5TeachText(npc) + "”");
+    add("ask", "👥 Hỏi thăm người quen").onclick = () => s5Out("💬 <b>" + npc.name + ":</b> “" + s5AskText(npc) + "”");
+    if (S5.comp && S5.comp.name === npc.name) add("comp", "🧭 Chia tay đồng hành").onclick = () => { s5EndCompanion("ngươi nói lời tạm biệt"); s5Out("💬 <b>" + npc.name + ":</b> “Đi cùng ngươi vui lắm. Ta về lo việc của ta — hẹn gặp lại trên giang hồ!”"); };
+    else add("comp", "🧭 Rủ đồng hành").onclick = () => { const r = s5Invite(npc);
+      s5Out("💬 <b>" + npc.name + ":</b> “" + r.msg + "”"); if (r.ok) saveGame(); };
+  }
+  // Mục OV5: quà có gu + sự kiện Tri kỷ
+  const anchor = dlg.querySelector(".dBtns");
+  if (anchor) { const sec = document.createElement("div"); sec.id = "ov5Sec"; anchor.parentNode.insertBefore(sec, anchor);
+    let h = "";
+    const giftItems = []; for (const it of GIFT_POOL.concat(["Linh Thảo", "Thảo Dược", "Kim Sang Dược"])) if ((G.items[it] || 0) > 0 && !giftItems.includes(it)) giftItems.push(it);
+    if (giftItems.length) { h += "<div class=\"dt\">🎁 <b>Tặng quà (có gu):</b> tặng đúng món thích +14 thiện cảm, món thường +6, món ghét chỉ +1 (người khó tính còn -2).</div><div class=\"dBtns\">"
+      + giftItems.map(it => "<button class=\"btn\" data-ov5gift=\"" + it + "\">🎁 " + it + (s5Likes(npc).includes(it) ? " 💝(thích!)" : s5Dislike(npc) === it ? " 💔(ghét)" : "") + " ×" + G.items[it] + "</button>").join("") + "</div>"; }
+    if (aff >= 60 && !S5.triki[npc.name] && !npc.generic && npcIsMaster(npc)) {
+      h += "<div class=\"dt\" style=\"border:1px solid var(--gold2);padding:6px 8px;border-radius:8px\">🌟 <b>Cột mốc TRI KỶ!</b> " + npc.name + " coi ngươi như tri kỷ — một sự kiện chỉ có một lần. Hãy chọn:<div class=\"dBtns\">"
+        + "<button class=\"btn\" id=\"ov5TriBro\">🤝 Kết nghĩa huynh đệ/tỷ muội</button>"
+        + "<button class=\"btn\" id=\"ov5TriVar\">📜 Xin truyền Biến Chiêu</button>"
+        + "<button class=\"btn ghost\" id=\"ov5TriLater\">Để sau</button></div>"
+        + "<span style=\"color:var(--dim)\">Kết nghĩa: ghi vào Nhật ký; khi " + npc.name + " đồng hành cùng ngươi, công lực của ngươi +8%. Biến Chiêu: ngộ biến chiêu cho 1 chiêu phái của họ mà ngươi đã học (không có chiêu phù hợp: +1 điểm lĩnh ngộ, +40 EXP).</span></div>"; }
+    sec.innerHTML = h;
+    sec.querySelectorAll("[data-ov5gift]").forEach(b => b.onclick = () => { const it = b.dataset.ov5gift;
+      const r = s5Gift(npc, it); if (!r) return;
+      S5._flash = "🎁 Ngươi tặng <b>" + it + "</b> cho " + npc.name + ".<br>💬 <b>" + npc.name + ":</b> “" + r.line + "”<br><span style=\"color:var(--dim)\">Thiện cảm " + (r.delta >= 0 ? "+" : "") + r.delta + " → " + (G.aff[npc.name] || 0) + " (" + s5Tier(G.aff[npc.name] || 0) + ")" + (r.kind === "like" ? " · Đúng món THÍCH — cộng gấp đôi!" : r.kind === "hate" ? " · Món GHÉT — lần sau tránh nhé." : "") + "</span>";
+      openDialog(npc); const o = document.getElementById("ovTopicOut"); if (o && S5._flash) { o.innerHTML = S5._flash; S5._flash = null; }
+      try { updateHud(); } catch (e) {} saveGame(); });
+    const tb = document.getElementById("ov5TriBro"); if (tb) tb.onclick = () => s5Triki(npc, "bro");
+    const tv = document.getElementById("ov5TriVar"); if (tv) tv.onclick = () => s5Triki(npc, "var");
+    const tl = document.getElementById("ov5TriLater"); if (tl) tl.onclick = () => { sec.innerHTML = ""; s5Out("💬 <b>" + npc.name + ":</b> “Không vội. Tình nghĩa này để trong lòng là đủ.”"); };
+  }
+  // Lựa chọn theo loại bắt chuyện mới
+  if (reason === "tea") s5Choices(npc, socPick(S5_CALLS.tea), [
+    { label: "🍵 Đồng ý, đi uống trà", run: () => { closeDialog(); return s5StartTea(npc); } },
+    { label: "🙏 Để khi khác", run: () => SOC_REFUSAL[socPers(npc)] || "Không sao, khi khác vậy." } ]);
+  else if (reason === "spar") s5Choices(npc, socPick(S5_CALLS.spar), [
+    { label: "⚔️ Đồng ý tỉ thí", run: () => { closeDialog(); setTimeout(() => startSpar(npc), 60); return "Được! Ra chiêu đi!"; } },
+    { label: "🙏 Khước từ", run: () => { if (socPers(npc) === "Kiêu ngạo") { G.aff[npc.name] = aff - 2; return "Hừ! Không dám à? Nhát gan. (Thiện cảm -2)"; } return "Ha, không sao! Khi khác giao thủ cũng được."; } } ]);
+  else if (reason === "warn") s5Choices(npc, "Phía trước có cao thủ đáng sợ đang lảng vảng — khí tức khiến chim thú bỏ chạy cả. Ngươi đi đường phải hết sức cẩn thận, đừng có ham đánh!", [
+    { label: "🙏 Cảm ơn đã cảnh báo", run: () => { G.aff[npc.name] = aff + 2; return "Ừm, cẩn thận là hơn. Ta thấy ngươi biết điều đấy. (Thiện cảm +2)"; } },
+    { label: "😤 Ta tự lo được", run: () => { if (socPers(npc) === "Kiêu ngạo") { G.aff[npc.name] = aff + 1; return "Hừ, có khí phách! Vậy ta không cản. (Thiện cảm +1)"; } return "Thôi được… ta chỉ lo cho ngươi thôi mà."; } } ]);
+  else if (reason === "secret") s5Choices(npc, socPick(S5_CALLS.secret), [
+    { label: "👂 Nghe bí mật", run: () => s5RevealSecret(npc) },
+    { label: "🙈 Không quan tâm", run: () => "Thôi vậy — bí mật này ta giữ lại cho người khác có duyên hơn." } ]);
+  else if (reason === "hurt") s5Choices(npc, socPick(S5_CALLS.hurt), [
+    { label: "💊 Cho 1 Kim Sang Dược", run: () => { if ((G.items["Kim Sang Dược"] || 0) <= 0) return "Ngươi lục túi… không có Kim Sang Dược. Ta… ta cố chịu vậy.";
+        G.items["Kim Sang Dược"]--; npc.hp = Math.min(npc.maxhp, npc.hp + Math.round(npc.maxhp * 0.45)); G.aff[npc.name] = aff + 8;
+        return "Ngươi… ngươi cho ta thuốc thật à? Ơn này ta không quên! (Thiện cảm +8, " + npc.name + " hồi phục 45% HP)"; } },
+    { label: "🙏 Động viên vài câu", run: () => { G.aff[npc.name] = aff + 1; return "Ừm… cảm ơn ngươi đã dừng lại hỏi han. Ta nghỉ một lát sẽ ổn. (Thiện cảm +1)"; } } ]);
+  else if (reason === "join") s5Choices(npc, socPick(S5_CALLS.join), [
+    { label: "🧭 Đồng ý, đi cùng ta!", run: () => { const r = s5Invite(npc, true); return r.msg; } },
+    { label: "🙏 Để khi khác", run: () => "Thôi được… ta đi đường của ta vậy. Hẹn gặp lại!" } ]);
+  else if (reason === "trade") { const tr = S5.trade[npc.name];
+    if (tr && tr.day === G.day) { if (tr.mode === "sell") s5Choices(npc, "Ta có 1 " + tr.item + " hàng tốt, bán riêng cho ngươi giá " + tr.price + " vàng (rẻ hơn chợ). Mua không?", [
+        { label: "🛒 Mua (" + tr.price + " vàng)", run: () => { if (G.gold < tr.price) return "Ngươi không đủ vàng à? Thôi, để dịp khác.";
+            G.gold -= tr.price; addItem(tr.item, 1); delete S5.trade[npc.name]; return "Sòng phẳng! Hàng của ta là hàng thật — cầm lấy, chúc ngươi dùng tốt."; } },
+        { label: "Không mua", run: () => { delete S5.trade[npc.name]; return "Ừ, không ép. Khi nào cần thì ghé ta."; } } ]);
+      else s5Choices(npc, "Nghe nói ngươi có 1 " + tr.item + " — ta đang cần gấp, mua lại giá " + tr.price + " vàng (cao hơn chợ nhiều). Bán không?", [
+        { label: "💰 Bán (" + tr.price + " vàng)", run: () => { if ((G.items[tr.item] || 0) <= 0) return "Ơ, ngươi đâu có " + tr.item + " trong túi?";
+            G.items[tr.item]--; G.gold += tr.price; G.aff[npc.name] = aff + 2; delete S5.trade[npc.name]; try { sfxCoin(); } catch (e) {} return "Tốt! Giao dịch sòng phẳng — ta thích ngươi rồi đấy. (Thiện cảm +2)"; } },
+        { label: "Không bán", run: () => { delete S5.trade[npc.name]; return "Thôi được, giữ mà dùng. Ta tìm người khác vậy."; } } ]); } }
+}
+/* ---------- Sự kiện cột mốc Tri kỷ ---------- */
+function s5Triki(npc, kind) {
+  if (S5.triki[npc.name]) return;
+  const name = CHARS[G.charIdx].name;
+  if (kind === "bro") { S5.triki[npc.name] = { day: G.day, gift: "bro" }; G.brothers = G.brothers || {}; G.brothers[npc.name] = 1;
+    fameChange(5, 0); s5Deed(name + " và " + npc.name + " kết nghĩa kim lan — giang hồ thêm một đôi tri kỷ", ZONES[npc.zone].name);
+    S5._flash = null; openDialog(npc); s5Out("🤝 <b>KẾT NGHĨA!</b> Ngươi và " + npc.name + " thắp hương kết nghĩa kim lan. Từ nay khi " + npc.name + " đồng hành cùng ngươi, công lực của ngươi <b>+8%</b>. Chứng nhận đã ghi vào Nhật ký (Q). Danh tiếng +5."); }
+  else { let granted = null; const ns = (typeof npcSectOf === "function") ? npcSectOf(npc) : null;
+    if (ns && typeof sectSkills === "function") { const ids = sectSkills(ns).filter(id => G.learned.includes(id) && !(G.variants && G.variants[id]));
+      if (ids.length) granted = ids[0]; }
+    if (granted) { G.variants = G.variants || {}; G.variants[granted] = 1; if (G.varUse && G.varUse[granted] === undefined) G.varUse[granted] = true;
+      S5.triki[npc.name] = { day: G.day, gift: "var:" + granted };
+      openDialog(npc); s5Out("📜 <b>TRUYỀN BIẾN CHIÊU!</b> " + npc.name + " chỉ điểm tận tay: ngươi NGỘ ra <b>Biến Chiêu của " + SKILLS[granted].name + "</b> (+15% sát thương, -20% hồi chiêu — đổi Bản gốc/Bản Biến trong panel Võ Học V)."); }
+    else { G.insight = (G.insight || 0) + 1; gainXP(40); S5.triki[npc.name] = { day: G.day, gift: "insight" };
+      openDialog(npc); s5Out("📜 " + npc.name + " truyền cho ngươi một buổi khẩu quyết nội công: <b>+1 điểm lĩnh ngộ, +40 EXP</b> (không có chiêu phái của họ trong số chiêu ngươi đã học để truyền Biến Chiêu)."); } }
+  try { sfxLevel(); } catch (e) {} saveGame(); }
+
+/* ================= 2) ĐỒNG HÀNH THẬT ================= */
+function s5Invite(npc, offered) {
+  if (S5.comp) return S5.comp.name === npc.name ? { ok: true, msg: "Ta đang đi cùng ngươi đây mà!" } : { ok: false, msg: "Ngươi đang có " + S5.comp.name + " đồng hành rồi — một lúc ta chỉ theo một người thôi." };
+  if (npc.isLeader) return { ok: false, msg: "Ta là chưởng môn, không thể rời tổng đàn. Ngươi cứ yên tâm hành tẩu." };
+  if (G.spouse === npc.name) return { ok: false, msg: "Ta là bạn đời của ngươi — cứ bật chế độ đi theo trong thoại của ta là được." };
+  if (SOC.errands.some(e => e.type === "escort" && e.state === "active" && e.giver === npc.name)) return { ok: false, msg: "Ta đang chờ ngươi hộ tống xong việc đã nhận — xong việc đó rồi ta theo ngươi cũng chưa muộn." };
+  const aff = s5Aff(npc);
+  if (!offered) { if (aff < 25) return { ok: false, msg: "Ta với ngươi chưa thân tới mức đó. (Cần thiện cảm ≥ 25 để rủ đồng hành; ≥ 40 là chắc chắn đồng ý)" };
+    if (aff < 40 && Math.random() < 0.5) return { ok: false, msg: "Ta còn việc riêng phải lo… để khi khác nhé. (Thiện cảm 25-39: tùy lúc họ mới đồng ý)" }; }
+  S5.comp = { name: npc.name, day: G.day, startTick: OV.tick.total, lastAffTick: OV.tick.total };
+  S5.counters.comp++;
+  npc.bubble = "Được! Ta theo ngươi!"; npc.bubbleT = 3;
+  toast("🧭 " + npc.name + " đồng ý ĐỒNG HÀNH cùng ngươi tới hết ngày " + G.day + " — họ theo ô thật và vào trận đánh cùng!");
+  return { ok: true, msg: "Được! Ta thu xếp nhanh rồi theo ngươi. Đánh nhau cứ gọi ta — chiêu của ta không phải dạng vừa đâu!" }; }
+function s5EndCompanion(why) { if (!S5.comp) return; const n = s5Npc(S5.comp.name);
+  if (n) { n.bubble = "Ta về trước đây — hẹn gặp lại!"; n.bubbleT = 3; }
+  toast("🧭 " + S5.comp.name + " chào tạm biệt (" + why + ") và quay về lịch trình của mình.");
+  S5.comp = null; saveGame(); }
+function s5CompanionNpc() { return S5.comp ? s5Npc(S5.comp.name) : null; }
+/* Neo di chuyển: đồng hành bám theo người chơi; người say loạng choạng */
+const _s5Anchor = ovNpcAnchor;
+ovNpcAnchor = function (n) {
+  if (G && S5.comp && S5.comp.name === n.name && !ovNpcBusy(n)) return [G.p.x + 38, G.p.y + 30];
+  const a = _s5Anchor(n);
+  if (S5.drunk[n.name] && S5.drunk[n.name] > OV.tick.total) { const w = Math.sin(OV.tick.total * 1.7 + hash(n.name) % 7) * 52;
+    return [a[0] + w, a[1] + Math.cos(OV.tick.total * 1.3 + hash(n.name) % 5) * 34]; }
+  return a; };
+/* Vào trận: đồng hành + người được hộ tống thành unit đồng minh đánh thật */
+const _s5OpenBattle = ovOpenBattle;
+ovOpenBattle = function (cfg) { _s5OpenBattle(cfg); const B = OV.battle; if (!B || !G) return;
+  const addAlly = (n, tag, isComp) => { if (!n) return;
+    if (B.units.some(u => u.npc === n)) return;
+    if (G.spouse === n.name && G.spouseFollow) return;
+    const s = OV.tickNpc.get(n); if (s && OV.cell && Math.max(Math.abs(s.gx - OV.cell.gx), Math.abs(s.gy - OV.cell.gy)) > 16) return;
+    const u = { uid: 700000 + ((Math.random() * 99999) | 0), side: "ally", npc: n, name: n.name + tag, ci: n.ci,
+      hp: Math.max(1, Math.round(n.hp)), maxhp: n.maxhp, spd: Math.round(n.spd * 3), stun: 0, dot: 0, atk: n.atk, socComp: !!isComp };
+    B.units.push(u); B.order.push(u); B.order.sort((a, b) => b.spd - a.spd);
+    ovBlog("🧭 <b>" + n.name + "</b>" + (isComp ? " (đồng hành) xông vào trận cùng ngươi!" : " (đang được hộ tống) cũng rút vũ khí đánh phụ!")); };
+  if (S5.comp) addAlly(s5CompanionNpc(), " 🧭", true);
+  const esc = SOC.errands.find(e => e.type === "escort" && e.state === "active");
+  if (esc) addAlly(s5Npc(esc.giver), " 🧾", false);
+  try { ovRenderBattle(); } catch (e) {} };
+/* Đồng hành tung chiêu phái thật, trình diễn như người chơi */
+const _s5AiAct = ovAiAct;
+ovAiAct = async function (u) { if (u && u.socComp && u.npc && OV.battle) { await s5CompAct(u); return; } return _s5AiAct(u); };
+async function s5CompAct(u) { const B = OV.battle; const n = u.npc;
+  const foes = ovAliveFoes(); if (!foes.length) { ovAfterAction(); return; }
+  const t = foes[(Math.random() * foes.length) | 0];
+  const set = npcSkillSet(n), id = set[(Math.random() * set.length) | 0], sk = SKILLS[id];
+  if (sk && Math.random() < 0.75) { const tier = ovTierOf(id, sk), buff = ["heal", "regen", "reflect", "crit"].indexOf(sk.kind) >= 0;
+    if (tier >= 3) ovBanner("✨ " + sk.name + " — " + n.name, (sk.sect && SECTS[sk.sect]) ? SECTS[sk.sect].color : "#ffe9b0");
+    try { sfxWhoosh(skillProfile(id, sk)); } catch (e) {}
+    ovBlog("🗡️ <b>" + n.name + "</b> (đồng hành) tung <b>" + sk.name + "</b> vào " + t.name + "!");
+    if (buff) { ovCastPose(u); ovImpactFx(u, ovSkillFxSrc(id), tier >= 3 ? 3 : 2, {});
+      if (sk.kind === "heal") { const h = Math.round(u.maxhp * 0.25); u.hp = Math.min(u.maxhp, u.hp + h); ovFloat(u, "+" + h, "heal"); ovBlog("💚 " + n.name + " tự vận công hồi phục +" + h + " HP."); } }
+    else if (sk.kind === "needle" || skillProfile(id, sk) === "finger") { ovCastPose(u); await ovProjectile(u, t, ovSkillFxSrc(id), tier >= 3 ? 128 : 96, 260); }
+    else { ovLunge(u, t, 16); await ovWait(120); }
+    if (OV.battle !== B) return;
+    if (!buff) { ovImpactFx(t, ovSkillFxSrc(id), tier, {}); ovHitFoe(t, Math.round(u.atk * 1.7 * (sk.mul || 1)), {}); ovKnock(t, u); } }
+  else { ovLunge(u, t, 16); await ovWait(120); if (OV.battle !== B) return;
+    ovImpactFx(t, ovFxSrc("slash"), 1, {}); ovHitFoe(t, u.atk || 10, { crit: Math.random() < 0.12 }); ovKnock(t, u);
+    ovBlog("⚔️ " + n.name + " (đồng hành) đánh thường " + t.name + "."); }
+  await ovWait(300); if (OV.battle !== B) return; ovAfterAction(); }
+/* Kết trận: thưởng thiện cảm cho đồng hành + tiếng đồn hạ boss */
+const _s5EndBattle = ovEndBattle;
+ovEndBattle = function (result) { const B = OV.battle;
+  const compU = B ? B.units.find(u => u.socComp) : null;
+  const mode = B ? B.mode : null; const bossName = B ? (B.units.find(u => u.side === "foe") || {}).name : "";
+  _s5EndBattle(result);
+  if (result === "win" && compU && S5.comp) { const n = s5CompanionNpc();
+    if (n) { let add = 2, msg = "đồng hành cùng nhau qua trận thắng";
+      if (compU.hp > 0 && compU.hp < compU.maxhp * 0.35) { add = 5; msg = "ngươi đã che chắn, cứu " + n.name + " lúc nguy kịch trong trận"; }
+      G.aff[n.name] = (G.aff[n.name] || 0) + add;
+      toast("🧭 " + n.name + ": “" + msg + "” — Thiện cảm +" + add + " → " + G.aff[n.name]); } }
+  if (result === "win" && (mode === "boss" || mode === "bossx")) s5Deed("hiệp khách " + CHARS[G.charIdx].name + " đã hạ " + (bossName || "boss") + " trong trận quyết đấu", (typeof curZone !== "undefined" && curZone) ? curZone.name : ""); };
+/* Buff kết nghĩa: đồng hành là tri kỷ đã kết nghĩa -> công lực +8% */
+const _s5pAtk = pAtk;
+pAtk = function () { let v = _s5pAtk();
+  if (S5.comp && S5.triki[S5.comp.name] && S5.triki[S5.comp.name].gift === "bro") v = Math.round(v * 1.08);
+  return v; };
+/* ================= 5a) PHỐ THỊ AMBIENT ================= */
+const S5_CRIES = ["📣 Hàng mới về đây! Giá hữu duyên cho người qua đường!", "📣 Thuốc tốt, rượu ngon — ghé xem một lát đi!", "📣 Đồ tươi ngon đây! Mua nhanh kẻo hết!", "📣 Qua xem đi, không mua cũng không sao!"];
+const S5_ARG_LINES = ["Ngươi nói ai vô lý?!", "Ta nhịn ngươi lâu rồi đấy!", "Chuyện này phải nói cho ra nhẽ!", "Ngươi đừng tưởng ta sợ ngươi!"];
+function s5NearNpcs(maxD, filter) { if (!OV.cell) return [];
+  return NPCS.filter(n => { if (ovNpcBusy(n) || n.act === "Ngủ") return false;
+    const s = OV.tickNpc.get(n); if (!s) return false;
+    if (Math.max(Math.abs(s.gx - OV.cell.gx), Math.abs(s.gy - OV.cell.gy)) > maxD) return false;
+    return !filter || filter(n); }); }
+function s5AmbientFire() { // bắn 1 sự kiện phố thị; trả true nếu có sự kiện diễn ra
+  if (!G || OV.battle || ovInCave() || ovUiPaused() || !OV.cell) return false;
+  const near = s5NearNpcs(7); if (near.length < 1) return false;
+  const roll = Math.random();
+  if (roll < 0.22) { const mer = near.filter(n => n.job === "Thương nhân"); const n = (mer.length ? mer : near)[(Math.random() * (mer.length || near.length)) | 0];
+    if (!n || n.bubbleT > 0) return false; n.bubble = socPick(S5_CRIES); n.bubbleT = 3; return true; }
+  if (roll < 0.44) { const masters = near.filter(n => npcIsMaster(n));
+    if (masters.length) { const mst = masters[0];
+      const stu = s5NearNpcs(8).find(o => o !== mst && s5CellDist(o) <= 9 && Math.abs((OV.tickNpc.get(o) || {}).gx - (OV.tickNpc.get(mst) || {}).gx) <= 2);
+      if (stu && mst.bubbleT <= 0) { mst.bubble = "Nghe đây: chiêu này phải giữ hơi ở đan điền, ra tay mới có lực!"; mst.bubbleT = 3;
+        stu.bubble = "Đệ tử lĩnh giáo!"; stu.bubbleT = 3; return true; } }
+    return false; }
+  if (roll < 0.62) { if (S5.arg) return false;
+    const pool = near.filter(n => !n.isLeader);
+    if (pool.length >= 2) { const a = pool[0], b = pool.find(o => o !== a && Math.max(Math.abs((OV.tickNpc.get(o) || {}).gx - (OV.tickNpc.get(a) || {}).gx), Math.abs((OV.tickNpc.get(o) || {}).gy - (OV.tickNpc.get(a) || {}).gy)) <= 2);
+      if (b) { S5.arg = { a: a.name, b: b.name, until: OV.tick.total + 12, mediated: false, phase: 0 };
+        const sa = socSt(a), sb = socSt(b); sa.visit = { other: b, until: OV.tick.total + 12 }; sb.visit = { other: a, until: OV.tick.total + 12 };
+        a.bubble = socPick(S5_ARG_LINES); a.bubbleT = 3; return true; } }
+    return false; }
+  if (roll < 0.80) { const pool = near.filter(n => !n.isLeader && !npcIsMaster(n));
+    if (pool.length) { const n = pool[(Math.random() * pool.length) | 0];
+      S5.drunk[n.name] = OV.tick.total + 12; n.bubble = "Hức… rượu ở quán này… ngon! Hức…"; n.bubbleT = 3; return true; }
+    return false; }
+  if (!S5.drop) { const owner = near[(Math.random() * near.length) | 0]; if (!owner) return false;
+    for (let k = 0; k < 8; k++) { const gx = OV.cell.gx + ((Math.random() * 5) | 0) - 2, gy = OV.cell.gy + ((Math.random() * 5) | 0) - 2;
+      if ((gx !== OV.cell.gx || gy !== OV.cell.gy) && !ovBlocked(gx, gy)) {
+        const goldDrop = Math.random() < 0.4;
+        S5.drop = { gx, gy, item: goldDrop ? null : socPick(["Kim Sang Dược", "Bánh Quế Hoa", "Trâm Ngọc"]), gold: goldDrop ? 20 + ((Math.random() * 25) | 0) : 0, owner: owner.name, day: G.day, asked: false };
+        owner.bubble = "Ơ? Túi đồ của ta rơi đâu mất rồi…"; owner.bubbleT = 3; return true; } }
+    return false; }
+  const n = near[(Math.random() * near.length) | 0]; if (!n || n.bubbleT > 0) return false;
+  n.bubble = (PERS_LINES[n.pers] || NPC_LINES)[(Math.random() * 3) | 0]; n.bubbleT = 2.6; return true; }
+function s5DropTick() { const d = S5.drop; if (!d || !OV.cell) return;
+  if (d.day !== G.day) { S5.drop = null; return; }
+  if (OV.cell.gx !== d.gx || OV.cell.gy !== d.gy || d.asked) return;
+  d.asked = true;
+  const owner = s5Npc(d.owner);
+  const what = d.item ? ("1 " + d.item) : (d.gold + " vàng");
+  const ok = s5Panel("🎁 Đồ đánh rơi", "Ngươi bước trúng một túi đồ nhỏ — bên trong có <b>" + what + "</b>. " + (owner ? "Hình như là của <b>" + d.owner + "</b> đánh rơi gần đây." : "") + " Ngươi tính sao?",
+    [ { label: "↩️ Trả lại cho " + d.owner, run: () => { S5.drop = null;
+          if (owner) { G.aff[owner.name] = (G.aff[owner.name] || 0) + 8; fameChange(2, 0);
+            return d.owner + " nhận lại túi đồ, cảm động rối rít: “Đa tạ! Giang hồ hiếm người thật thà như ngươi!” (Thiện cảm với " + d.owner + " +8, Chính danh +2)"; }
+          return "Không tìm thấy chủ nhân — ngươi cất túi đồ vào rương trấn để ai mất thì tới nhận."; } },
+      { label: "🤫 Giữ luôn", run: () => { S5.drop = null;
+          if (d.item) addItem(d.item, 1); else G.gold += d.gold;
+          const witness = s5NearNpcs(3).length > 0;
+          if (witness) { fameChange(0, 3); s5Deed("có người thấy hiệp khách " + CHARS[G.charIdx].name + " nhặt được túi đồ đánh rơi mà không trả — tiếng xấu đồn xa", (typeof curZone !== "undefined" && curZone) ? curZone.name : "");
+            return "Ngươi lặng lẽ cất " + what + " vào túi… nhưng có người đã trông thấy! (Ác danh +3, và việc này sẽ đồn sang vùng khác)"; }
+          return "Ngươi cất " + what + " vào túi. Không ai trông thấy cả."; } } ]);
+  if (!ok) d.asked = false; }
+function s5ArgTick() { const ar = S5.arg; if (!ar) return;
+  const a = s5Npc(ar.a), b = s5Npc(ar.b); if (!a || !b || OV.tick.total > ar.until) { S5.arg = null; return; }
+  if (OV.tick.total % 3 === 0) { const who = ((OV.tick.total / 3) | 0) % 2 === 0 ? a : b;
+    who.bubble = socPick(S5_ARG_LINES); who.bubbleT = 2.6; }
+  if (!ar.mediated && OV.cell) { const da = s5CellDist(a), db = s5CellDist(b);
+    if (Math.min(da, db) <= 1) { ar.mediated = true;
+      const ok = s5Panel("🗣️ Khẩu chiến giữa đường", "<b>" + ar.a + "</b> và <b>" + ar.b + "</b> đang cãi nhau to giữa đường vì chuyện cũ. Dân quanh đó đứng xem, không ai dám can. Ngươi tính sao?",
+        [ { label: "⚖️ Phân xử công bằng (cần Chính danh ≥ 20)", run: () => { S5.arg = null;
+              if ((G.fame || 0) < 20) return "Ngươi chưa đủ danh tiếng — hai người chẳng ai nghe, lại quay sang cãi tiếp. (Cần Chính danh ≥ 20)"; 
+              G.aff[ar.a] = (G.aff[ar.a] || 0) + 4; G.aff[ar.b] = (G.aff[ar.b] || 0) + 4; fameChange(2, 0);
+              return "Ngươi phân xử rành mạch, hai bên nể mặt người có danh tiếng mà bắt tay giảng hòa. (Thiện cảm với cả hai +4, Chính danh +2)"; } },
+          { label: "👉 Nghiêng về " + ar.a, run: () => { S5.arg = null;
+              G.aff[ar.a] = (G.aff[ar.a] || 0) + 6; G.aff[ar.b] = (G.aff[ar.b] || 0) - 4;
+              return ar.a + " hả hê ra mặt, còn " + ar.b + " phẫn nộ bỏ đi. (Thiện cảm: " + ar.a + " +6, " + ar.b + " -4)"; } },
+          { label: "🚶 Bỏ đi, kệ họ", run: () => { S5.arg = null; return "Ngươi lặng lẽ đi tiếp. Sau lưng, tiếng cãi vã vẫn chưa dứt…"; } } ]);
+      if (!ok) ar.mediated = false; } } }
+/* ================= 6) PHẢN ỨNG THEO TRẠNG THÁI NGƯỜI CHƠI ================= */
+function s5ReactTick() { if (!G || !OV.cell || OV.battle) return;
+  const day = G.day;
+  if (G.p.hp < G.p.maxhp * 0.3) { const helpers = s5NearNpcs(4, n => socPers(n) === "Nhân hậu" || socPers(n) === "Trượng nghĩa");
+    if (helpers.length) { const n = helpers[0], key = "aid|" + n.name + "|" + day;
+      if (!S5.react[key]) { S5.react[key] = 1; addItem("Kim Sang Dược", 1); G.aff[n.name] = (G.aff[n.name] || 0) + 2;
+        n.bubble = "Ngươi bị thương nặng quá! Cầm lấy Kim Sang Dược này, uống ngay đi!"; n.bubbleT = 3.4;
+        toast("💊 " + n.name + " lo lắng chạy lại, dúi cho ngươi 1 Kim Sang Dược! (Thiện cảm +2)"); } }
+    else { const near = s5NearNpcs(4); const key = "worry|" + day;
+      if (near.length && !S5.react[key]) { S5.react[key] = 1; near[0].bubble = "Ngươi chảy máu nhiều quá… vào trấn nghỉ đi, đừng cố!"; near[0].bubbleT = 3; } } }
+  const hasGod = (G.learned || []).some(id => ["tb1", "tb2", "tb3", "tb4", "tb5"].includes(id))
+    || (G.gear || []).some(g => ["Đồ Long Đao", "Ỷ Thiên Kiếm", "Huyền Thiết Trọng Kiếm", "Kim Xà Kiếm", "Đả Cẩu Bổng"].includes(g.name))
+    || (G.items["Mảnh Thần Binh"] || 0) > 0;
+  if (hasGod) { const masters = s5NearNpcs(4, n => npcIsMaster(n));
+    if (masters.length) { const n = masters[0], key = "god|" + n.name + "|" + day;
+      if (!S5.react[key]) { S5.react[key] = 1; n.bubble = "Khí tức thần binh trên người ngươi… không tầm thường. Ngươi là người có duyên với binh khí tuyệt thế đấy!"; n.bubbleT = 3.4; } } }
+  if (typeof weather !== "undefined" && weather === "Mưa") { const key = "rain|" + day + "|" + ((OV.tick.today / 30) | 0);
+    if (!S5.react[key]) { const near = s5NearNpcs(5); if (near.length) { S5.react[key] = 1;
+      near[0].bubble = "Mưa to quá! Vào mái hiên trú một lát đi, đi mưa dễ cảm lạnh lắm."; near[0].bubbleT = 3; } } }
+  if (G.wEv && G.wEv.title && G.wEv.state !== "done") { const key = "wev|" + G.wEv.title + "|" + day;
+    if (!S5.react[key]) { const near = s5NearNpcs(5); if (near.length) { S5.react[key] = 1;
+      near[0].bubble = "Ngươi nghe chuyện " + G.wEv.title + " chưa? Cả trấn đang bàn tán đấy!"; near[0].bubbleT = 3; } } } }
+/* ================= NHỊP OV5: tiền xử lý (nới spam) + hậu xử lý ================= */
+function s5PreTick() { if (!G) return;
+  if (S5.level === 3) { for (const [, s] of SOC.st) if (s && s.lastApproach > -900) s.lastApproach -= 1; // mức Nhiều: hồi chiêu bắt chuyện nhanh gấp đôi
+    if (SOC.approaches >= 3 && S5.dayCount < S5_CAPS[3]) SOC.approaches = 2; } // nới trần 3/ngày của OV4 lên 12 ở mức Nhiều
+  else if (S5.level === 2 && SOC.approaches >= 3 && S5.dayCount < S5_CAPS[2]) SOC.approaches = 2; }
+function s5PostTick() { if (!G) return;
+  if (G.day !== S5.lastDay) { S5.lastDay = G.day; S5.dayCount = 0;
+    S5.marks = S5.marks.filter(mk => G.day - mk.day <= 2);
+    if (S5.comp && S5.comp.day !== G.day) s5EndCompanion("hết ngày đồng hành"); }
+  // boss chết ngoài trận (cao thủ hạ...) vẫn thành tiếng đồn
+  const bA = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead), bxA = (typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead);
+  if (S5._boss === true && !bA) s5Deed("Đông Phương Bất Bại đã bại trận — giang hồ chấn động", "Hắc Mộc Nhai");
+  if (S5._bossx === false && bxA) s5Deed("một cao thủ đáng sợ vừa xuất hiện, khí tức khiến chim thú quanh vùng bỏ chạy", "");
+  S5._boss = bA; S5._bossx = bxA;
+  // đồng hành: tăng thiện cảm theo thời gian + hết hạn/bị thương nặng thì tạm biệt
+  if (S5.comp) { const n = s5CompanionNpc();
+    if (!n) S5.comp = null;
+    else if (OV.tick.total - S5.comp.startTick > 170) s5EndCompanion("đã đi cùng đủ lâu, họ còn việc riêng");
+    else if (n.hp < n.maxhp * 0.2) s5EndCompanion("bị thương nặng, phải về dưỡng thương");
+    else if (OV.tick.total - S5.comp.lastAffTick >= 25) { S5.comp.lastAffTick = OV.tick.total;
+      G.aff[n.name] = (G.aff[n.name] || 0) + 1; } }
+  // trà ở tửu lâu: NPC tới quán + người chơi kề bên -> ngồi nói chuyện vài nhịp
+  if (S5.tea) { const n = s5Npc(S5.tea.name);
+    if (!n || OV.tick.total - S5.tea.start > 110) { if (n && OV.tick.total - S5.tea.start > 110) toast("🍵 " + S5.tea.name + " chờ lâu không thấy ngươi tới tửu lâu nên đã về."); S5.tea = null; }
+    else { const s = OV.tickNpc.get(n);
+      if (s && Math.hypot(s.px - n.tavx, s.py - n.tavy) < 90 && s5CellDist(n) <= 1 && OV.tick.total - S5.tea.lastRound >= 5) {
+        S5.tea.lastRound = OV.tick.total; S5.tea.rounds++;
+        n.bubble = S5_TEA_LINES[Math.min(S5.tea.rounds - 1, S5_TEA_LINES.length - 1)]; n.bubbleT = 3.2;
+        if (S5.tea.rounds >= 3) { G.aff[n.name] = (G.aff[n.name] || 0) + 4;
+          toast("🍵 Uống trà với " + n.name + " xong — Thiện cảm +4. Họ còn kể: “" + socRumorText(n) + "”");
+          const st = socSt(n); if (st.visit) st.visit.until = OV.tick.total;
+          S5.tea = null; saveGame(); } } } }
+  s5ArgTick(); s5DropTick();
+  if (OV.tick.total % 5 === 0) s5ReactTick();
+  // lịch ambient theo mức tương tác
+  const gap = S5.level === 3 ? 3 : S5.level === 2 ? 6 : 10;
+  const chance = S5.level === 3 ? 0.65 : S5.level === 2 ? 0.45 : 0.25;
+  if (OV.tick.total - S5.lastAmb >= gap && Math.random() < chance) { if (s5AmbientFire()) { S5.lastAmb = OV.tick.total; S5.counters.ambient++; } } }
+const _s5TickOnce = ovTickOnce;
+ovTickOnce = function () { s5PreTick(); _s5TickOnce(); s5PostTick(); };
+/* ---------- Minimap: dấu bí mật + điểm đồ rơi ---------- */
+const _s5MM = drawMinimap;
+drawMinimap = function () { _s5MM(); if (!G) return;
+  const m = document.getElementById("minimap"); if (!m || m.offsetParent === null) return;
+  const g = m.getContext("2d"), sx = m.width / WORLD_W, sy = m.height / WORLD_H;
+  g.fillStyle = "#c99aff";
+  for (const mk of S5.marks) { g.save(); g.translate(mk.x * sx, mk.y * sy); g.rotate(Math.PI / 4); g.fillRect(-2.4, -2.4, 4.8, 4.8); g.restore(); }
+  if (S5.drop) { const c = ovCenter(S5.drop.gx, S5.drop.gy); g.fillStyle = "#ffd23e";
+    g.beginPath(); g.arc(c.x * sx, c.y * sy, 3, 0, 6.29); g.fill(); } };
+/* ---------- Nhật ký: chứng nhận kết nghĩa + tiếng đồn + đồng hành ---------- */
+const _s5Quest = renderQuestPanel;
+renderQuestPanel = function () { _s5Quest(); const b = document.getElementById("questBox"); if (!b || !G) return;
+  let h = "<h4>🌟 Tri kỷ &amp; tiếng đồn (OV5)</h4>";
+  if (S5.comp) h += "<p>🧭 Đang đồng hành: <b>" + S5.comp.name + "</b> (tới hết ngày " + S5.comp.day + ")</p>";
+  const tris = Object.keys(S5.triki);
+  if (tris.length) for (const nm of tris) h += "<p>🤝 <b>Chứng nhận kết nghĩa:</b> ngươi và " + nm + " — tri kỷ từ ngày " + S5.triki[nm].day + (S5.triki[nm].gift === "bro" ? " (kết nghĩa kim lan: khi họ đồng hành, công lực +8%)" : " (đã truyền thụ biến chiêu/chỉ điểm)") + "</p>";
+  else h += "<p class=\"dim\">Chưa có tri kỷ kết nghĩa. Đưa thiện cảm với 1 cao thủ lên ≥ 60 (Tri kỷ) rồi mở thoại để dự sự kiện cột mốc.</p>";
+  if (S5.deeds.length) { h += "<p><b>🗞️ Tiếng đồn về ngươi đang lan truyền:</b></p>"; for (const d of S5.deeds) h += "<p class=\"dim\">· [" + (d.zone || "khắp nơi") + " — ngày " + d.day + "] " + d.txt + "</p>"; }
+  b.innerHTML += h; };
+/* ---------- Trợ giúp + cài đặt mức tương tác ---------- */
+const _s5Help = renderHelpPanel;
+renderHelpPanel = function () { _s5Help(); const b = document.getElementById("helpBox"); if (!b || b.querySelector(".ov5Help")) return;
+  const d = document.createElement("div"); d.className = "ov5Help";
+  d.innerHTML = "<h4>🧑‍🤝‍🧑 NPC như người thật — tầng 2 (OV5)</h4>"
+    + "<p><b>⚙️ Mức tương tác NPC:</b> <b>" + S5_LVL_NAME[S5.level] + "</b> — điều tiết tần suất NPC bắt chuyện + sự kiện phố thị. "
+    + "<button class=\"btn\" data-s5lvl=\"1\">Ít</button> <button class=\"btn\" data-s5lvl=\"2\">Thường</button> <button class=\"btn\" data-s5lvl=\"3\">Nhiều</button></p>"
+    + "<p><b>Bắt chuyện mới:</b> mời trà ở tửu lâu (đi cùng tới quán thật), rủ tỉ thí, cảnh báo boss phía trước, thương nhân chào mua/bán giá riêng, tiết lộ vị trí rương (ghim ✦ tím trên minimap), NPC bị thương xin thuốc, rủ đồng hành. Mọi cuộc quan trọng đều có <b>2-3 lựa chọn</b> với hậu quả khác nhau.</p>"
+    + "<p><b>Đồng hành:</b> mở thoại chọn [🧭 Rủ đồng hành] (thiện cảm ≥ 40 chắc chắn đồng ý) — họ theo ô thật, <b>vào trận tung chiêu phái thật</b>; người được hộ tống cũng vào trận đánh phụ. Đồng hành tới hết ngày; đi cùng và thắng trận cùng nhau tăng thiện cảm.</p>"
+    + "<p><b>Chủ đề mới trong thoại:</b> [📖 Kể chuyện đời] tích nguyên tác của cao thủ (mở dần theo thiện cảm) · [🎓 Xin chỉ giáo] tốn 1 thể lực, nhận EXP/chỉ điểm (mỗi người 1 lần/ngày) · [👥 Hỏi thăm người quen] vị trí thật của NPC khác.</p>"
+    + "<p><b>Quà có gu:</b> mỗi NPC có món thích và món ghét (hiện ngay đầu hộp thoại). Thích +14 thiện cảm, thường +6, ghét +1 (người Kiêu ngạo/Gian xảo: -2). Thang quan hệ: Xa lạ → Quen biết (10) → Thân thiết (30) → <b>Tri kỷ (60)</b>: cao thủ đạt Tri kỷ mở sự kiện 1 lần — Kết nghĩa (đồng hành cùng họ: công lực +8%, ghi Nhật ký) hoặc xin truyền Biến Chiêu.</p>"
+    + "<p><b>Phố thị &amp; tiếng đồn:</b> rao hàng, sư phụ dạy đệ tử, khẩu chiến (lại gần can hòa), người say, đồ đánh rơi (bước lên nhặt: trả lại hay giữ luôn). Việc lớn của ngươi (hạ boss, giúp nhiều người, kết nghĩa, việc xấu bị thấy) <b>lan sang vùng khác</b> — NPC ở trấn khác sẽ nhắc lại khi gặp.</p>"
+    + "<p class=\"dim\">Thống kê phiên này: bắt chuyện " + S5.counters.approach + " · sự kiện phố thị " + S5.counters.ambient + " · lựa chọn đã quyết " + S5.counters.choice + " · quà đã tặng " + S5.counters.gift + " · lượt đồng hành " + S5.counters.comp + ".</p>";
+  b.appendChild(d);
+  d.querySelectorAll("[data-s5lvl]").forEach(btn => btn.onclick = () => { S5.level = parseInt(btn.dataset.s5lvl, 10) || 3;
+    toast("⚙️ Mức tương tác NPC: " + S5_LVL_NAME[S5.level]); saveGame(); renderHelpPanel(); }); };
+/* ---------- Save / nạp: field riêng "ov5" ---------- */
+const _s5Save = saveGame;
+saveGame = function () { _s5Save();
+  try { if (!G) return; const raw = localStorage.getItem(SAVE_KEY); if (!raw) return; const j = JSON.parse(raw);
+    j.ov5 = { level: S5.level, comp: S5.comp, deeds: S5.deeds, deedSeen: S5.deedSeen, triki: S5.triki, marks: S5.marks, counters: S5.counters, helpDeed: S5._helpDeed };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(j)); } catch (e) {} };
+const _s5Start = startGame;
+startGame = function (ci, fs) {
+  S5.comp = null; S5.deeds = []; S5.deedSeen = {}; S5.triki = {}; S5.marks = []; S5.drop = null; S5.tea = null; S5.arg = null; S5.drunk = {}; S5.trade = {}; S5.react = {}; S5.dayCount = 0;
+  _s5Start(ci, fs);
+  if (fs && G) { try { const j = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+      if (j && j.ov5) { S5.level = j.ov5.level || 3; S5.comp = j.ov5.comp || null; S5.deeds = Array.isArray(j.ov5.deeds) ? j.ov5.deeds : [];
+        S5.deedSeen = j.ov5.deedSeen || {}; S5.triki = j.ov5.triki || {}; S5.marks = Array.isArray(j.ov5.marks) ? j.ov5.marks : [];
+        S5.counters = Object.assign(S5.counters, j.ov5.counters || {}); S5._helpDeed = j.ov5.helpDeed || 0;
+        if (S5.comp && S5.comp.day !== G.day) S5.comp = null; } } catch (e) {} }
+  S5.lastDay = G ? G.day : 0;
+  S5._boss = (typeof BOSS !== "undefined" && BOSS && !BOSS.dead); S5._bossx = (typeof BOSSX !== "undefined" && BOSSX && !BOSSX.dead); };
+/* ---------- API kiểm chứng cho probe ---------- */
+if (window.__OV) { window.__OV.s5 = {
+    state: S5, setLevel: lv => { S5.level = lv; return S5.level; },
+    tier: name => { const n = s5Npc(name); return n ? s5Tier(s5Aff(n)) : null; },
+    likes: name => { const n = s5Npc(name); return n ? s5Likes(n) : null; },
+    dislike: name => { const n = s5Npc(name); return n ? s5Dislike(n) : null; },
+    gift: (name, item) => { const n = s5Npc(name); return n ? s5Gift(n, item) : null; },
+    invite: name => { const n = s5Npc(name); return n ? s5Invite(n) : null; },
+    endCompanion: () => s5EndCompanion("probe"),
+    companion: () => S5.comp,
+    story: name => { const n = s5Npc(name); return n ? s5StoryText(n) : null; },
+    teach: name => { const n = s5Npc(name); return n ? s5TeachText(n) : null; },
+    ask: name => { const n = s5Npc(name); return n ? s5AskText(n) : null; },
+    deed: (txt, zone) => s5Deed(txt, zone),
+    forceAmbient: () => { const ok = s5AmbientFire(); if (ok) S5.counters.ambient++; return ok; },
+    counters: () => Object.assign({}, S5.counters),
+    triki: (name, kind) => { const n = s5Npc(name); if (n) s5Triki(n, kind || "bro"); return S5.triki[name] || null; },
+    reveal: name => { const n = s5Npc(name); return n ? s5RevealSecret(n) : null; } };
+  window.__OV.version = "ov5-living-npc"; }
+
+</script>
+<script>
+"use strict";
 /* VÁ THANH NÚT HỆ THỐNG: bánh xe chuột dọc -> cuộn ngang thanh nút (bản chạm đã có pan-x ở CSS);
    kèm tự kiểm tra khi vào game: nếu thanh còn cuộn được mà người chơi chưa từng cuộn,
    nhích nhẹ 48px rồi trả về để ra hiệu "thanh này vuốt ngang được" (chỉ 1 lần/phiên). */
