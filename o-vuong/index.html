@@ -1980,7 +1980,7 @@ function showEvent(forceId){ const ev=forceId==="win"?null:EVENTS[(Math.random()
 /* ================= RENDER ================= */
 const cv=$("cv"), ctx=cv.getContext("2d");
 const atlasImgs=SHEETS.map((_,i)=>{ const im=new Image(); im.src=`assets/atlas${i+1}.png`; return im; });
-let VW=0,VH=0,DPR=1;
+let VW=0,VH=0,DPR=1,VSCALE=1; /* VSCALE: hệ số phóng THẾ GIỚI — phone (pointer:coarse) = 0.8: mỗi ô 40px chỉ còn 32px trên màn hình, thấy rộng hơn 1/0,8² ≈ 1,56 lần diện tích; desktop = 1 (giữ nguyên). VW/VH là kích thước THẾ GIỚI nhìn thấy (CSS px / VSCALE); canvas backing vẫn theo CSS px thật. */
 let _lvw=0,_lvh=0,_lorient="";
 function applyViewportSize(force){ const vv=window.visualViewport;
   /* Kích thước theo visualViewport = phần màn hình THẬT đang nhìn thấy. innerHeight trên iOS Safari /
@@ -1995,7 +1995,9 @@ function applyViewportSize(force){ const vv=window.visualViewport;
   /* Phone (pointer:coarse): giới hạn DPR 1.5 — canvas DPR 2-3 trên phone to gấp ~2-4 lần điểm ảnh,
      GPU điện thoại đuối -> giật + có lúc bị thu hồi bề mặt vẽ thành ĐEN THUI. 1.5 vẫn nét ở cỡ màn hình này. */
   const coarse=!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
-  DPR=Math.min(coarse?1.5:2,window.devicePixelRatio||1); VW=w; VH=h; cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); }
+  DPR=Math.min(coarse?1.5:2,window.devicePixelRatio||1);
+  /* Thu nhỏ thế giới trên phone để nhìn bao quát: VSCALE 0.8 -> tầm nhìn 390x844 từ ~9,8x21,1 ô thành ~12,2x26,4 ô (ngang 844x390: 21,1x9,8 -> 26,4x12,2). Mọi culling/camera vốn so theo VW/VH + cam (tọa độ thế giới) nên tự khớp; handler chạm->ô dùng tỉ lệ VW/r.width nên tọa độ chạm vẫn chính xác; bán kính sương mù OV_VIEW_R là số thế giới — KHÔNG đổi. */
+  VSCALE=(coarse||Math.min(w,h)<=480)?0.8:1; VW=Math.round(w/VSCALE); VH=Math.round(h/VSCALE); cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); }
 function resize(){ applyViewportSize(true); }
 window.addEventListener("resize",()=>applyViewportSize(false));
 /* Xoay máy: orientationchange + visualViewport bắt được cả webview Messenger/iOS nơi resize đến trễ hoặc không đến; gọi lại sau 380ms khi kích thước đã ổn định */
@@ -2012,7 +2014,7 @@ const MV={vx:0,vy:0,stam:100,stamLock:false,sprinting:false,phase:0,bobA:0,bobY:
 const AFTER=[];
 function pushAfter(p){ AFTER.push({x:p.x,y:p.y,face:p.face,ci:G.charIdx,life:0.3}); if(AFTER.length>12) AFTER.shift(); }
 function tickAfter(dt){ for(let i=AFTER.length-1;i>=0;i--){ AFTER[i].life-=dt; if(AFTER[i].life<=0) AFTER.splice(i,1); } }
-function drawAfter(){ for(const a of AFTER){ ctx.globalAlpha=Math.max(0,a.life/0.3)*0.32; drawSprite(a.ci,a.x-cam.x,a.y-cam.y,54,a.face<0); } ctx.globalAlpha=1; }
+function drawAfter(){ for(const a of AFTER){ ctx.globalAlpha=Math.max(0,a.life/0.3)*0.32; drawSprite(a.ci,a.x-cam.x,a.y-cam.y,46,a.face<0); } ctx.globalAlpha=1; }
 function entBob(e){ let h=MV.wm.get(e); if(!h){ h={lx:e.x,ly:e.y,mv:0,ph:Math.random()*6.28}; MV.wm.set(e,h); }
   const moved=Math.hypot(e.x-h.lx,e.y-h.ly); h.lx=e.x; h.ly=e.y;
   if(moved>0.04&&moved<80){ h.mv=Math.min(1,h.mv+0.25); h.ph+=moved*0.16; } else h.mv=Math.max(0,h.mv-0.1);
@@ -2020,13 +2022,20 @@ function entBob(e){ let h=MV.wm.get(e); if(!h){ h={lx:e.x,ly:e.y,mv:0,ph:Math.ra
 function shake(n){ shakeT=Math.max(shakeT,n); }
 let toastT=0;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.opacity=1; toastT=3.2; }
+/* Chuẩn hoá chiều cao THẬT của sprite starter về chuẩn atlas: đo từ file ảnh (alpha>100) —
+   nhân vật chiếm ~92,4% chiều cao ô atlas 160px, còn ảnh starter 256px mỗi người một tỉ lệ
+   (0,75–0,94) do khoảng trống trên đầu khác nhau. STARTER_HK[id] = 0,924 / tỉ lệ của người đó:
+   vẽ khung to ra bấy nhiêu (neo chân ở đáy như cũ) thì chiều cao NHÌN THẤY của người chơi
+   = size × 0,924 — bằng đúng chuẩn NPC atlas ở cùng size. Không sửa file ảnh gốc. */
+const STARTER_HK={2:1.116,5:1.029,6:1.020,7:0.989,8:0.994,12:0.985,13:0.985,14:1.046,15:1.225,16:0.989,18:0.985,19:1.007};
 function drawSprite(ci,x,y,size,flip,bobY,tilt){
   const c=CHARS[ci]; if(!c) return;
   ctx.save();
   if(tilt){ ctx.translate(x,y); ctx.rotate(tilt); ctx.translate(-x,-y); }
   if(flip){ ctx.translate(x,0); ctx.scale(-1,1); x=0; }
   if(c.stId){ const sim=starterImgs[c.stId]; if(!sim||!sim.complete||!sim.naturalWidth){ ctx.restore(); return; }
-    ctx.drawImage(sim,0,0,sim.naturalWidth,sim.naturalHeight,x-size/2,y-size+(bobY||0),size,size); ctx.restore(); return; }
+    const S=size*(STARTER_HK[c.stId]||1);
+    ctx.drawImage(sim,0,0,sim.naturalWidth,sim.naturalHeight,x-S/2,y-S+(bobY||0),S,S); ctx.restore(); return; }
   const im=atlasImgs[c.sheet]; if(!im.complete){ ctx.restore(); return; }
   ctx.drawImage(im,c.col*160,c.row*160,160,160,x-size/2,y-size+(bobY||0),size,size); ctx.restore(); }
 function drawShadow(x,y,w){ ctx.fillStyle="rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(x,y,w,w*0.32,0,0,6.29); ctx.fill(); }
@@ -2356,7 +2365,7 @@ function drawEnemyBody(e,sx,sy,now){ now=now||0;
   ctx.fillText((e.elite?"⭐ ":"")+t.n,sx,sy-(topY+5)*s); }
 function render(now){
   if(window.__inCave&&__inCave()){ __caveRender(now); return; }
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.setTransform(DPR*VSCALE,0,0,DPR*VSCALE,0,0);
   const p=G.p, z=curZone||zoneAt(p.x,p.y);
   const shx=shakeT>0?(Math.random()-0.5)*shakeT*2:0, shy=shakeT>0?(Math.random()-0.5)*shakeT*2:0;
   cam.x+=shx; cam.y+=shy; // cam nền (mượt, deadzone+lerp) do update() duy trì; render chỉ cộng rung rồi trừ lại ở cuối
@@ -2473,11 +2482,11 @@ function render(now){
     ctx.strokeStyle="#c23b2e"; ctx.beginPath(); ctx.moveTo(pr.x-cam.x,pr.y-cam.y); ctx.lineTo(pr.x-cam.x-pr.vx*0.03,pr.y-cam.y-pr.vy*0.03); ctx.stroke(); });
   drawFX(); // hiệu ứng chiêu thức: rồng khí / Phật chưởng / vệt chém / tia / vòng sóng
   // người chơi
-  { const sx=p.x-cam.x, sy=p.y-cam.y; drawShadow(sx,sy,15*(1+MV.bobY*0.025));
+  { const sx=p.x-cam.x, sy=p.y-cam.y; drawShadow(sx,sy,14*(1+MV.bobY*0.025));
     drawAfter();
-    if(p.dashT>0){ ctx.globalAlpha=0.35; drawSprite(G.charIdx,sx-p.face*22,sy,54,p.face<0); ctx.globalAlpha=1; }
+    if(p.dashT>0){ ctx.globalAlpha=0.35; drawSprite(G.charIdx,sx-p.face*22,sy,46,p.face<0); ctx.globalAlpha=1; }
     if(p.hurtT>0&&((now/60)|0)%2===0) ctx.globalAlpha=0.55;
-    drawSprite(G.charIdx,sx,sy,54,p.face<0,MV.bobY,MV.tilt); ctx.globalAlpha=1;
+    drawSprite(G.charIdx,sx,sy,46,p.face<0,MV.bobY,MV.tilt); ctx.globalAlpha=1;
     /* vệt chém đòn thường: đã chuyển sang ảnh vfx-slash sinh trong doAttack (drawFX), bỏ cung tròn vẽ tay */
     ctx.fillStyle="#fff"; ctx.font="bold 11.5px 'Be Vietnam Pro'"; ctx.textAlign="center";
     ctx.shadowColor="#000"; ctx.shadowBlur=4;
@@ -4565,7 +4574,7 @@ window.__caveUpdate=function(dt,now){ const p=G.p; G.time+=dt;
   tickFX(dt);
   if(toastT>0){ toastT-=dt; if(toastT<=0) $("toast").style.opacity=0; }
   updateHud(); };
-window.__caveRender=function(now){ ctx.setTransform(DPR,0,0,DPR,0,0); const p=G.p, th=CAVE_THEMES[CAVE.def.theme];
+window.__caveRender=function(now){ ctx.setTransform(DPR*VSCALE,0,0,DPR*VSCALE,0,0); const p=G.p, th=CAVE_THEMES[CAVE.def.theme];
   cam.x=Math.max(0,Math.min(CAVE_W-VW,p.x-VW/2)); cam.y=Math.max(0,Math.min(CAVE_H-VH,p.y-VH/2));
   ctx.fillStyle=th.floor; ctx.fillRect(0,0,VW,VH);
   ctx.fillStyle="rgba(255,255,255,.05)"; const rnd=seededRand(hash(CAVE.def.id));
@@ -4588,10 +4597,10 @@ window.__caveRender=function(now){ ctx.setTransform(DPR,0,0,DPR,0,0); const p=G.
     ctx.fillStyle="#ff9d8a"; ctx.font="bold 12px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4; ctx.fillText(b.name,sx,sy-96); ctx.shadowBlur=0; }
   PROJS.forEach(pr=>{ ctx.fillStyle="#e8e8f2"; ctx.beginPath(); ctx.arc(pr.x-cam.x,pr.y-cam.y,3.4,0,6.29); ctx.fill(); });
   drawFX();
-  { const sx=p.x-cam.x, sy=p.y-cam.y; drawShadow(sx,sy,15*(1+MV.bobY*0.025));
+  { const sx=p.x-cam.x, sy=p.y-cam.y; drawShadow(sx,sy,14*(1+MV.bobY*0.025));
     drawAfter();
     if(p.hurtT>0&&((now/60)|0)%2===0) ctx.globalAlpha=0.55;
-    drawSprite(G.charIdx,sx,sy,54,p.face<0,MV.bobY,MV.tilt); ctx.globalAlpha=1;
+    drawSprite(G.charIdx,sx,sy,46,p.face<0,MV.bobY,MV.tilt); ctx.globalAlpha=1;
     /* vệt chém đòn thường trong hang: dùng chung ảnh vfx-slash từ doAttack, bỏ cung tròn vẽ tay */
     if(G.buffs.reflect>0){ const pu=1+Math.sin(now/220)*0.05; ctx.strokeStyle="rgba(127,209,242,.78)"; ctx.lineWidth=2.4;
       ctx.beginPath(); ctx.arc(sx,sy-24,35*pu,0,6.29); ctx.stroke(); }
@@ -5685,7 +5694,7 @@ function ovRenderBattle() {
   const mk = (u) => {
     const pct = Math.max(0, Math.round(u.hp / u.maxhp * 100));
     const spr = u.ci !== null && u.ci !== undefined
-      ? `<div class="spr" style="${portStyle(CHARS[u.ci], 78)};animation-delay:${(u.uid % 5) * 0.23}s"></div>`
+      ? `<div class="spr" style="${portStyle(CHARS[u.ci], 78)}${CHARS[u.ci] && CHARS[u.ci].stId ? ";background-size:" + ((STARTER_HK[CHARS[u.ci].stId] || 1) * 100).toFixed(1) + "% " + ((STARTER_HK[CHARS[u.ci].stId] || 1) * 100).toFixed(1) + "%" : ""};animation-delay:${(u.uid % 5) * 0.23}s"></div>`
       : `<div class="medal" style="border-color:${u.color || "#888"};animation-delay:${(u.uid % 5) * 0.23}s">${u.icon || "👹"}</div>`;
     const mp = u.isPlayer ? `<div class="bar mp"><i style="width:${Math.max(0, G.p.mp / G.p.maxmp * 100)}%"></i></div>` : "";
     const st = [u.stun > 0 ? "💫 Choáng" : "", u.dot > 0 ? "☠️ Độc" : "", B.target === u ? "🎯" : ""].filter(Boolean).join(" ");
