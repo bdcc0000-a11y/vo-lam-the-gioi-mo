@@ -54,6 +54,21 @@ h1,h2,h3{font-family:"Noto Serif",serif;margin:0}
 .card .nm{font-size:11.5px;font-weight:700;line-height:1.25;margin-top:5px;min-height:29px}
 .card .fc{font-size:10px;color:var(--dim)}
 .countNote{color:var(--dim);font-size:13px;margin:8px 2px}
+/* ---------- NHÂN VẬT MỞ MÀN MỚI (20 thẻ) + CHỈ SỐ ---------- */
+.card .cardImg{width:100%;height:auto;display:block;border-radius:7px;border:1px solid #000}
+.detail .cardImgBig{width:min(210px,70vw);height:auto;display:block;margin:0 auto;border:3px solid var(--gold);border-radius:10px}
+.sbar{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:5px}
+.sbar .sl2{width:97px;color:var(--dim);flex:none;white-space:nowrap}
+.sbar .sb{flex:1;height:9px;background:#120b06;border:1px solid #000;border-radius:5px;overflow:hidden}
+.sbar .sb i{display:block;height:100%;background:linear-gradient(90deg,#8a5a1e,#e0aa4e)}
+.sbar b{color:var(--gold2);width:20px;text-align:right;flex:none}
+.aptRow{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.aptChip{font-size:11.5px;background:#1c1109;border:1px solid #5d421f;border-radius:6px;padding:3px 7px}
+.aptChip b{font-weight:800}
+.gS{color:#ffd23e}.gA{color:#7fd1f2}.gB{color:#9fe08a}.gC{color:#d89a6a}
+#statBtn.pulse{animation:statPulse 1.1s ease-in-out infinite}
+@keyframes statPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.65)}}
+.statPickBtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 
 /* ---------- GAME SCREEN ---------- */
 #gameScreen{position:fixed;inset:0;background:#000;overflow:hidden}
@@ -290,11 +305,11 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
     <div class="selHead">
       <div>
         <h1>Võ Lâm — Thế Giới Mở 2.5D</h1>
-        <p>Chọn một trong 120 hiệp khách từ 6 tấm thẻ nhân vật để bắt đầu hành trình: khám phá <b>30 vùng đất</b> — thế giới 14.172 × 11.810, rộng gấp đôi diện tích bản trước (cùng 12 hang động/bí cảnh), luyện võ, kết giao NPC, làm nhiệm vụ và quyết chiến Đông Phương Bất Bại.</p>
+        <p>Chọn <b>1 trong 20 nhân vật mở màn mới</b> để bắt đầu hành trình — mỗi người có <b>7 chỉ số riêng</b> (Sức Mạnh · Thân Pháp · Nội Lực · Thể Phách · Trí Tuệ · Giao Tiếp · Phúc Duyên), <b>tư chất 6 hệ võ học</b> (hạng C/B/A/S), tính cách và thiên phú khác nhau, ăn thật vào gameplay: tư chất quyết định sát thương & tốc độ học theo hệ chiêu, Giao Tiếp quyết định thiện cảm/mặc cả/thưởng ủy thác, Phúc Duyên quyết định chí mạng & rơi đồ. 120 cao thủ võ lâm vẫn sống trong thế giới làm NPC như cũ. Khám phá <b>30 vùng đất</b> — thế giới 14.172 × 11.810, 12 hang động/bí cảnh, luyện võ, kết giao NPC, làm nhiệm vụ và quyết chiến Đông Phương Bất Bại.</p>
         <p style="margin-top:6px">🌏 <b>Bản mở rộng Đại Giang Hồ:</b> 30 vùng · 12 hang động &amp; bí cảnh · 12 môn phái · sự kiện thế giới theo lịch · ngựa &amp; xa phu &amp; thuyền · lập phái riêng · thần binh · linh thú · thành tựu &amp; danh hiệu.</p><p style="margin-top:6px">🏯 <b>Mới:</b> cả 12 môn phái đều có <b>tổng đàn riêng</b> to đẹp tại vùng trụ sở — sơn môn gắn biển tên phái, thần đạo lát đá dẫn lên đại điện mái màu riêng trên nền cao, lư hương giữa sân, đệ tử xếp hàng luyện công; chưởng môn &amp; trưởng lão đứng trước đại điện, tới cổng bấm <b>E</b> để mở panel Môn Phái.</p><p style="margin-top:6px">🔗 <b>Võ học nâng cấp:</b> Liên Chiêu nay lưu <b>3 bộ chuỗi</b> — chuỗi <b>thuần phái</b> (3 chiêu cùng phái) nổ <b>Tuyệt Học Hợp Kích 260%</b> mang tên riêng từng phái, trình diễn 3 giai đoạn tụ khí → bùng nổ → sóng xung kích. <b>Biến Chiêu</b> khoác <b>hào quang nguyên tố</b> (🔥 Hỏa · ❄️ Băng · ☠️ Độc · ⚡ Lôi · 🌑 Ám · ✨ Quang) phủ lên ảnh chiêu — xem &amp; xếp chuỗi trong panel Võ Học (V).</p><p style="margin-top:6px">✨ Đã có đủ 8 phase: NPC sống theo lịch trình · 8 môn phái &amp; 32+ chiêu võ học · Chương 2 nhiều kết thúc &amp; kỳ ngộ · tình duyên, hôn nhân, nhà cửa · 6 nghề &amp; kinh tế liên vùng · <b>con cái, gia tộc &amp; truyền thừa</b> · màn tổng kết Truyền Kỳ.</p>
       </div>
       <div class="selTools">
-        <input id="searchBox" type="search" placeholder="Tìm hiệp khách, môn phái…" aria-label="Tìm nhân vật" />
+        <input id="searchBox" type="search" placeholder="Tìm nhân vật mở màn…" aria-label="Tìm nhân vật" />
         <button class="btn ghost hidden" id="continueBtn">▶ Chơi tiếp</button>
       </div>
     </div>
@@ -346,6 +361,7 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
   <div id="bagBox" class="hidden"></div>
   <div id="sectBox" class="panelBox hidden"></div>
   <div id="skillBox" class="panelBox hidden"></div>
+  <div id="statBox" class="panelBox hidden"></div>
   <div id="questBox" class="panelBox hidden"></div>
   <div id="jobBox" class="panelBox hidden"></div>
   <div id="shopBox" class="panelBox hidden"></div>
@@ -365,6 +381,7 @@ body.inGame{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;over
   <div class="hud" id="sysBtns">
     <button class="btn ghost" id="sectBtn">🏯 Môn phái (P)</button>
     <button class="btn ghost" id="skillBtn">📖 Võ học (V)</button>
+    <button class="btn ghost" id="statBtn">📊 Chỉ số</button>
     <button class="btn ghost" id="questBtn">📜 Nhật ký (Q)</button>
     <button class="btn ghost" id="jobBtn">🛠️ Nghề (N)</button>
     <button class="btn ghost" id="familyBtn">👨‍👩‍👧 Gia đình (G)</button>
@@ -450,6 +467,7 @@ CHARS.forEach(c=>{ if(TIER_S.includes(c.name)){ c.hp=150; c.atk=27; c.def=17; c.
   else if(TIER_A.includes(c.name)){ c.hp=Math.max(c.hp,128); c.atk=Math.max(c.atk,23); c.def=Math.max(c.def,14); }
   else if(TIER_C.includes(c.name)){ c.hp=Math.min(c.hp,86); c.atk=Math.min(c.atk,12); c.def=Math.min(c.def,7); } });
 function portStyle(c,size){ // CSS background cho portrait từ atlas
+  if(c&&c.stId) return `background-image:url(assets/starters/starter-${String(c.stId).padStart(2,"0")}.png);background-size:contain;background-position:center bottom;image-rendering:auto`;
   return `background-image:url(assets/atlas${c.sheet+1}.png);background-size:500% 400%;background-position:${c.col*25}% ${c.row*33.333}%`;
 }
 function seededRand(seed){let s=seed>>>0||1;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
@@ -462,32 +480,123 @@ const $=id=>document.getElementById(id);
    vì onclick inline bị chặn trong khung nhúng nên nút Đóng bấm không có tác dụng. */
 document.addEventListener("click",e=>{ const b=e.target&&e.target.closest?e.target.closest("[data-close]"):null;
   if(!b) return; const t=document.getElementById(b.getAttribute("data-close")); if(t) t.classList.add("hidden"); });
-let selIdx=0;
+let selIdx=1; // id nhân vật mở màn đang chọn (1..20)
+/* ================= NHÂN VẬT MỞ MÀN MỚI — 20 người (dữ liệu: data:application/json;base64,eyJub3RlIjoiMjAgbmjDom4gduG6rXQgbeG7nyBtw6BuIG3hu5tpIChj4bqvdCB04burIOG6o25oIFRJTkEgZ+G7rWkgMjAyNi0xMS0yNikuIENo4buJIHPhu5EgMS0xMDogc209U+G7qWMgTeG6oW5oLCB0cD1UaMOibiBQaMOhcCwgbmw9TuG7mWkgTOG7sWMsIHRwaD1UaOG7gyBQaMOhY2gsIHR0PVRyw60gVHXhu4csIGd0PUdpYW8gVGnhur9wLCBwZD1QaMO6YyBEdXnDqm4uIFTGsCBjaOG6pXQgQy9CL0EvUyBjaG8gNiBo4buHOiBjaHVvbmc9UXV54buBbiBDaMaw4bufbmcsIGtpZW09S2nhur9tIFBow6FwLCBkYW89xJBhbyBQaMOhcCwgY2hpPUNo4buJIFBow6FwLCBhbT3Dgm0gQ8O0bmcsIG5vaT1O4buZaSBDw7RuZy4iLCJzdGFydGVycyI6W3siYXB0Ijp7ImFtIjoiUyIsImNoaSI6IkIiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQiJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0wMS5wbmciLCJpZCI6MSwibmFtZSI6IlPGoW4gVMO5bmciLCJwZXJzb25hbGl0eSI6Ik5nw7RpIHNhbyB04buxIHRpbiIsInNwcml0ZSI6InN0YXJ0ZXItMDEucG5nIiwic3RhdHMiOnsiZ3QiOjEwLCJubCI6NiwicGQiOjgsInNtIjo0LCJ0cCI6NywidHBoIjo1LCJ0dCI6N30sInRyYWl0IjoiR2lhbyB0aeG6v3AgYuG6rWMgdGjhuqd5OiB0aGnhu4duIGPhuqNtIHTEg25nIG5oYW5oLCBt4bq3YyBj4bqjIGdp4buPaSJ9LHsiYXB0Ijp7ImFtIjoiUyIsImNoaSI6IkIiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQSJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0wMi5wbmciLCJpZCI6MiwibmFtZSI6IlTDuW5nIETGsMahbmciLCJwZXJzb25hbGl0eSI6IsSQYW0gbcOqIGNow6F5IGLhu49uZyIsInNwcml0ZSI6InN0YXJ0ZXItMDIucG5nIiwic3RhdHMiOnsiZ3QiOjcsIm5sIjo5LCJwZCI6NSwic20iOjUsInRwIjo0LCJ0cGgiOjYsInR0Ijo3fSwidHJhaXQiOiJHaeG7jW5nIGNhIG7hu5lpIGzhu7FjOiBjaGnDqnUgw4JtIEPDtG5nIGPhu7FjIG3huqFuaCJ9LHsiYXB0Ijp7ImFtIjoiQSIsImNoaSI6IkIiLCJjaHVvbmciOiJDIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQiJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0wMy5wbmciLCJpZCI6MywibmFtZSI6Ik3hu7kgQ2hpIiwicGVyc29uYWxpdHkiOiJE4buLdSBkw6BuZyBjaMOibiBjaOG6pXQiLCJzcHJpdGUiOiJzdGFydGVyLTAzLnBuZyIsInN0YXRzIjp7Imd0Ijo4LCJubCI6NiwicGQiOjcsInNtIjozLCJ0cCI6NSwidHBoIjo0LCJ0dCI6Nn0sInRyYWl0IjoiQWkgY8WpbmcgcXXDvTogdGhp4buHbiBj4bqjbSB24bubaSBOUEMgbmjDom4gaOG6rXUgdMSDbmcgZ+G6pXAgcsaw4buhaSJ9LHsiYXB0Ijp7ImFtIjoiQiIsImNoaSI6IkIiLCJjaHVvbmciOiJBIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiUyJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0wNC5wbmciLCJpZCI6NCwibmFtZSI6IlRow61jaCBDaMOibiBRdWFuZyIsInBlcnNvbmFsaXR5IjoixJBp4buBbSDEkeG6oW0gdGh1eeG6v3QgcGjDoXAiLCJzcHJpdGUiOiJzdGFydGVyLTA0LnBuZyIsInN0YXRzIjp7Imd0Ijo4LCJubCI6MTAsInBkIjo3LCJzbSI6MywidHAiOjMsInRwaCI6NSwidHQiOjl9LCJ0cmFpdCI6Ik7hu5lpIGPDtG5nIHRow6JtIGjhuq11LCB0aHV54bq/dCBwaOG7pWMgTlBDIGLhurFuZyBs4budaSBs4bq9In0seyJhcHQiOnsiYW0iOiJDIiwiY2hpIjoiQSIsImNodW9uZyI6IkIiLCJkYW8iOiJDIiwia2llbSI6IkIiLCJub2kiOiJCIn0sImNhcmQiOiJjYXJkcy9zdGFydGVyLTA1LnBuZyIsImlkIjo1LCJuYW1lIjoiTGluaCAxNCIsInBlcnNvbmFsaXR5IjoiTMOpbSBs4buJbmgga2jDsyDEkW/DoW4iLCJzcHJpdGUiOiJzdGFydGVyLTA1LnBuZyIsInN0YXRzIjp7Imd0Ijo2LCJubCI6NSwicGQiOjksInNtIjo0LCJ0cCI6OCwidHBoIjo0LCJ0dCI6OH0sInRyYWl0IjoiUGjDumMgZHV5w6puIGNhbzogaGF5IGfhurdwIG1heSwgbsOpIMSRw7JuIGtow6lvIn0seyJhcHQiOnsiYW0iOiJCIiwiY2hpIjoiQiIsImNodW9uZyI6IkEiLCJkYW8iOiJCIiwia2llbSI6IkMiLCJub2kiOiJDIn0sImNhcmQiOiJjYXJkcy9zdGFydGVyLTA2LnBuZyIsImlkIjo2LCJuYW1lIjoiUGjGsMahbmcgSOG6sW5nIiwicGVyc29uYWxpdHkiOiJUaOG6s25nIHRo4bqvbiBi4buRYyBs4butYSIsInNwcml0ZSI6InN0YXJ0ZXItMDYucG5nIiwic3RhdHMiOnsiZ3QiOjksIm5sIjo1LCJwZCI6NSwic20iOjcsInRwIjo0LCJ0cGgiOjYsInR0Ijo3fSwidHJhaXQiOiLEgm4gbsOzaSDEkWFuaCB0aMOpcDogxJFlIG7huqF0IHbDoCBt4bq3YyBj4bqjIMSR4buBdSBoaeG7h3UgcXXhuqMifSx7ImFwdCI6eyJhbSI6IkIiLCJjaGkiOiJCIiwiY2h1b25nIjoiQyIsImRhbyI6IkMiLCJraWVtIjoiQiIsIm5vaSI6IkIifSwiY2FyZCI6ImNhcmRzL3N0YXJ0ZXItMDcucG5nIiwiaWQiOjcsIm5hbWUiOiJNYWkgUGjGsMahbmcgVGjDunkiLCJwZXJzb25hbGl0eSI6IlNhbmcgdHLhu41uZyDEkWnhu4FtIHTEqW5oIiwic3ByaXRlIjoic3RhcnRlci0wNy5wbmciLCJzdGF0cyI6eyJndCI6OSwibmwiOjUsInBkIjo4LCJzbSI6MywidHAiOjYsInRwaCI6NSwidHQiOjd9LCJ0cmFpdCI6Iktow60gY2jhuqV0IGhvYSBo4bqtdTogTlBDIGzhu4tjaCBz4buxIG7hu4MgdHLhu41uZywgcXXDoCB04bq3bmcgaGnhu4d1IHF14bqjIGjGoW4ifSx7ImFwdCI6eyJhbSI6IlMiLCJjaGkiOiJCIiwiY2h1b25nIjoiQiIsImRhbyI6IkMiLCJraWVtIjoiQyIsIm5vaSI6IkIifSwiY2FyZCI6ImNhcmRzL3N0YXJ0ZXItMDgucG5nIiwiaWQiOjgsIm5hbWUiOiJN4bu5IFTDom0iLCJwZXJzb25hbGl0eSI6Ik5ow6JuIGjhuq11IHF14buRYyBkw6JuIiwic3ByaXRlIjoic3RhcnRlci0wOC5wbmciLCJzdGF0cyI6eyJndCI6OSwibmwiOjcsInBkIjo4LCJzbSI6NCwidHAiOjUsInRwaCI6NSwidHQiOjZ9LCJ0cmFpdCI6IsSQxrDhu6NjIGzDsm5nIHRoacOqbiBo4bqhOiBkYW5oIHRp4bq/bmcgdMSDbmcgbmhhbmgsIOG7p3kgdGjDoWMgdGjGsOG7n25nIGNhbyBoxqFuIn0seyJhcHQiOnsiYW0iOiJBIiwiY2hpIjoiQiIsImNodW9uZyI6IkMiLCJkYW8iOiJDIiwia2llbSI6IkIiLCJub2kiOiJCIn0sImNhcmQiOiJjYXJkcy9zdGFydGVyLTA5LnBuZyIsImlkIjo5LCJuYW1lIjoiSMOgIEFuaCBUdeG6pW4iLCJwZXJzb25hbGl0eSI6Ikzhu4tjaCB0aGnhu4dwIHRy4bqnbSDhuqVtIiwic3ByaXRlIjoic3RhcnRlci0wOS5wbmciLCJzdGF0cyI6eyJndCI6OCwibmwiOjYsInBkIjo2LCJzbSI6NCwidHAiOjUsInRwaCI6NSwidHQiOjl9LCJ0cmFpdCI6IlRyw60gdHXhu4cgY2FvOiBo4buNYyBjaGnDqnUgbmhhbmgsIMSR4buRaSDEkcOhcCBraMOpbyJ9LHsiYXB0Ijp7ImFtIjoiQSIsImNoaSI6IkIiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQyJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0xMC5wbmciLCJpZCI6MTAsIm5hbWUiOiJDaMOibiBUaMOgbmgiLCJwZXJzb25hbGl0eSI6IkjDoGkgaMaw4bubYyBob+G6oXQgbmfDtG4iLCJzcHJpdGUiOiJzdGFydGVyLTEwLnBuZyIsInN0YXRzIjp7Imd0IjoxMCwibmwiOjUsInBkIjo3LCJzbSI6NCwidHAiOjYsInRwaCI6NSwidHQiOjl9LCJ0cmFpdCI6IlZ1YSBnaWFvIHRp4bq/cDogbeG7nyBraMOzYSBs4buxYSBjaOG7jW4gdGhv4bqhaSDEkeG6t2MgYmnhu4d0LCBow7JhIGdp4bqjaSBnaeG7j2kifSx7ImFwdCI6eyJhbSI6IkMiLCJjaGkiOiJDIiwiY2h1b25nIjoiQiIsImRhbyI6IkMiLCJraWVtIjoiQyIsIm5vaSI6IkMifSwiY2FyZCI6ImNhcmRzL3N0YXJ0ZXItMTEucG5nIiwiaWQiOjExLCJuYW1lIjoiVmnhu4d0IEhlbyIsInBlcnNvbmFsaXR5IjoiVsO0IHTGsCBtYXkgbeG6r24iLCJzcHJpdGUiOiJzdGFydGVyLTExLnBuZyIsInN0YXRzIjp7Imd0Ijo2LCJubCI6NCwicGQiOjEwLCJzbSI6NSwidHAiOjUsInRwaCI6NywidHQiOjR9LCJ0cmFpdCI6IlBow7pjIHRpbmggY2hp4bq/dSBt4buHbmg6IHThu4kgbOG7hyByxqFpIMSR4buTIHF1w70gdsOgIGNow60gbeG6oW5nIGNhbyBi4bqldCBuZ+G7nSJ9LHsiYXB0Ijp7ImFtIjoiQyIsImNoaSI6IkIiLCJjaHVvbmciOiJBIiwiZGFvIjoiQiIsImtpZW0iOiJCIiwibm9pIjoiQSJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0xMi5wbmciLCJpZCI6MTIsIm5hbWUiOiJU4bupIFLhu5NuZyIsInBlcnNvbmFsaXR5IjoiTmfhu5cgbmdo4buLY2ggdGjhuqduIHRow7RuZyIsInNwcml0ZSI6InN0YXJ0ZXItMTIucG5nIiwic3RhdHMiOnsiZ3QiOjUsIm5sIjo3LCJwZCI6Niwic20iOjgsInRwIjo5LCJ0cGgiOjcsInR0Ijo1fSwidHJhaXQiOiJUaMOibiBwaMOhcCBxdeG7tyBk4buLOiBuw6kgxJHDsm4gdsOgIHJhIMSRw7JuIGxpw6puIGhvw6BuIn0seyJhcHQiOnsiYW0iOiJBIiwiY2hpIjoiQiIsImNodW9uZyI6IkMiLCJkYW8iOiJDIiwia2llbSI6IkMiLCJub2kiOiJCIn0sImNhcmQiOiJjYXJkcy9zdGFydGVyLTEzLnBuZyIsImlkIjoxMywibmFtZSI6IsSQZW4gVsOidSIsInBlcnNvbmFsaXR5IjoiVHLhuqdtIGzhuq9uZyBjaOG6pXQgcGjDoWMiLCJzcHJpdGUiOiJzdGFydGVyLTEzLnBuZyIsInN0YXRzIjp7Imd0Ijo3LCJubCI6NiwicGQiOjYsInNtIjo0LCJ0cCI6NSwidHBoIjo1LCJ0dCI6OX0sInRyYWl0IjoiTOG7nWkgbOG6vSBjw7MgaOG7k246IGNoacOqdSDDgm0gQ8O0bmcga8OobSBoaeG7h3Ug4bupbmcga2jhu5FuZyBjaOG6vyBsw6J1IGjGoW4ifSx7ImFwdCI6eyJhbSI6IkIiLCJjaGkiOiJDIiwiY2h1b25nIjoiQiIsImRhbyI6IkIiLCJraWVtIjoiQyIsIm5vaSI6IkMifSwiY2FyZCI6ImNhcmRzL3N0YXJ0ZXItMTQucG5nIiwiaWQiOjE0LCJuYW1lIjoiUXV54buBbiBMaW5oIiwicGVyc29uYWxpdHkiOiJOaMOibiBo4bqtdSBjaMOibiBjaOG6pXQiLCJzcHJpdGUiOiJzdGFydGVyLTE0LnBuZyIsInN0YXRzIjp7Imd0Ijo5LCJubCI6NSwicGQiOjgsInNtIjo2LCJ0cCI6NCwidHBoIjo3LCJ0dCI6Nn0sInRyYWl0IjoiQuG6oW4gY+G7p2EgbmjDoCBuw7RuZzogZMOibiB0cuG6pW4gcXXDvSBt4bq/biwgZ2nDoSBtdWEgcuG6uywgZOG7hSDEkcaw4bujYyBnacO6cCDEkeG7oSJ9LHsiYXB0Ijp7ImFtIjoiQiIsImNoaSI6IkEiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJCIiwibm9pIjoiQyJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0xNS5wbmciLCJpZCI6MTUsIm5hbWUiOiJYdcOibiBC4bqvYyIsInBlcnNvbmFsaXR5IjoiSMOzbSBo4buJbmggc+G6r2Mgc+G6o28iLCJzcHJpdGUiOiJzdGFydGVyLTE1LnBuZyIsInN0YXRzIjp7Imd0Ijo5LCJubCI6NSwicGQiOjcsInNtIjo0LCJ0cCI6NiwidHBoIjo1LCJ0dCI6OX0sInRyYWl0IjoiTWnhu4duZyBsxrDhu6FpIHRoacOqbiBo4bqhOiBjaOG7jWMgdOG7qWMgxJHhu4tjaCBnaeG6o20gcGjDsm5nIHRo4bunLCBow7JhIGdp4bqjaSB4dW5nIMSR4buZdCJ9LHsiYXB0Ijp7ImFtIjoiQyIsImNoaSI6IkEiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQiJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0xNi5wbmciLCJpZCI6MTYsIm5hbWUiOiJRdWFuZyBI4bqjaSIsInBlcnNvbmFsaXR5IjoiS2nDqm4gdHLDrCBiw7luZyBu4buVIiwic3ByaXRlIjoic3RhcnRlci0xNi5wbmciLCJzdGF0cyI6eyJndCI6NiwibmwiOjUsInBkIjo3LCJzbSI6NiwidHAiOjEwLCJ0cGgiOjgsInR0Ijo2fSwidHJhaXQiOiLEkMO0aSBjaMOibiB2w6BuZzoga2hpbmggY8O0bmcgK3Thu5FjIMSR4buZIHJhIMSRw7JuLCBjaGnDqnUgQ2jhu4kgUGjDoXAgbmjGsCBzw7p0IGLDs25nIn0seyJhcHQiOnsiYW0iOiJDIiwiY2hpIjoiQyIsImNodW9uZyI6IkEiLCJkYW8iOiJBIiwia2llbSI6IkMiLCJub2kiOiJDIn0sImNhcmQiOiJjYXJkcy9zdGFydGVyLTE3LnBuZyIsImlkIjoxNywibmFtZSI6IlRp4bq/biBMdeG6rXQiLCJwZXJzb25hbGl0eSI6IkjDoG8gc+G6o25nIGPhu6luZyBj4buxYSIsInNwcml0ZSI6InN0YXJ0ZXItMTcucG5nIiwic3RhdHMiOnsiZ3QiOjcsIm5sIjo0LCJwZCI6NSwic20iOjgsInRwIjo1LCJ0cGgiOjksInR0Ijo1fSwidHJhaXQiOiJUaMOibiB0aOG7gyB0aMOpcDogbcOhdSB2w6AgcGjDsm5nIHRo4bunIGNhbywgY2jhu4t1IMSRw7JuIHRoYXkgxJHhu5NuZyDEkeG7mWkifSx7ImFwdCI6eyJhbSI6IkEiLCJjaGkiOiJCIiwiY2h1b25nIjoiQyIsImRhbyI6IkMiLCJraWVtIjoiQiIsIm5vaSI6IkIifSwiY2FyZCI6ImNhcmRzL3N0YXJ0ZXItMTgucG5nIiwiaWQiOjE4LCJuYW1lIjoiU3Vib2kiLCJwZXJzb25hbGl0eSI6IkPDoSB0w61uaCBs4bqhbmggbMO5bmciLCJzcHJpdGUiOiJzdGFydGVyLTE4LnBuZyIsInN0YXRzIjp7Imd0Ijo4LCJubCI6NiwicGQiOjYsInNtIjozLCJ0cCI6NywidHBoIjo0LCJ0dCI6OH0sInRyYWl0IjoiUGhvbmcgdGjDoWkgbmfhuqd1OiDEkeG7i2NoIHnhur91IHbDrWEgZ2nhuqNtIHPDoXQgdGjGsMahbmcsIMSR4buRaSDEkcOhcCBuZ+G6r24gbcOgIGNo4bqldCJ9LHsiYXB0Ijp7ImFtIjoiQiIsImNoaSI6IkIiLCJjaHVvbmciOiJCIiwiZGFvIjoiQiIsImtpZW0iOiJDIiwibm9pIjoiQyJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0xOS5wbmciLCJpZCI6MTksIm5hbWUiOiJUaHUgVHJhbmciLCJwZXJzb25hbGl0eSI6IkxhbmggbOG7o2kgZHV5w6puIGTDoW5nIiwic3ByaXRlIjoic3RhcnRlci0xOS5wbmciLCJzdGF0cyI6eyJndCI6OSwibmwiOjUsInBkIjo3LCJzbSI6NSwidHAiOjYsInRwaCI6NiwidHQiOjh9LCJ0cmFpdCI6Iktow6lvIMSDbiBraMOpbyBuw7NpOiB0aMawxqFuZyBsxrDhu6NuZyB2w6AgeGluIHZp4buHYyDEkeG7gXUgdGh14bqtbiBs4bujaSJ9LHsiYXB0Ijp7ImFtIjoiUyIsImNoaSI6IkEiLCJjaHVvbmciOiJCIiwiZGFvIjoiQyIsImtpZW0iOiJDIiwibm9pIjoiQiJ9LCJjYXJkIjoiY2FyZHMvc3RhcnRlci0yMC5wbmciLCJpZCI6MjAsIm5hbWUiOiJLYXJpayIsInBlcnNvbmFsaXR5IjoiTuG7mWkgdMOibSBzw6J1IHPhuq9jIiwic3ByaXRlIjoic3RhcnRlci0yMC5wbmciLCJzdGF0cyI6eyJndCI6NywibmwiOjcsInBkIjo1LCJzbSI6NCwidHAiOjYsInRwaCI6NSwidHQiOjh9LCJ0cmFpdCI6IlbhuqduIMSRaeG7h3UgbWEgbeG7izogw4JtIEPDtG5nIG3huqFuaCwgZOG7hSBuZ+G7mSBiaeG6v24gY2hpw6p1IGtoaSB04buJIHRow60ifV19) =================
+   Từ nay game MỚI chỉ chọn trong 20 nhân vật này; 120 cao thủ vẫn là NPC trong thế giới.
+   Chỉ số 1-10: sm Sức Mạnh · tp Thân Pháp · nl Nội Lực · tph Thể Phách · tt Trí Tuệ · gt Giao Tiếp · pd Phúc Duyên.
+   Tư chất 6 hệ (C/B/A/S): chuong Quyền Chưởng · kiem Kiếm Pháp · dao Đao Pháp · chi Chỉ Pháp · am Âm Công · noi Nội Công.
+   Nhân vật người chơi dùng 1 entry tổng hợp CHARS[120] (stId) để mọi hệ cũ (tên/sprite/portrait) chạy nguyên;
+   sprite/portrait lấy từ assets/starters/starter-XX.png trong suốt. Save cũ (cao thủ) KHÔNG có starterId:
+   chỉ số mặc định cân bằng 5/5 + tư chất B toàn hệ -> mọi hệ số đều trung tính (x1.0), chỉ số dẫn xuất giữ công thức cũ. */
+const STARTERS=[
+ {id:1, name:"Sơn Tùng", personality:"Ngôi sao tự tin", tone:"Kiêu ngạo", traitId:"giaotiep", trait:"Giao tiếp bậc thầy: thiện cảm tăng nhanh, mặc cả giỏi", stats:{sm:4,tp:7,nl:6,tph:5,tt:7,gt:10,pd:8}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"B",am:"S",noi:"B"}},
+ {id:2, name:"Tùng Dương", personality:"Đam mê cháy bỏng", tone:"Hào sảng", traitId:"amcong", trait:"Giọng ca nội lực: chiêu Âm Công cực mạnh", stats:{sm:5,tp:4,nl:9,tph:6,tt:7,gt:7,pd:5}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"B",am:"S",noi:"A"}},
+ {id:3, name:"Mỹ Chi", personality:"Dịu dàng chân chất", tone:"Nhân hậu", traitId:"nhanhau", trait:"Ai cũng quý: thiện cảm với NPC nhân hậu tăng gấp rưỡi", stats:{sm:3,tp:5,nl:6,tph:4,tt:6,gt:8,pd:7}, apt:{chuong:"C",kiem:"C",dao:"C",chi:"B",am:"A",noi:"B"}},
+ {id:4, name:"Thích Chân Quang", personality:"Điềm đạm thuyết pháp", tone:"Trầm lặng", traitId:"thuyetphuc", trait:"Nội công thâm hậu, thuyết phục NPC bằng lời lẽ", stats:{sm:3,tp:3,nl:10,tph:5,tt:9,gt:8,pd:7}, apt:{chuong:"A",kiem:"C",dao:"C",chi:"B",am:"B",noi:"S"}},
+ {id:5, name:"Linh 14", personality:"Lém lỉnh khó đoán", tone:"Đa nghi", traitId:"mayman", trait:"Phúc duyên cao: hay gặp may, né đòn khéo", stats:{sm:4,tp:8,nl:5,tph:4,tt:8,gt:6,pd:9}, apt:{chuong:"B",kiem:"B",dao:"C",chi:"A",am:"C",noi:"B"}},
+ {id:6, name:"Phương Hằng", personality:"Thẳng thắn bốc lửa", tone:"Hào sảng", traitId:"danhdep", trait:"Ăn nói đanh thép: đe nạt và mặc cả đều hiệu quả", stats:{sm:7,tp:4,nl:5,tph:6,tt:7,gt:9,pd:5}, apt:{chuong:"A",kiem:"C",dao:"B",chi:"B",am:"B",noi:"C"}},
+ {id:7, name:"Mai Phương Thúy", personality:"Sang trọng điềm tĩnh", tone:"Kiêu ngạo", traitId:"khichat", trait:"Khí chất hoa hậu: NPC lịch sự nể trọng, quà tặng hiệu quả hơn", stats:{sm:3,tp:6,nl:5,tph:5,tt:7,gt:9,pd:8}, apt:{chuong:"C",kiem:"B",dao:"C",chi:"B",am:"B",noi:"B"}},
+ {id:8, name:"Mỹ Tâm", personality:"Nhân hậu quốc dân", tone:"Nhân hậu", traitId:"danhvong", trait:"Được lòng thiên hạ: danh tiếng tăng nhanh, ủy thác thưởng cao hơn", stats:{sm:4,tp:5,nl:7,tph:5,tt:6,gt:9,pd:8}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"B",am:"S",noi:"B"}},
+ {id:9, name:"Hà Anh Tuấn", personality:"Lịch thiệp trầm ấm", tone:"Trầm lặng", traitId:"tritue", trait:"Trí tuệ cao: học chiêu nhanh, đối đáp khéo", stats:{sm:4,tp:5,nl:6,tph:5,tt:9,gt:8,pd:6}, apt:{chuong:"C",kiem:"B",dao:"C",chi:"B",am:"A",noi:"B"}},
+ {id:10, name:"Chân Thành", personality:"Hài hước hoạt ngôn", tone:"Vui tính", traitId:"vuagiaotiep", trait:"Vua giao tiếp: mở khóa lựa chọn thoại đặc biệt, hòa giải giỏi", stats:{sm:4,tp:6,nl:5,tph:5,tt:9,gt:10,pd:7}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"B",am:"A",noi:"C"}},
+ {id:11, name:"Việt Heo", personality:"Vô tư may mắn", tone:"Vui tính", traitId:"phuctinh", trait:"Phúc tinh chiếu mệnh: tỉ lệ rơi đồ quý và chí mạng cao bất ngờ", stats:{sm:5,tp:5,nl:4,tph:7,tt:4,gt:6,pd:10}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"C",am:"C",noi:"C"}},
+ {id:12, name:"Tứ Rồng", personality:"Ngỗ nghịch thần thông", tone:"Kiêu ngạo", traitId:"thanphap", trait:"Thân pháp quỷ dị: né đòn và ra đòn liên hoàn", stats:{sm:8,tp:9,nl:7,tph:7,tt:5,gt:5,pd:6}, apt:{chuong:"A",kiem:"B",dao:"B",chi:"B",am:"C",noi:"A"}},
+ {id:13, name:"Đen Vâu", personality:"Trầm lắng chất phác", tone:"Trầm lặng", traitId:"amkhongche", trait:"Lời lẽ có hồn: chiêu Âm Công kèm hiệu ứng khống chế lâu hơn", stats:{sm:4,tp:5,nl:6,tph:5,tt:9,gt:7,pd:6}, apt:{chuong:"C",kiem:"C",dao:"C",chi:"B",am:"A",noi:"B"}},
+ {id:14, name:"Quyền Linh", personality:"Nhân hậu chân chất", tone:"Nhân hậu", traitId:"nhanong", trait:"Bạn của nhà nông: dân trấn quý mến, giá mua rẻ, dễ được giúp đỡ", stats:{sm:6,tp:4,nl:5,tph:7,tt:6,gt:9,pd:8}, apt:{chuong:"B",kiem:"C",dao:"B",chi:"C",am:"B",noi:"C"}},
+ {id:15, name:"Xuân Bắc", personality:"Hóm hỉnh sắc sảo", tone:"Vui tính", traitId:"miengluoi", trait:"Miệng lưỡi thiên hạ: chọc tức địch giảm phòng thủ, hòa giải xung đột", stats:{sm:4,tp:6,nl:5,tph:5,tt:9,gt:9,pd:7}, apt:{chuong:"B",kiem:"B",dao:"C",chi:"A",am:"B",noi:"C"}},
+ {id:16, name:"Quang Hải", personality:"Kiên trì bùng nổ", tone:"Trượng nghĩa", traitId:"chanvang", trait:"Đôi chân vàng: khinh công +tốc độ ra đòn, chiêu Chỉ Pháp như sút bóng", stats:{sm:6,tp:10,nl:5,tph:8,tt:6,gt:6,pd:7}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"A",am:"C",noi:"B"}},
+ {id:17, name:"Tiến Luật", personality:"Hào sảng cứng cựa", tone:"Hào sảng", traitId:"thethep", trait:"Thân thể thép: máu và phòng thủ cao, chịu đòn thay đồng đội", stats:{sm:8,tp:5,nl:4,tph:9,tt:5,gt:7,pd:5}, apt:{chuong:"A",kiem:"C",dao:"A",chi:"C",am:"C",noi:"C"}},
+ {id:18, name:"Suboi", personality:"Cá tính lạnh lùng", tone:"Trầm lặng", traitId:"phongthai", trait:"Phong thái ngầu: địch yếu vía giảm sát thương, đối đáp ngắn mà chất", stats:{sm:3,tp:7,nl:6,tph:4,tt:8,gt:8,pd:6}, apt:{chuong:"C",kiem:"B",dao:"C",chi:"B",am:"A",noi:"B"}},
+ {id:19, name:"Thu Trang", personality:"Lanh lợi duyên dáng", tone:"Vui tính", traitId:"kheoan", trait:"Khéo ăn khéo nói: thương lượng và xin việc đều thuận lợi", stats:{sm:5,tp:6,nl:5,tph:6,tt:8,gt:9,pd:7}, apt:{chuong:"B",kiem:"C",dao:"B",chi:"B",am:"B",noi:"C"}},
+ {id:20, name:"Karik", personality:"Nội tâm sâu sắc", tone:"Trầm lặng", traitId:"vandieu", trait:"Vần điệu ma mị: Âm Công mạnh, dễ ngộ biến chiêu khi tỉ thí", stats:{sm:4,tp:6,nl:7,tph:5,tt:8,gt:7,pd:5}, apt:{chuong:"B",kiem:"C",dao:"C",chi:"A",am:"S",noi:"B"}}
+];
+const STAT_DEFS=[["sm","💪 Sức Mạnh"],["tp","👟 Thân Pháp"],["nl","🔵 Nội Lực"],["tph","🛡️ Thể Phách"],["tt","🧠 Trí Tuệ"],["gt","🗣️ Giao Tiếp"],["pd","🍀 Phúc Duyên"]];
+const SYS_NAME={chuong:"Quyền Chưởng",kiem:"Kiếm Pháp",dao:"Đao Pháp",chi:"Chỉ Pháp",am:"Âm Công",noi:"Nội Công"};
+const SYS_KEYS=["chuong","kiem","dao","chi","am","noi"];
+const APT_MUL={S:1.35,A:1.2,B:1,C:0.85};   // hệ số sát thương theo hạng tư chất
+const APT_COST={S:0.7,A:0.8,B:1,C:1.2};    // hệ số "giá EXP chiêu" (số lần dùng cần để lên cấp chiêu)
+/* Gán 55 chiêu về 6 hệ (theo loại chiêu/mô tả sẵn có):
+   chuong(10): chưởng/quyền tay không · kiem(17): mọi kiếm pháp/kiếm khí · dao(4): đao/bổng/lệnh bài binh khí ·
+   chi(6): chỉ pháp + ám khí châm/phù · am(1): Sư Tử Hống (sóng âm) · noi(17): nội công/tâm pháp/hồi phục/phản kình/độc công/bộ pháp còn lại */
+const SKILL_SYS={basic_palm:"chuong",sl_1:"chuong",sl_2:"chuong",sl_3:"chuong",sl_4:"am",cb_2:"chuong",cb_3:"chuong",cb_4:"chuong",nm_3:"chuong",td_1:"chuong",td_4:"chuong",
+ wd_1:"kiem",wd_4:"kiem",cm_1:"kiem",cm_4:"kiem",nm_1:"kiem",nm_4:"kiem",hs_1:"kiem",hs_2:"kiem",hs_4:"kiem",tc_1:"kiem",tc_2:"kiem",cl_1:"kiem",cl_2:"kiem",cl_4:"kiem",tb1:"kiem",tb3:"kiem",tb4:"kiem",
+ cb_1:"dao",mg_1:"dao",tb2:"dao",tb5:"dao",
+ cm_2:"chi",tx_2:"chi",dt_1:"chi",dt_2:"chi",dt_4:"chi",td_3:"chi",
+ wd_2:"noi",wd_3:"noi",mg_2:"noi",mg_3:"noi",mg_4:"noi",cm_3:"noi",nm_2:"noi",hs_3:"noi",tc_3:"noi",tc_4:"noi",td_2:"noi",tx_1:"noi",tx_3:"noi",tx_4:"noi",cl_3:"noi",dt_3:"noi",hxdf:"noi"};
+const starterImgs={}; STARTERS.forEach(s=>{ const im=new Image(); im.src="assets/starters/starter-"+String(s.id).padStart(2,"0")+".png"; starterImgs[s.id]=im; });
+function starterById(id){ return STARTERS.find(s=>s.id===id)||null; }
+let PENDING_STARTER=null; // id nhân vật mở màn cho game MỚI (startGame đọc qua newState)
+function starterDerived(st){ // chỉ số dẫn xuất nền cho entry CHARS tổng hợp (khớp pAtk/pDef/pSpd công thức cũ)
+  return { hp:55+st.tph*9, atk:8+st.sm*2, def:Math.round(4+st.tph*1.2), spd:90+st.tp*6 }; }
+function ensureStarterChar(id){ const s=starterById(id); if(!s) return null; const d=starterDerived(s.stats);
+  CHARS[120]={idx:120, stId:id, sheet:-1, col:0, row:0, name:s.name, faction:s.personality, weapon:"Tay không", skill:"basic_palm", hp:d.hp, atk:d.atk, def:d.def, spd:d.spd};
+  return CHARS[120]; }
+function refreshStarterChar(){ if(!G||!G.starterId) return; const c=CHARS[120]; if(!c||c.stId!==G.starterId) ensureStarterChar(G.starterId);
+  const d=starterDerived(G.stats); const cc=CHARS[120]; cc.atk=d.atk; cc.def=d.def; cc.spd=d.spd; cc.hp=d.hp; }
+/* ---- truy cập chỉ số người chơi (an toàn khi chưa vào game / nhân vật cao thủ cũ) ---- */
+function pStat(k){ return (typeof G!=="undefined"&&G&&G.stats&&G.stats[k]!==undefined)?G.stats[k]:5; }
+function pApt(sys){ return (typeof G!=="undefined"&&G&&G.apt&&G.apt[sys])?G.apt[sys]:"B"; }
+function aptMul(id){ if(typeof G==="undefined"||!G||!G.starterId) return 1; const sys=SKILL_SYS[id]; if(!sys) return 1;
+  let m=APT_MUL[pApt(sys)]||1;
+  if(sys==="am"&&G.starterId===2) m*=1.25;       // Tùng Dương: Âm Công cực mạnh
+  if(sys==="am"&&G.starterId===20) m*=1.15;      // Karik: Âm Công mạnh
+  if(sys==="chi"&&G.starterId===16) m*=1.2;      // Quang Hải: Chỉ Pháp như sút bóng
+  return m; }
+function skillUseNeed(id){ const sys=SKILL_SYS[id]; const cf=(typeof G!=="undefined"&&G&&G.starterId&&sys)?(APT_COST[pApt(sys)]||1):1;
+  let need=8*cf*(1-(pStat("tt")-5)*0.04); if(typeof G!=="undefined"&&G&&G.starterId===9) need*=0.8; // Hà Anh Tuấn học nhanh
+  return Math.max(3,Math.round(need)); }
+function skillLvFromUse(id){ return Math.min(5,1+Math.floor(((typeof G!=="undefined"&&G&&G.skillUse&&G.skillUse[id])||0)/skillUseNeed(id))); }
+/* ---- Giao Tiếp + tính cách: hệ số thiện cảm nhận được ---- */
+const TONE_CLASH=[["Nhân hậu","Gian xảo"],["Kiêu ngạo","Trượng nghĩa"]];
+function toneMul(npc){ if(typeof G==="undefined"||!G||!G.starterId||!npc) return 1; const mine=G.tone, theirs=npc.pers||null; if(!mine||!theirs) return 1;
+  if(mine===theirs) return 1.3; // cùng "tần số" tính cách: hợp nhau ngay
+  for(const [a,b] of TONE_CLASH){ if((mine===a&&theirs===b)||(mine===b&&theirs===a)) return 0.7; } // xung khắc: chậm thân
+  return 1; }
+function affGtMul(){ return 0.7+pStat("gt")*0.06; } // gt 10 -> x1.30 · gt 5 (mặc định) -> x1.00
+function gainAff(npc,amt){ if(typeof G==="undefined"||!G||!npc) return 0; const nm=(typeof npc==="string")?npc:npc.name; if(!nm) return 0;
+  if(amt>0&&G.starterId){ let m=affGtMul()*toneMul(typeof npc==="object"?npc:null);
+    if(G.starterId===1) m*=1.15;                                   // Sơn Tùng: giao tiếp bậc thầy
+    if(G.starterId===3&&(npc&&npc.pers==="Nhân hậu")) m*=1.5;      // Mỹ Chi: NPC nhân hậu quý gấp rưỡi
+    if(G.starterId===4&&(npc&&(npc.pers==="Trầm lặng"||npc.pers==="Nhân hậu"))) m*=1.2; // Chân Quang: lời lẽ thuyết phục
+    if(G.starterId===7&&(npc&&(npc.pers==="Kiêu ngạo"||npc.pers==="Trầm lặng"))) m*=1.2; // Mai Phương Thúy: người lịch sự nể trọng
+    if(G.starterId===14&&(npc&&npc.generic)) m*=1.3;               // Quyền Linh: dân trấn quý mến
+    if(G.starterId===19) m*=1.1;                                   // Thu Trang: khéo ăn khéo nói
+    amt=Math.max(1,Math.round(amt*m)); }
+  G.aff[nm]=(G.aff[nm]||0)+amt; return amt; }
+/* ---- Chỉ số dẫn xuất cho nhân vật mở màn (cao thủ cũ giữ công thức gốc) ---- */
+function starterMaxHp(){ const s=G.stats; return Math.round((55+s.tph*9+(G.lv-1)*(10+s.tph))*(G.starterId===17?1.12:1)); } // Tiến Luật +12% HP
+function starterMaxMp(){ const s=G.stats; return 30+s.nl*9+(G.lv-1)*6+((G.innerLv||1)-1)*15; }
+function recalcDerived(){ if(!G||!G.starterId) return; refreshStarterChar();
+  G.p.maxhp=starterMaxHp(); G.p.maxmp=starterMaxMp();
+  G.p.hp=Math.min(G.p.hp,G.p.maxhp); G.p.mp=Math.min(G.p.mp,G.p.maxmp); }
+window.__ST={ starters:STARTERS, skillSys:SKILL_SYS, pStat:(k)=>pStat(k), aptMul:(id)=>aptMul(id),
+  affGtMul:()=>affGtMul(), stepsMax:()=>ovStepsMax(), starterMaxHp:()=>starterMaxHp(), starterMaxMp:()=>starterMaxMp(),
+  gainAff:(npc,amt)=>gainAff(npc,amt) };
+const STAT_BAR=(label,val)=>`<div class="sbar"><span class="sl2">${label}</span><span class="sb"><i style="width:${val*10}%"></i></span><b>${val}</b></div>`;
 function renderDetail(){
-  const c=CHARS[selIdx];
+  const s=starterById(selIdx)||STARTERS[0];
   $("detailPanel").innerHTML=`
-    <div class="port" style="${portStyle(c,150)}"></div>
-    <h2>${c.name}</h2><div class="sub">${c.faction} · Vũ khí: ${c.weapon}</div>
-    <div class="statGrid">
-      <div><span>❤️ Sinh lực</span><b>${c.hp}</b></div><div><span>⚔️ Tấn công</span><b>${c.atk}</b></div>
-      <div><span>🛡️ Phòng thủ</span><b>${c.def}</b></div><div><span>👟 Tốc độ</span><b>${c.spd}</b></div>
-    </div>
-    <div class="skill">Tuyệt kỹ: <b>${c.skill}</b><br><small style="color:var(--dim)">Phím K — chưởng/khí diện rộng, tốn 30 nội lực. Lên cấp 5 mở khóa dạng tuyệt học mạnh hơn.</small></div>
+    <img class="cardImgBig" src="assets/starters/cards/starter-${String(s.id).padStart(2,"0")}.png" alt="Thẻ nhân vật ${s.name}" />
+    <h2>${s.name}</h2><div class="sub">Tính cách: ${s.personality}</div>
+    ${STAT_DEFS.map(([k,lb])=>STAT_BAR(lb,s.stats[k])).join("")}
+    <div style="margin-top:10px;font-size:12.5px;color:var(--dim)">🎓 Tư chất võ học:</div>
+    <div class="aptRow">${SYS_KEYS.map(k=>`<span class="aptChip">${SYS_NAME[k]} <b class="g${s.apt[k]}">${s.apt[k]}</b></span>`).join("")}</div>
+    <div class="skill">✨ Thiên phú: <b>${s.trait}</b><br><small style="color:var(--dim)">Sinh lực theo Thể Phách · nội lực theo Nội Lực · bước/ngày & thứ tự lượt theo Thân Pháp · chí mạng & rơi đồ theo Phúc Duyên · tốc độ học chiêu theo Trí Tuệ · thiện cảm/mặc cả theo Giao Tiếp. Mỗi 3 cấp được +1 chỉ số tự chọn.</small></div>
     <button class="btn" id="startBtn">⚔️ Vào Giang Hồ</button>`;
-  $("startBtn").onclick=()=>startGame(selIdx,false);
+  $("startBtn").onclick=()=>{ PENDING_STARTER=s.id; ensureStarterChar(s.id); startGame(120,false); };
 }
 function renderGrid(filter=""){
   const g=$("charGrid"); g.innerHTML=""; let n=0;
   const f=filter.trim().toLowerCase();
-  CHARS.forEach(c=>{
-    if(f && !(c.name.toLowerCase().includes(f)||c.faction.toLowerCase().includes(f)||c.weapon.toLowerCase().includes(f))) return;
+  STARTERS.forEach(s=>{
+    if(f && !(s.name.toLowerCase().includes(f)||s.personality.toLowerCase().includes(f))) return;
     n++;
-    const d=document.createElement("button"); d.className="card"+(c.idx===selIdx?" sel":"");
-    d.innerHTML=`<div class="port" style="${portStyle(c,72)}"></div><div class="nm">${c.name}</div><div class="fc">${c.faction}</div>`;
-    d.onclick=()=>{selIdx=c.idx;renderGrid($("searchBox").value);renderDetail();};
+    const d=document.createElement("button"); d.className="card"+(s.id===selIdx?" sel":"");
+    d.innerHTML=`<img class="cardImg" src="assets/starters/cards/starter-${String(s.id).padStart(2,"0")}.png" alt="${s.name}" loading="lazy" /><div class="fc">${s.personality}</div>`;
+    d.onclick=()=>{selIdx=s.id;renderGrid($("searchBox").value);renderDetail();};
     g.appendChild(d);
   });
-  $("countNote").textContent=`Hiển thị ${n}/120 hiệp khách — bấm vào thẻ để xem chỉ số, rồi “Vào Giang Hồ”.`;
+  $("countNote").textContent=`Hiển thị ${n}/20 nhân vật mở màn — bấm vào thẻ để xem 7 chỉ số + tư chất, rồi “Vào Giang Hồ”. (120 cao thủ vẫn ở trong thế giới làm NPC.)`;
 }
 $("searchBox").addEventListener("input",e=>renderGrid(e.target.value));
 
@@ -498,7 +607,8 @@ const SKILL_TEST={on:false,noCd:false,snap:null};
 const SAVE_KEY="volam_ovuong_tb_v1";
 const WORLD_VER=4, PREV_ZW=1500, OLD_ZW=1670; // v4: ZW 1670 -> 2362 (diện tích x2, mỗi chiều x1,4142) + 12 võ đường môn phái; v3: ZW1670; v2: ZW1500; không field: lưới cũ ZW900
 function saveGame(){ if(!G) return; try{localStorage.setItem(SAVE_KEY,JSON.stringify({
-  charIdx:G.charIdx,lv:G.lv,exp:G.exp,gold:G.gold,x:G.p.x,y:G.p.y,sect:G.sect,aff:G.aff,
+  charIdx:G.charIdx,starterId:G.starterId||null,stats:G.stats||null,apt:G.apt||null,statPicks:G.statPicks||0,
+  lv:G.lv,exp:G.exp,gold:G.gold,x:G.p.x,y:G.p.y,sect:G.sect,aff:G.aff,
   mq:G.mq,items:G.items,bonusAtk:G.bonusAtk,kills:G.kills,
   fame:G.fame,infamy:G.infamy,brothers:G.brothers,npcQuest:G.npcQuest,npcQuestDone:G.npcQuestDone,
   contrib:G.contrib,contribTotal:G.contribTotal,sectRank:G.sectRank,joinQuest:G.joinQuest,
@@ -511,9 +621,10 @@ function saveGame(){ if(!G) return; try{localStorage.setItem(SAVE_KEY,JSON.strin
   children:G.children,preg:G.preg,childFollow:G.childFollow,stats:G.stats,worldV2:WORLD_VER,visited:G.visited,horse:G.horse,mounted:G.mounted,ownSect:G.ownSect,pet:G.pet,ach:G.ach,cavesDone:G.cavesDone,caveLootDay:G.caveLootDay,title:G.title,wEv:G.wEv,frags:G.frags,south:G.south}))}catch(e){} }
 function loadSave(){ try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null}catch(e){return null} }
 const oldSave=loadSave();
+if(oldSave && oldSave.starterId) ensureStarterChar(oldSave.starterId); // save bằng nhân vật mở màn mới: dựng lại entry CHARS[120] trước khi đọc tên
 if(oldSave && CHARS[oldSave.charIdx]){ $("continueBtn").classList.remove("hidden");
   $("continueBtn").textContent=`▶ Chơi tiếp — ${CHARS[oldSave.charIdx].name} (Cấp ${oldSave.lv})`;
-  $("continueBtn").onclick=()=>startGame(oldSave.charIdx,true); selIdx=oldSave.charIdx; }
+  $("continueBtn").onclick=()=>startGame(oldSave.charIdx,true); if(!oldSave.starterId) selIdx=1; else selIdx=oldSave.starterId; }
 renderGrid(); renderDetail();
 
 /* ================= ÂM THANH WebAudio ================= */
@@ -1166,11 +1277,15 @@ function drawHall(h,now){ const s=h.sc, sx=h.cx-cam.x, sy=h.cy-cam.y;
     ctx.fillStyle="#f5cf87"; ctx.font="bold 12.5px 'Be Vietnam Pro',sans-serif";
     ctx.fillText("[E] Tại cổng — mở Môn Phái "+h.sect,sx,sy+352*s); ctx.restore(); } }
 function skillLv(id){ return G.skillLv[id]||1; }
-function fameChange(df,di){ G.fame=Math.max(0,(G.fame||0)+df); G.infamy=Math.max(0,(G.infamy||0)+di); }
+function fameChange(df,di){ if(df>0&&typeof G!=="undefined"&&G&&G.starterId===8) df=Math.round(df*1.3); // Mỹ Tâm: danh tiếng tăng nhanh +30%
+  G.fame=Math.max(0,(G.fame||0)+df); G.infamy=Math.max(0,(G.infamy||0)+di); }
 /* ================= TRẠNG THÁI GAME ================= */
 let G=null, running=false;
 function newState(charIdx,fromSave){
-  const c=CHARS[charIdx]; const sv=fromSave?loadSave():null;
+  const sv0=fromSave?loadSave():null;
+  if(sv0&&sv0.starterId) ensureStarterChar(sv0.starterId); // save nhân vật mở màn: dựng entry CHARS[120] trước khi đọc chỉ số nền
+  else if(!fromSave&&PENDING_STARTER) ensureStarterChar(PENDING_STARTER);
+  const c=CHARS[charIdx]; const sv=sv0;
   const st={ charIdx, lv:sv?sv.lv:1, exp:sv?sv.exp:0, gold:sv?sv.gold:60,
     sect:(sv&&sv.sect&&SECTS[sv.sect])?sv.sect:null, aff:sv?sv.aff:{}, items:sv?sv.items:{"Kim Sang Dược":2},
     bonusAtk:sv?sv.bonusAtk:0, kills:sv?sv.kills:0,
@@ -1225,6 +1340,16 @@ function newState(charIdx,fromSave){
     (st.children||[]).forEach(ch=>{ if(ch.x!==undefined){ ch.x=Math.max(16,Math.min(WORLD_W-16,ch.x)); ch.y=Math.max(16,Math.min(WORLD_H-16,ch.y)); } });
     if(st.pet&&st.pet.x!==undefined){ st.pet.x=Math.max(16,Math.min(WORLD_W-16,st.pet.x)); st.pet.y=Math.max(16,Math.min(WORLD_H-16,st.pet.y)); }
   }
+  /* NHÂN VẬT MỞ MÀN MỚI: starterId/stats/apt/tone lấy từ starters.json (game mới) hoặc từ save;
+     save cũ bằng cao thủ (không có starterId) -> mặc định cân bằng 5/5 + tư chất B toàn hệ (mọi hệ số trung tính). */
+  const stDef=starterById(sv?sv.starterId:PENDING_STARTER);
+  st.starterId=stDef?stDef.id:null;
+  if(stDef){ st.stats=Object.assign({},(sv&&sv.stats)?sv.stats:stDef.stats); st.apt=Object.assign({},(sv&&sv.apt)?sv.apt:stDef.apt);
+    st.personality=stDef.personality; st.tone=stDef.tone; st.traitId=stDef.traitId; st.trait=stDef.trait; }
+  else { st.stats={sm:5,tp:5,nl:5,tph:5,tt:5,gt:5,pd:5}; st.apt={chuong:"B",kiem:"B",dao:"B",chi:"B",am:"B",noi:"B"};
+    st.personality=null; st.tone=null; st.traitId=null; st.trait=null; }
+  st.statPicks=(sv&&sv.statPicks)||0; st.charmDay=(sv&&sv.charmDay)||{};
+  if(!fromSave) PENDING_STARTER=null;
   if(!st.visited) st.visited={};
   // NHÓM 2 (Võ học sâu hơn) — migrate an toàn: save cũ thiếu field thì mặc định như dưới, không đụng field cũ nào
   // LIÊN CHIÊU 3 BỘ: save mới có chainSets[3 bộ]+chainActive; save cũ chỉ có 1 chain -> chuỗi đó thành Bộ 1, Bộ 2/3 trống
@@ -1240,6 +1365,9 @@ function newState(charIdx,fromSave){
   st.variants=(sv&&sv.variants)?sv.variants:{}; st.varUse=(sv&&sv.varUse)?sv.varUse:{}; st.ngoDay=(sv&&sv.ngoDay)?sv.ngoDay:{};
   st.chainProg=0; st.chainT=0; st.comboCdUntil=0; st.spar=null; // runtime thuần túy, không lưu
   st.p.maxhp=c.hp+ (st.lv-1)*14; st.p.hp=st.p.maxhp; st.p.mp=70;
+  if(st.starterId){ // nhân vật mở màn: HP theo Thể Phách, bể nội lực theo Nội Lực (xem starterMaxHp/starterMaxMp)
+    const gBkp=G; G=st; st.p.maxhp=starterMaxHp(); st.p.maxmp=starterMaxMp(); G=gBkp;
+    st.p.hp=st.p.maxhp; st.p.mp=Math.min(70,st.p.maxmp); }
   if(sv&&SECRET.taken!==undefined && st.mq.step>2) SECRET.taken=true;
   return st;
 }
@@ -1249,7 +1377,9 @@ function foodBonus(){ if(G&&G.foodBuff&&G.foodBuff.t>G.time) return G.foodBuff; 
 function pAtk(){ const c=CHARS[G.charIdx]; return c.atk + (G.lv-1)*3 + G.bonusAtk + (G.sect?4+G.sectRank*2:0) + equipBonus().a + foodBonus().atk; }
 function pDef(){ const v=CHARS[G.charIdx].def + (G.lv-1)*2 + (G.innerLv-1) + equipBonus().d + foodBonus().def; return Math.round(v*(tamActive()==="Thiếu Lâm"?1.15:1)); } // Kim Cang Tâm Kinh: +15% thủ
 function pSpd(){ const v=CHARS[G.charIdx].spd + 130 + (G.swiftLv-1)*9 + equipBonus().s + foodBonus().spd; return Math.round(v*(tamActive()==="Cổ Mộ"?1.1:1)); } // Hàn Ngọc Tâm Pháp: +10% tốc độ
-function priceMul(){ return Math.max(0.6,Math.min(1.8,1 + G.infamy*0.012 - G.fame*0.004)); }
+function priceMul(){ let m=1 + G.infamy*0.012 - G.fame*0.004 - (pStat("gt")-5)*0.02; // Giao Tiếp: gt 10 -> giá mua -10% (gt 5 trung tính)
+  if(G.starterId===1) m*=0.95; else if(G.starterId===6) m*=0.93; else if(G.starterId===14) m*=0.92; // thiên phú mặc cả: Sơn Tùng / Phương Hằng / Quyền Linh
+  return Math.max(0.6,Math.min(1.8,m)); }
 function fameTitle(){ if(G.infamy>=40&&G.infamy>G.fame) return "☠️ Ác danh lừng lẫy"; if(G.infamy>=20&&G.infamy>G.fame) return "🌑 Ác danh"; if(G.fame>=60) return "🌟 Chính danh vang xa"; if(G.fame>=25) return "⭐ Chính danh"; if(G.infamy>=10) return "🌑 Tiếng xấu đồn xa"; return "🍃 Vô danh"; }
 function xpNeed(){ return 60 + G.lv*40; }
 /* ================= NPC (dùng sprite 34 nhân vật còn lại) ================= */
@@ -1651,7 +1781,12 @@ function questProgress(kind,elite){
   updateQuestHud(); }
 function gainXP(n){ if(tamActive()==="Tiêu Dao") n=Math.round(n*1.15); // Bắc Minh Tâm Pháp: +15% EXP
   G.exp+=n; while(G.exp>=xpNeed()){ G.exp-=xpNeed(); G.lv++; G.insight=(G.insight||0)+1;
-    G.p.maxhp+=14; G.p.hp=Math.min(G.p.maxhp,G.p.hp+Math.round(G.p.maxhp*0.5)); G.p.maxmp+=8;
+    if(G.starterId){ recalcDerived(); G.p.hp=Math.min(G.p.maxhp,G.p.hp+Math.round(G.p.maxhp*0.5)); } // nhân vật mở màn: dẫn xuất theo chỉ số
+    else { G.p.maxhp+=14; G.p.hp=Math.min(G.p.maxhp,G.p.hp+Math.round(G.p.maxhp*0.5)); G.p.maxmp+=8; }
+    if(G.lv%3===0){ G.statPicks=(G.statPicks||0)+1; // mỗi 3 cấp: +1 điểm chỉ số tự chọn (tối đa 15/chỉ số)
+      setTimeout(()=>{ if(!G) return; const inBattle=(typeof OV!=="undefined"&&OV.battle);
+        if(inBattle){ toast("📊 Lên cấp "+G.lv+": có 1 điểm +1 chỉ số đang chờ — mở 📊 Chỉ số ở thanh menu dưới để chọn!"); const sb=$("statBtn"); if(sb) sb.classList.add("pulse"); }
+        else if(typeof toggleStatPanel==="function"){ toast("📊 Lên cấp "+G.lv+" — chọn +1 vào 1 trong 7 chỉ số!"); toggleStatPanel(true); } },900); }
     toast(`⭐ Lên cấp ${G.lv}! +1 điểm lĩnh ngộ (mở Võ Học — V để nâng Nội công/Khinh công)`); sfxLevel(); spawnP(G.p.x,G.p.y-20,"#f5cf87",26,170,0.8,4);
     if(G.lv===3) toast("🔓 Tuyệt kỹ cường hóa: sát thương diện rộng tăng mạnh!");
     if(G.lv===5) toast("🔓 Lĩnh ngộ TUYỆT HỌC: phím K nay gây sát thương cực lớn!"); } }
@@ -1680,6 +1815,7 @@ function openDialog(npc){ dlgNPC=npc; const c=CHARS[npc.ci]; const aff=G.aff[npc
    <div class="dt" style="color:var(--dim);font-size:12.5px">🎁 Sở thích: ${likes.join(", ")} — tặng đúng món được cộng nhiều thiện cảm.</div>
    <div class="dt">“${line}”</div>${extra}<div class="dBtns">
    <button class="btn" id="dTalk">💬 Trò chuyện</button>
+   ${pStat("gt")>=8?`<button class="btn" id="dCharm">🗣️ ${G.starterId===6?"Đe nạt khéo léo":"Thuyết phục · hòa giải"} (Giao Tiếp ${pStat("gt")})</button>`:""}
    <button class="btn" id="dGift">🎁 Tặng quà (${giftCost} vàng${aff>=30?" — bạn bè giảm giá":""})</button>
    ${!npc.generic?`<button class="btn" id="dSpar">⚔️ Xin tỉ thí (giao hữu)</button>`:""}
    ${aff>=60&&!nq&&!G.npcQuestDone[npc.name]?`<button class="btn" id="dQuest">📜 Nhiệm vụ tri kỷ</button>`:""}
@@ -1699,10 +1835,17 @@ function openDialog(npc){ dlgNPC=npc; const c=CHARS[npc.ci]; const aff=G.aff[npc
    <button class="btn ghost" id="dClose">Đóng (E)</button></div>`;
   $("dialog").classList.remove("hidden");
   $("dClose").onclick=closeDialog;
-  $("dTalk").onclick=()=>{ G.aff[npc.name]=aff+2; storyTalkHook(npc); if(!G.talked[npc.name]){G.talked[npc.name]=1; questProgress("talk");}
+  $("dTalk").onclick=()=>{ gainAff(npc,2); storyTalkHook(npc); if(!G.talked[npc.name]){G.talked[npc.name]=1; questProgress("talk");}
     toast(`❤️ Thiện cảm với ${npc.name} tăng lên ${G.aff[npc.name]}`); openDialog(npc); };
-  $("dGift").onclick=()=>{ if(G.gold<giftCost){ toast("Không đủ vàng!"); return; } G.gold-=giftCost; G.aff[npc.name]=(G.aff[npc.name]||0)+6;
-    toast(`🎁 ${npc.name} rất vui! Thiện cảm +6`); sfxCoin(); openDialog(npc); updateHud(); };
+  const chb=$("dCharm"); if(chb) chb.onclick=()=>{ // lựa chọn thoại ĐẶC BIỆT — chỉ mở khi Giao Tiếp >= 8, mỗi NPC 1 lần/ngày
+    G.charmDay=G.charmDay||{}; const key=npc.name+"@"+G.day;
+    if(G.charmDay[key]){ toast(`Hôm nay ngươi đã dùng lời lẽ với ${npc.name} rồi — mai hãy quay lại.`); return; }
+    G.charmDay[key]=1; const got=gainAff(npc, G.starterId===10?8:5); // Chân Thành: vua giao tiếp, hiệu quả vượt trội
+    if(Math.random()<0.3){ fameChange(1,0); toast(`🗣️ Lời lẽ của ngươi khiến ${npc.name} tâm phục khẩu phục! Thiện cảm +${got}, Chính danh +1`); }
+    else toast(`🗣️ Ngươi khéo léo thuyết phục/hòa giải — ${npc.name} gật gù tâm đắc. Thiện cảm +${got}`);
+    sfxCoin(); openDialog(npc); updateHud(); saveGame(); };
+  $("dGift").onclick=()=>{ if(G.gold<giftCost){ toast("Không đủ vàng!"); return; } G.gold-=giftCost; const gA=gainAff(npc,G.starterId===7?9:6);
+    toast(`🎁 ${npc.name} rất vui! Thiện cảm +${gA}`); sfxCoin(); openDialog(npc); updateHud(); };
   const spb2=$("dSpar"); if(spb2) spb2.onclick=()=>startSpar(npc); // TỈ THÍ: thắng chưởng môn mở Tâm Pháp phái đó; thắng cao thủ có tên có 25% ngộ Biến Chiêu
   const qb=$("dQuest"); if(qb) qb.onclick=()=>{ G.npcQuest[npc.name]={zone:npc.zone,need:3,prog:0,done:false};
     toast(`📜 Nhận nhiệm vụ tri kỷ của ${npc.name}: hạ 3 địch tại ${ZONES[npc.zone].name}`); openDialog(npc); saveGame(); };
@@ -1712,7 +1855,7 @@ function openDialog(npc){ dlgNPC=npc; const c=CHARS[npc.ci]; const aff=G.aff[npc
     G.joinQuest={sect:sectName,zone:SECTS[sectName].zone,need:3,prog:0};
     toast(`🏯 Nhiệm vụ nhập môn ${sectName}: hạ 3 địch tại ${ZONES[SECTS[sectName].zone].name}, rồi quay lại gặp tông chủ.`); openDialog(npc); saveGame(); };
   const jd=$("dJoinDone"); if(jd) jd.onclick=()=>{ if(G.joinQuest.prog<G.joinQuest.need){ toast("Chưa xong nhiệm vụ nhập môn!"); return; }
-    G.sect=sectName; G.sectRank=0; G.contrib=0; G.contribTotal=0; G.joinQuest=null; G.aff[npc.name]=(G.aff[npc.name]||0)+10;
+    G.sect=sectName; G.sectRank=0; G.contrib=0; G.contribTotal=0; G.joinQuest=null; gainAff(npc,10);
     if(!G.tamUnlocked.includes(sectName)) G.tamUnlocked.push(sectName); if(!G.tamEquip) G.tamEquip=sectName; // gia nhập phái: tự mở khóa + trang bị Tâm Pháp của phái mình
     genSectQuests(); gainXP(30); fameChange(3,0);
     toast(`🏯 Bái sư thành công! Chính thức là ${RANKS[0]} của ${sectName}. Mở panel Môn Phái (P) nhận nhiệm vụ hàng ngày.`); sfxLevel(); closeDialog(); updateHud(); saveGame(); };
@@ -1724,8 +1867,8 @@ function openDialog(npc){ dlgNPC=npc; const c=CHARS[npc.ci]; const aff=G.aff[npc
   const alb=$("dAlch"); if(alb) alb.onclick=()=>{ closeDialog(); openCraft("alchemy"); };
   const ckb=$("dCook"); if(ckb) ckb.onclick=()=>{ closeDialog(); openCraft("cook"); };
   document.querySelectorAll("[data-likegift]").forEach(b=>b.onclick=()=>{ const it=b.dataset.likegift;
-    if((G.items[it]||0)<=0) return; G.items[it]--; G.aff[npc.name]=(G.aff[npc.name]||0)+12;
-    toast(`💝 ${npc.name} nhận ${it} — đúng sở thích! Thiện cảm +12`); sfxCoin(); openDialog(npc); updateHud(); });
+    if((G.items[it]||0)<=0) return; G.items[it]--; const gA=gainAff(npc,G.starterId===7?16:12);
+    toast(`💝 ${npc.name} nhận ${it} — đúng sở thích! Thiện cảm +${gA}`); sfxCoin(); openDialog(npc); updateHud(); });
   const dtb=$("dDate"); if(dtb) dtb.onclick=()=>openDateMenu(npc);
   const t2b=$("dTrain2"); if(t2b) t2b.onclick=()=>trainTogether(npc);
   const spb=$("dSpouseTgl"); if(spb) spb.onclick=()=>{ G.spouseFollow=!G.spouseFollow; if(G.spouseFollow) G.childFollow=null;
@@ -1844,10 +1987,13 @@ function shake(n){ shakeT=Math.max(shakeT,n); }
 let toastT=0;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.style.opacity=1; toastT=3.2; }
 function drawSprite(ci,x,y,size,flip,bobY,tilt){
-  const c=CHARS[ci], im=atlasImgs[c.sheet]; if(!im.complete) return;
+  const c=CHARS[ci]; if(!c) return;
   ctx.save();
   if(tilt){ ctx.translate(x,y); ctx.rotate(tilt); ctx.translate(-x,-y); }
   if(flip){ ctx.translate(x,0); ctx.scale(-1,1); x=0; }
+  if(c.stId){ const sim=starterImgs[c.stId]; if(!sim||!sim.complete||!sim.naturalWidth){ ctx.restore(); return; }
+    ctx.drawImage(sim,0,0,sim.naturalWidth,sim.naturalHeight,x-size/2,y-size+(bobY||0),size,size); ctx.restore(); return; }
+  const im=atlasImgs[c.sheet]; if(!im.complete){ ctx.restore(); return; }
   ctx.drawImage(im,c.col*160,c.row*160,160,160,x-size/2,y-size+(bobY||0),size,size); ctx.restore(); }
 function drawShadow(x,y,w){ ctx.fillStyle="rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(x,y,w,w*0.32,0,0,6.29); ctx.fill(); }
 /* ================= VẼ NHÀ CỬA (nâng cấp toàn bộ) =================
@@ -2410,14 +2556,15 @@ function killEnemy(e){ if(BOSS&&e===BOSS) return; // boss xử lý riêng ở bo
   if(G.joinQuest&&zi===G.joinQuest.zone){ G.joinQuest.prog++; toast(`🏯 Nhiệm vụ nhập môn ${G.joinQuest.sect}: ${G.joinQuest.prog}/${G.joinQuest.need}`); }
   sectProgress("kill",zi);
   Object.keys(G.npcQuest).forEach(nm=>{ const nq=G.npcQuest[nm]; if(nq&&!nq.done&&zi===nq.zone){ nq.prog++;
-    if(nq.prog>=nq.need){ nq.done=true; G.npcQuestDone[nm]=1; delete G.npcQuest[nm]; G.aff[nm]=(G.aff[nm]||0)+15;
+    if(nq.prog>=nq.need){ nq.done=true; G.npcQuestDone[nm]=1; delete G.npcQuest[nm]; gainAff(nm,15);
       G.items["Kim Sang Dược"]=(G.items["Kim Sang Dược"]||0)+1; fameChange(3,0);
       toast(`📜 Hoàn thành nhiệm vụ tri kỷ của ${nm}! Thiện cảm +15, nhận Kim Sang Dược`); } } });
   const xp=e.t.xp*(e.elite?3:1), gold=e.t.gold*(e.elite?4:1)+((Math.random()*6)|0);
   G.gold+=gold; gainXP(xp); addDmg(e.x,e.y-70,`+${xp} EXP`,"#9fe08a"); spawnP(e.x,e.y-22,"#f5cf87",12,160,0.5,3);
   if(Math.random()<0.25){ G.items["Kim Sang Dược"]=(G.items["Kim Sang Dược"]||0)+1; toast("🎒 Nhặt được Kim Sang Dược"); }
   if(Math.random()<0.3){ addItem("Thịt Thú",1); jobXP("hunt",2,true); }
-  if(Math.random()<0.18){ addItem("Thảo Dược",1); }
+  if(Math.random()<0.18+(pStat("pd")-5)*0.015+(G.starterId===5?0.05:0)){ addItem("Thảo Dược",1); } // Phúc Duyên cao: rơi đồ thường xuyên hơn (Linh 14 thêm may mắn)
+  if(Math.random()<0.03+(pStat("pd")-5)*0.006+(G.starterId===11?0.05:G.starterId===5?0.03:0)){ addItem("Nội Lực Đan",1); toast("🍀 Phúc duyên chiếu cố — nhặt được Nội Lực Đan quý!"); } // đồ quý: pd 10 ~6% (Việt Heo ~11%)
   onKillStory(zi,e.elite);
   questProgress("kill",e.elite); updateHud(); }
 /* ================= NHÓM 2: VÕ HỌC SÂU HƠN — LIÊN CHIÊU/HỢP KÍCH · TÂM PHÁP · NGỘ BIẾN CHIÊU =================
@@ -2449,8 +2596,12 @@ const TAM_PHAP={
  "Côn Luân":{name:"Côn Luân Tâm Pháp",icon:"🏔️",desc:"+12% sát thương chiêu hệ kiếm, giảm 50% hiệu ứng làm chậm (nước sâu)"},
  "Điểm Thương":{name:"Nhất Dương Tâm Pháp",icon:"👉",desc:"+15% sát thương chỉ pháp (Điểm Thương), tầm chiêu chỉ +20px"}};
 function tamActive(){ return (G&&G.tamEquip&&TAM_PHAP[G.tamEquip])?G.tamEquip:null; }
-function dodgeChance(){ const t=tamActive(); return (t==="Võ Đang"?0.08:0)+(t==="Cổ Mộ"?0.05:0); }
-function critChance(){ return 0.15+(G&&G.buffs&&G.buffs.crit>0?0.5:0)+(tamActive()==="Hoa Sơn"?0.10:0); }
+function dodgeChance(){ const t=tamActive(); let d=(t==="Võ Đang"?0.08:0)+(t==="Cổ Mộ"?0.05:0)+(pStat("tp")-5)*0.004; // Thân Pháp cao né tốt hơn
+  if(G&&G.starterId===5) d+=0.05; else if(G&&G.starterId===12) d+=0.04; // Linh 14 né khéo · Tứ Rồng thân pháp quỷ dị
+  return d; }
+function critChance(){ let c=0.15+(G&&G.buffs&&G.buffs.crit>0?0.5:0)+(tamActive()==="Hoa Sơn"?0.10:0)+(pStat("pd")-5)*0.01; // Phúc Duyên: pd 10 -> +5% chí mạng
+  if(G&&G.starterId===11) c+=0.05; // Việt Heo: phúc tinh chiếu mệnh
+  return c; }
 function tamMul(id,sk){ const t=tamActive(); if(!t||!sk) return 1; let m=1; const prof=skillProfile(id,sk);
   if(t==="Minh Giáo"&&(prof==="fire"||sk.sect==="Minh Giáo")) m*=1.15;
   if(t==="Tinh Túc"&&(prof==="poison"||sk.kind==="dot")) m*=1.20;
@@ -2589,7 +2740,7 @@ function sparTick(dt){ const s=G.spar; if(!s) return; const n=s.npc; s.t+=dt;
   else if(s.atkT<=0&&d<62){ s.atkT=0.9; addSlash(n.x+n.face*30,n.y-24,84,0,n.face<0,0.14); sparDmgPlayer(Math.round(n.atk*0.8)); } }
 function endSpar(win){ const s=G.spar; if(!s) return; G.spar=null; const npc=s.npc;
   if(win){ npc.bubble="Hảo võ công! Ta thua tâm phục khẩu phục."; npc.bubbleT=3;
-    G.aff[npc.name]=(G.aff[npc.name]||0)+4; fameChange(2,0); gainXP(30);
+    gainAff(npc,4); fameChange(2,0); gainXP(30);
     toast(`⚔️ THẮNG TỈ THÍ trước ${npc.name}! Thiện cảm +4, Chính danh +2, +30 EXP`);
     const sectL=sectOfLeader(npc.ci); // TÂM PHÁP phái khác: thắng tỉ thí CHƯỞNG MÔN phái đó là mở khóa (vĩnh viễn)
     if(npc.isLeader&&sectL&&TAM_PHAP[sectL]&&!G.tamUnlocked.includes(sectL)){ G.tamUnlocked.push(sectL);
@@ -2606,9 +2757,9 @@ function tryNgoBienChieu(npc,s){ if(!npc||npc.generic) return;
   G.ngoDay=G.ngoDay||{}; Object.keys(G.ngoDay).forEach(k=>{ if(!k.endsWith("@"+G.day)) delete G.ngoDay[k]; }); // dọn lượt ngày cũ
   const key=npc.name+"@"+G.day; if(G.ngoDay[key]) return; // mỗi cao thủ chỉ cho ngộ 1 lần/ngày game
   G.ngoDay[key]=1;
-  if(Math.random()>=0.25) return; // 25% cơ hội ngộ
+  if(Math.random()>=(G.starterId===20?0.40:0.25)) return; // 25% cơ hội ngộ (Karik: 40% — vần điệu ma mị, dễ ngộ biến chiêu)
   const id=pool[(Math.random()*pool.length)|0];
-  if(G.variants[id]){ G.skillUse[id]=(G.skillUse[id]||0)+1; const lv=Math.min(5,1+Math.floor(G.skillUse[id]/8)); // ngộ trùng chiêu đã có biến: thay bằng +1 thông thạo chiêu gốc
+  if(G.variants[id]){ G.skillUse[id]=(G.skillUse[id]||0)+1; const lv=skillLvFromUse(id); // ngộ trùng chiêu đã có biến: thay bằng +1 thông thạo chiêu gốc
     if(lv>(G.skillLv[id]||1)) G.skillLv[id]=lv;
     toast(`✦ ${npc.name} lại tung ${SKILLS[id].name} — chiêu này ngươi đã có Biến Chiêu, thay vào đó thông thạo +1 (Lv${G.skillLv[id]||1}).`); return; }
   G.variants[id]=1; if(G.varUse[id]===undefined) G.varUse[id]=true;
@@ -2622,9 +2773,9 @@ function sparSkillHit(id,sk,base){ const s=G.spar; if(!s||!sk) return; // chiêu
 let PPROJS=[];
 function skillReady(id){ return (SKILL_TEST.on&&SKILL_TEST.noCd)||(G.cdMap[id]||0)<=G.time; }
 function skillCdLeft(id){ return Math.max(0,(G.cdMap[id]||0)-G.time); }
-function useSkill(id){ // tăng thuần thục -> tăng cấp chiêu
+function useSkill(id){ // tăng thuần thục -> tăng cấp chiêu (ngưỡng theo Tư chất hệ + Trí Tuệ: S cần ít lần dùng hơn, C cần nhiều hơn)
   G.skillUse[id]=(G.skillUse[id]||0)+1;
-  const lv=Math.min(5,1+Math.floor(G.skillUse[id]/8));
+  const lv=skillLvFromUse(id);
   if(lv>(G.skillLv[id]||1)){ G.skillLv[id]=lv; toast(`📖 ${SKILLS[id].name} thuần thục lên cấp ${lv}!`); } }
 /* ================= CHẾ ĐỘ TEST CHIÊU (full skill) — runtime, cách ly hoàn toàn khỏi save ================= */
 function isTestOnlySkill(id){ return SKILL_TEST.on&&SKILL_TEST.snap&&SKILL_TEST.snap.learned.indexOf(id)<0; }
@@ -2654,7 +2805,7 @@ function exitSkillTest(){ if(!SKILL_TEST.on) return; const snap=SKILL_TEST.snap;
   toast("⏹ Đã thoát chế độ test — chiêu đã học, cấp thông thạo và ô gán đã khôi phục như trước khi test."); }
 function setTestNoCd(v){ SKILL_TEST.noCd=!!v; if(SKILL_TEST.noCd&&G) G.cdMap={}; if(G) renderSkillBar(); }
 function dmgEnemy(e,dmg,color,opts){ opts=opts||{}; if(e.dead) return;
-  const crit=opts.forceCrit||Math.random()<(0.15+(G.buffs.crit>0?0.5:0)+(tamActive()==="Hoa Sơn"?0.10:0)); // Tử Hà Tâm Pháp: +10% tỉ lệ chí mạng
+  const crit=opts.forceCrit||Math.random()<critChance(); // tỉ lệ chí mạng chung: buff + Tử Hà Tâm Pháp + Phúc Duyên (+ Việt Heo)
   let d=Math.round(dmg*(0.9+Math.random()*0.2)*(crit?(G.buffs.crit>0?2.2:1.8):1));
   e.hp-=d; e.hurtT=0.2; e.flashT=0.075; if(e!==BOSS) e.state="chase"; // chớp trắng 75ms khi trúng đòn
   if(tamActive()==="Tiêu Dao") G.p.mp=Math.min(G.p.maxmp,G.p.mp+d*0.02); // Bắc Minh Tâm Pháp: hút 2% sát thương thành nội lực
@@ -2708,7 +2859,7 @@ function castSkill(slot){ const p=G.p; initAudio(); const id=G.loadout[slot]; if
   if(!SKILL_TEST.on){ if(p.mp<sk.mp){ toast(`Không đủ nội lực cho ${sk.name}! (cần ${sk.mp})`); return; } p.mp-=sk.mp; } // test: nội lực vô hạn
   G.cdMap[id]=G.time+((SKILL_TEST.on&&SKILL_TEST.noCd)?0:effCd(id,sk)); useSkill(id); // hồi chiêu hiệu dụng: Biến chiêu -20% · Tiên Thiên Tâm Pháp -10%
   const isVar=variantOn(id), vElem=isVar?varElemOf(id):null; // BIẾN CHIÊU đang dùng: nguyên tố + màu nguyên tố cho hạt/vệt sáng điểm trúng
-  const lv=skillLv(id), base=pAtk()*sk.mul*(isVar?1.15:1)*(1+(lv-1)*0.12)*tamMul(id,sk), col=isVar?VAR_ELEM[vElem].c:(sk.sect&&SECTS[sk.sect]?SECTS[sk.sect].color:"#7fd1f2"); // Biến chiêu +15% sát thương · Tâm pháp cộng hệ số theo nhóm chiêu
+  const lv=skillLv(id), base=pAtk()*sk.mul*(isVar?1.15:1)*(1+(lv-1)*0.12)*tamMul(id,sk)*aptMul(id), col=isVar?VAR_ELEM[vElem].c:(sk.sect&&SECTS[sk.sect]?SECTS[sk.sect].color:"#7fd1f2"); // Biến chiêu +15% · Tâm pháp theo nhóm chiêu · Tư chất theo hệ (S x1.35/A x1.2/B x1/C x0.85)
   const prof=skillProfile(id,sk), sig=SIG_FX[id]||null;
   const vHue=0; // bỏ nhuộm hue: Biến Chiêu dùng lớp aura nguyên tố phủ lên ảnh gốc
   if(isVar) spawnFx(p.x,p.y-24,col,12,{spd:230,life:0.5,s:4,shape:3,grav:0}); // hạt màu nguyên tố văng ra quanh thân khi xuất biến chiêu
@@ -2873,7 +3024,7 @@ function renderSkillPanel(){ const b=$("skillBox");
   const prevScroll=b.scrollTop; // Render lại cùng tab (trang bị chiêu, nâng cấp...) thì giữ nguyên vị trí cuộn
   const row=(id)=>{ const sk=SKILLS[id], has=G.learned.includes(id), slot=G.loadout.indexOf(id);
     return `<div class="skillRow"><div class="si"><div class="sn">${has?"":'🔒 '}${sk.name}${has&&variantOn(id)?" · "+varElem(id).name+" Biến":""}${has&&hasVariant(id)?` <span class="elb elb-${varElemOf(id)}" title="Nguyên tố Biến Chiêu">${varElem(id).icon} ${varElem(id).name} Biến</span>`:""}${isTestOnlySkill(id)?'<span class="testTag">TEST</span>':""} ${has?`<span style="color:var(--gold2)">Lv${skillLv(id)}</span>`:""} ${sk.sect?`<span class="dim">· ${sk.sect}</span>`:`<span class="dim">· Cơ bản</span>`}</div>
-    <div class="sd">${sk.desc}<br>💧 ${sk.mp} nội lực · ⏱️ hồi chiêu ${has?effCd(id,sk).toFixed(1):sk.cd}s · ✨ ${fxLabel(id,sk)}${sk.rank?` · Cần ${RANKS[sk.rank]}`:""}${has?` · Đã dùng ${G.skillUse[id]||0} lần`:""}${has&&hasVariant(id)?`<br>✦ <b style="color:#c99aff">Đã ngộ Biến Chiêu — nguyên tố ${varElem(id).icon} ${varElem(id).name} Biến</b>: +15% sát thương, -20% hồi chiêu, khi tung chiêu phủ lớp <b>vòng hào quang ${varElem(id).name}</b> xoay quanh ảnh chiêu kèm hạt & vệt sáng màu ${varElem(id).name} — đang dùng: <b>${variantOn(id)?("Bản Biến "+varElem(id).icon):"Bản gốc"}</b>`:""}</div></div>
+    <div class="sd">${sk.desc}<br>💧 ${sk.mp} nội lực · ⏱️ hồi chiêu ${has?effCd(id,sk).toFixed(1):sk.cd}s · ✨ ${fxLabel(id,sk)}${sk.rank?` · Cần ${RANKS[sk.rank]}`:""}${has?` · Đã dùng ${G.skillUse[id]||0} lần`:""}${SKILL_SYS[id]?`<br>🎓 Hệ ${SYS_NAME[SKILL_SYS[id]]} — Tư chất <b class="g${pApt(SKILL_SYS[id])}">${pApt(SKILL_SYS[id])}</b>: sát thương ×${aptMul(id).toFixed(2)} · EXP chiêu ×${(APT_COST[pApt(SKILL_SYS[id])]||1).toFixed(1)}${G.starterId?"":" (nhân vật cũ: tư chất B toàn hệ)"}`:""}${has&&hasVariant(id)?`<br>✦ <b style="color:#c99aff">Đã ngộ Biến Chiêu — nguyên tố ${varElem(id).icon} ${varElem(id).name} Biến</b>: +15% sát thương, -20% hồi chiêu, khi tung chiêu phủ lớp <b>vòng hào quang ${varElem(id).name}</b> xoay quanh ảnh chiêu kèm hạt & vệt sáng màu ${varElem(id).name} — đang dùng: <b>${variantOn(id)?("Bản Biến "+varElem(id).icon):"Bản gốc"}</b>`:""}</div></div>
     ${has?`<button class="btn" data-eq="${id}">${slot>=0?"Ô "+(slot+1)+" ✓":"Trang bị"}</button>${hasVariant(id)?`<button class="btn ghost" data-vart="${id}">${variantOn(id)?"Dùng bản gốc":"Dùng bản Biến ✦"}</button>`:""}`:`<span class="dim" style="font-size:12px">${sk.sect===G.sect?"Học tại tông chủ":"Bí kíp/đổi cống hiến"}</span>`}</div>`; };
   const allIds=Object.keys(SKILLS);
   const eqSn=(G.tamEquip&&TAM_PHAP[G.tamEquip])?G.tamEquip:null;
@@ -2921,7 +3072,7 @@ function renderSkillPanel(){ const b=$("skillBox");
   b.querySelectorAll("[data-vart]").forEach(btn=>btn.onclick=()=>{ const id=btn.dataset.vart; G.varUse[id]=!variantOn(id); toast(G.varUse[id]?`✦ ${SKILLS[id].name}: dùng BẢN BIẾN (+15% sát thương, -20% hồi chiêu)`:`${SKILLS[id].name}: dùng BẢN GỐC`); renderSkillPanel(); renderSkillBar(); saveGame(); });
   const tov=$("tstOnV"); if(tov) tov.onclick=()=>{ enterSkillTest(); renderSkillPanel(); };
   const tfv=$("tstOffV"); if(tfv) tfv.onclick=()=>{ exitSkillTest(); renderSkillPanel(); };
-  const upI=$("upInner"); if(upI) upI.onclick=()=>{ if(G.insight<1){ toast("Không đủ điểm lĩnh ngộ — hãy lên cấp!"); return; } G.insight--; G.innerLv++; G.p.maxmp=100+(G.lv-1)*8+(G.innerLv-1)*15; toast(`🧘 Nội công lên cấp ${G.innerLv}!`); renderSkillPanel(); saveGame(); };
+  const upI=$("upInner"); if(upI) upI.onclick=()=>{ if(G.insight<1){ toast("Không đủ điểm lĩnh ngộ — hãy lên cấp!"); return; } G.insight--; G.innerLv++; if(G.starterId) recalcDerived(); else G.p.maxmp=100+(G.lv-1)*8+(G.innerLv-1)*15; toast(`🧘 Nội công lên cấp ${G.innerLv}!`); renderSkillPanel(); saveGame(); };
   const upS=$("upSwift"); if(upS) upS.onclick=()=>{ if(G.insight<1){ toast("Không đủ điểm lĩnh ngộ — hãy lên cấp!"); return; } G.insight--; G.swiftLv++; toast(`👟 Khinh công lên cấp ${G.swiftLv}!`); renderSkillPanel(); saveGame(); };
 }
 function toggleBag(){ const b=$("bagBox"); if(!b.classList.contains("hidden")){ b.classList.add("hidden"); return; } closePanels(); closePanels2();
@@ -2963,7 +3114,7 @@ function update(dt,now){
   dayHour=(dayHour+dt*(24/240))%24; // 1 ngày game = 240 giây
   if(dayHour<prevHour){ G.day++; onNewDayFamily(); toast(`🌅 Ngày mới — Ngày ${G.day}. Nhiệm vụ môn phái đã làm mới!`); if(G.sect) genSectQuests(); saveGame(); }
   // buff võ học + nội công/khinh công
-  p.maxmp=100+(G.lv-1)*8+(G.innerLv-1)*15;
+  p.maxmp=G.starterId?starterMaxMp():100+(G.lv-1)*8+(G.innerLv-1)*15; // nhân vật mở màn: bể nội lực theo chỉ số Nội Lực
   if(G.buffs.reflect>0)G.buffs.reflect-=dt; if(G.buffs.crit>0)G.buffs.crit-=dt;
   if(G.buffs.regen>0){ G.buffs.regen-=dt; p.hp=Math.min(p.maxhp,p.hp+p.maxhp*0.045*dt); p.mp=Math.min(p.maxmp,p.mp+16*dt); }
   // tuần tra môn phái: đi qua điểm cờ là hoàn thành 1 chặng
@@ -3387,7 +3538,7 @@ function openDateMenu(npc){ if(G.dateDay[npc.name]===G.day){ toast(`Hôm nay đ�
     $("dDateOk").onclick=closeDialog; sfxCoin(); updateHud(); saveGame(); }); }
 function trainTogether(npc){ if(G.trainDay[npc.name]===G.day){ toast(`Hôm nay đã luyện võ cùng ${npc.name} rồi.`); return; }
   G.trainDay[npc.name]=G.day; dayHour=(dayHour+1.5)%24; gainXP(45);
-  const ups=[]; G.learned.forEach(id=>{ G.skillUse[id]=(G.skillUse[id]||0)+2; const lv=Math.min(5,1+Math.floor(G.skillUse[id]/8)); if(lv>(G.skillLv[id]||1)){ G.skillLv[id]=lv; ups.push(SKILLS[id].name+" Lv"+lv); } });
+  const ups=[]; G.learned.forEach(id=>{ G.skillUse[id]=(G.skillUse[id]||0)+2; const lv=skillLvFromUse(id); if(lv>(G.skillLv[id]||1)){ G.skillLv[id]=lv; ups.push(SKILLS[id].name+" Lv"+lv); } });
   G.aff[npc.name]=(G.aff[npc.name]||0)+2; spawnP(G.p.x,G.p.y-22,"#bfe3f2",18,200,0.5,3);
   toast(`🧘 Song tu luyện võ cùng ${npc.name}: +45 EXP, thuần thục mọi chiêu +2${ups.length?", lên cấp: "+ups.join(", "):""}. Thiện cảm +2`); sfxLevel(); renderSkillBar(); openDialog(npc); saveGame(); }
 function propose(npc){ const cost=G.gold>=100?100:0; if(cost) G.gold-=100;
@@ -3415,7 +3566,7 @@ function openHouse(hs){ const owned=G.house===hs.zi, ownedElsewhere=G.house!==nu
   const sb=$("hSleep"); if(sb) sb.onclick=()=>{ if(dayHour>=7){ G.day++; onNewDayFamily(); if(G.sect) genSectQuests(); } dayHour=7; G.p.hp=G.p.maxhp; G.p.mp=G.p.maxmp; G.p.dotT=0; toast("🌅 Ngủ một giấc tới sáng — hồi phục hoàn toàn, đã lưu game."); closeDialog(); saveGame(); updateHud(); };
   const cb=$("hChest"); if(cb) cb.onclick=()=>openChest(hs);
   const tb2=$("hTrain"); if(tb2) tb2.onclick=()=>{ if(G.homeTrainDay===G.day){ toast("Hôm nay đã luyện công ở nhà rồi."); return; } G.homeTrainDay=G.day; dayHour=(dayHour+2)%24;
-    G.learned.forEach(id=>{ G.skillUse[id]=(G.skillUse[id]||0)+2; const lv=Math.min(5,1+Math.floor(G.skillUse[id]/8)); if(lv>(G.skillLv[id]||1)) G.skillLv[id]=lv; });
+    G.learned.forEach(id=>{ G.skillUse[id]=(G.skillUse[id]||0)+2; const lv=skillLvFromUse(id); if(lv>(G.skillLv[id]||1)) G.skillLv[id]=lv; });
     toast("🧘 Luyện công tại nhà: thuần thục mọi chiêu +2."); sfxLevel(); renderSkillBar(); openHouse(hs); saveGame(); }; }
 function openChest(hs){ $("dialog").innerHTML=`<div class="dn">🧰 Rương đồ</div><div class="dt">Trong rương: <b>${G.chestGold} vàng</b> · <b>${G.chestPotion} Kim Sang Dược</b><br>Trong túi: ${G.gold} vàng · Kim Sang Dược ×${G.items["Kim Sang Dược"]||0}</div><div class="dBtns">
   <button class="btn" id="cInG">Gửi 100 vàng</button><button class="btn" id="cOutG">Rút 100 vàng</button>
@@ -3506,7 +3657,36 @@ function renderCraft(kind){ const cf=CRAFTS[kind], b=$("shopBox"), lv=jobLv(cf.j
     else { addItem(r.out,1); toast(`✅ Đã làm xong: ${r.out} — xem trong Túi đồ (B).`); }
     sfxCoin(); renderCraft(kind); updateHud(); saveGame(); }); }
 /* ---------- PANEL NHẬT KÝ (Q) & NGHỀ (N) ---------- */
-function closePanels2(){ $("questBox").classList.add("hidden"); $("jobBox").classList.add("hidden"); $("shopBox").classList.add("hidden"); $("familyBox").classList.add("hidden"); $("helpBox").classList.add("hidden"); $("legendBox").classList.add("hidden"); }
+function closePanels2(){ $("questBox").classList.add("hidden"); $("jobBox").classList.add("hidden"); $("shopBox").classList.add("hidden"); $("familyBox").classList.add("hidden"); $("helpBox").classList.add("hidden"); $("legendBox").classList.add("hidden"); const sb2=$("statBox"); if(sb2) sb2.classList.add("hidden"); }
+/* ================= PANEL 📊 CHỈ SỐ NHÂN VẬT ================= */
+function toggleStatPanel(forceOpen){ const b=$("statBox"); if(!b||!G) return;
+  if(!forceOpen&&!b.classList.contains("hidden")){ b.classList.add("hidden"); return; }
+  $("sectBox").classList.add("hidden"); $("skillBox").classList.add("hidden"); $("bagBox").classList.add("hidden"); closePanels2();
+  renderStatPanel(); b.classList.remove("hidden"); }
+function renderStatPanel(){ const b=$("statBox"); if(!b||!G) return; const s=starterById(G.starterId);
+  const steps=(typeof ovStepsMax==="function")?ovStepsMax():"—";
+  const critP=Math.round(critChance()*100), priceOff=Math.round((1-priceMul())*100);
+  b.innerHTML=`<h3>📊 Chỉ số — ${CHARS[G.charIdx].name} · Cấp ${G.lv}</h3>
+  ${s?`<p>🎭 Tính cách: <b>${s.personality}</b> (tần số: ${s.tone})<br>✨ Thiên phú: <b>${s.trait}</b></p>`:`<p class="dim">Nhân vật cao thủ từ save cũ — chỉ số cân bằng mặc định, tư chất B toàn hệ (mọi hệ số trung tính), chỉ số dẫn xuất theo công thức gốc.</p>`}
+  <h4>7 chỉ số chính (1–15)</h4>
+  ${STAT_DEFS.map(([k,lb])=>STAT_BAR(lb,G.stats[k])).join("")}
+  ${(G.statPicks||0)>0?`<p style="margin-top:8px">🎁 Đang có <b style="color:var(--gold2)">${G.statPicks} điểm +1 chỉ số</b> (thưởng mỗi 3 cấp) — chọn 1 chỉ số để cộng:</p><div class="statPickBtns">${STAT_DEFS.map(([k,lb])=>`<button class="btn" data-statpick="${k}" ${G.stats[k]>=15?"disabled style=opacity:.5":""}>+1 ${lb} (${G.stats[k]})</button>`).join("")}</div>`:""}
+  <h4>🎓 Tư chất 6 hệ võ học</h4>
+  <div class="aptRow">${SYS_KEYS.map(k=>`<span class="aptChip">${SYS_NAME[k]} <b class="g${pApt(k)}">${pApt(k)}</b> <span class="dim">×${(APT_MUL[pApt(k)]||1).toFixed(2)}</span></span>`).join("")}</div>
+  <p class="dim">Hạng tư chất: S = sát thương hệ đó ×1.35, EXP chiêu ×0.7 · A = ×1.2 / ×0.8 · B = ×1.0 · C = ×0.85 / ×1.2.</p>
+  <h4>Chỉ số dẫn xuất đang áp</h4>
+  <p>❤️ Sinh lực tối đa: <b>${G.p.maxhp}</b> · 🔵 Nội lực tối đa: <b>${G.p.maxmp}</b><br>
+  ⚔️ Công: <b>${pAtk()}</b> · 🛡️ Thủ: <b>${pDef()}</b> · 👟 Tốc độ: <b>${pSpd()}</b><br>
+  👣 Bước/ngày: <b>${steps}</b> = 40 + (Cấp−1)×2 + Khinh công×3 + (Thân Pháp−5)×2<br>
+  💥 Chí mạng: <b>${critP}%</b> (Phúc Duyên ${G.stats.pd}: ${(G.stats.pd-5)*1>=0?"+":""}${(G.stats.pd-5)}%) · 🗣️ Hệ số thiện cảm: <b>×${affGtMul().toFixed(2)}</b> (0.7 + Giao Tiếp×0.06)${G.tone?` · hợp tần số ${G.tone}: ×1.3, xung khắc: ×0.7`:""}<br>
+  🛒 Giá mua: <b>${priceOff>=0?"−":"+"}${Math.abs(priceOff)}%</b> so với giá gốc (Giao Tiếp + danh tiếng/ác danh + thiên phú)</p>
+  <div class="row"><button class="btn" data-close="statBox">Đóng</button></div>`;
+  b.querySelectorAll("[data-statpick]").forEach(btn=>btn.onclick=()=>{ const k=btn.dataset.statpick;
+    if((G.statPicks||0)<1||G.stats[k]>=15) return; G.stats[k]++; G.statPicks--;
+    if(G.starterId){ recalcDerived(); G.p.hp=Math.min(G.p.maxhp,G.p.hp+Math.round(G.p.maxhp*0.25)); }
+    toast(`📊 +1 ${STAT_DEFS.find(d=>d[0]===k)[1]} → ${G.stats[k]}! Chỉ số dẫn xuất đã cập nhật.`);
+    const sb=$("statBtn"); if(sb&&!(G.statPicks>0)) sb.classList.remove("pulse");
+    renderStatPanel(); updateHud(); saveGame(); }); }
 function toggleQuestPanel(){ const b=$("questBox"); if(!b.classList.contains("hidden")){ b.classList.add("hidden"); return; } closePanels(); closePanels2(); $("bagBox").classList.add("hidden"); renderQuestPanel(); b.classList.remove("hidden"); }
 function toggleJobPanel(){ const b=$("jobBox"); if(!b.classList.contains("hidden")){ b.classList.add("hidden"); return; } closePanels(); closePanels2(); $("bagBox").classList.add("hidden"); renderJobPanel(); b.classList.remove("hidden"); }
 function renderQuestPanel(){ const b=$("questBox"), s=G.story2;
@@ -4210,6 +4390,7 @@ $("muteBtn").onclick=e=>{ muted=!muted; e.target.textContent=muted?"🔇 Đã t�
 $("bagBtn").onclick=()=>toggleBag();
 $("sectBtn").onclick=()=>toggleSectPanel();
 $("skillBtn").onclick=()=>toggleSkillPanel();
+$("statBtn").onclick=()=>toggleStatPanel();
 $("questBtn").onclick=()=>toggleQuestPanel();
 $("jobBtn").onclick=()=>toggleJobPanel();
 $("familyBtn").onclick=()=>toggleFamilyPanel();
@@ -4772,7 +4953,7 @@ const OVC = OV.CELL;
 const ovCellOf = (x, y) => ({ gx: Math.max(0, Math.min(OV.GW - 1, Math.floor(x / OVC))), gy: Math.max(0, Math.min(OV.GH - 1, Math.floor(y / OVC))) });
 const ovCenter = (gx, gy) => ({ x: gx * OVC + OVC / 2, y: gy * OVC + OVC / 2 });
 const ovSameCell = (a, b) => a && b && a.gx === b.gx && a.gy === b.gy;
-function ovStepsMax() { if (!G) return 40; return 40 + (G.lv - 1) * 2 + (G.swiftLv || 1) * 3; }
+function ovStepsMax() { if (!G) return 40; return 40 + (G.lv - 1) * 2 + (G.swiftLv || 1) * 3 + (pStat("tp") - 5) * 2; } // + Thân Pháp: tp 10 -> +10 bước/ngày, tp 3 -> -4 (tp 5 trung tính)
 
 /* ---------- VA CHẠM LƯỚI: suy ra từ chính dữ liệu va chạm của bản chính ----------
    nước sâu (trừ dải cầu giữa mặt nước) · thân đại điện + trụ cổng 12 võ đường (HALLS.solids,
@@ -5487,11 +5668,11 @@ function ovPlayerUnit() { return OV.battle.units.find(u => u.isPlayer); }
 function ovAliveFoes() { return OV.battle.units.filter(u => u.side === "foe" && u.hp > 0); }
 function ovAliveAllies() { return OV.battle.units.filter(u => u.side === "ally" && u.hp > 0); }
 /* ---- sát thương: cùng công thức bản chính ---- */
-function ovCritRoll() { const B = OV.battle;
-  return Math.random() < 0.15 + (B.buffs.crit > 0 ? 0.5 : 0) + (tamActive() === "Hoa Sơn" ? 0.10 : 0); }
+function ovCritRoll() { return Math.random() < critChance(); } // dùng chung critChance(): buff + tâm pháp + Phúc Duyên
 function ovHitFoe(u, base, opts) { opts = opts || {}; const B = OV.battle; if (!u || u.hp <= 0) return 0;
   const crit = opts.crit !== undefined ? opts.crit : ovCritRoll();
   let d = Math.round(base * (0.9 + Math.random() * 0.2) * (crit ? (B.buffs.crit > 0 ? 2.2 : 1.8) : 1));
+  if (u.taunted > 0) { d = Math.round(d * 1.15); u.taunted--; } // bị Xuân Bắc chọc tức: phòng thủ lơi lỏng
   d = Math.max(1, d); u.hp -= d;
   if (u.ref) { u.ref.hp = u.hp; u.ref.pDmg = (u.ref.pDmg || 0) + d; if (u.ref.foe) u.ref.foe = null; }
   if (tamActive() === "Tiêu Dao") G.p.mp = Math.min(G.p.maxmp, G.p.mp + d * 0.02);
@@ -5503,6 +5684,7 @@ function ovHitFoe(u, base, opts) { opts = opts || {}; const B = OV.battle; if (!
 function ovHitPlayer(raw, srcName) { const B = OV.battle, p = G.p;
   if (B.dodgeFlag) { ovFloat(ovPlayerUnit(), "NÉ!", "miss"); ovBlog("🌀 Bạn né được đòn của " + srcName + "!"); return 0; }
   if (Math.random() < dodgeChance()) { ovFloat(ovPlayerUnit(), "NÉ!", "miss"); return 0; }
+  if (G.starterId === 18) raw *= 0.93; // Suboi: phong thái ngầu — địch yếu vía, sát thương vào mình -7%
   const real = Math.max(1, Math.round(raw - pDef() * 0.45));
   p.hp -= real; ovFloat(ovPlayerUnit(), "-" + real, "hurt");
   ovBlog("🗡️ " + srcName + " đánh bạn <b>-" + real + "</b> HP.");
@@ -5513,7 +5695,8 @@ function ovHitPlayer(raw, srcName) { const B = OV.battle, p = G.p;
     if (src) { const rd2 = Math.round(real * 0.05); if (rd2 > 0) { src.hp -= rd2; if (src.ref) src.ref.hp = src.hp; } } }
   return real; }
 function ovHitAlly(u, raw, srcName) { if (!u || u.hp <= 0) return;
-  const real = Math.max(1, Math.round(raw * (0.85 + Math.random() * 0.3) - 3));
+  let real = Math.max(1, Math.round(raw * (0.85 + Math.random() * 0.3) - 3));
+  if (G.starterId === 17 && G.p.hp > 0) real = Math.max(1, Math.round(real * 0.85)); // Tiến Luật: chịu đòn thay đồng đội (-15% sát thương lên đồng minh)
   u.hp -= real; ovFloat(u, "-" + real, "hurt");
   ovBlog("🗡️ " + srcName + " đánh " + u.name + " <b>-" + real + "</b> HP.");
   if (u.hp <= 0) ovBlog("💀 " + u.name + " gục ngã trong trận này!"); }
@@ -5732,6 +5915,8 @@ async function ovActBasic() { const B = OV.battle; if (!B || B.busy || !B.active
   const base = pAtk() * (tamActive() === "Cái Bang" && G.p.hp < G.p.maxhp * 0.4 ? 1.2 : 1);
   ovHitFoe(t, base, {}); ovKnock(t, B.active);
   ovBlog("⚔️ Bạn đánh thường " + t.name + ".");
+  if (G.starterId === 12 && t.hp > 0 && Math.random() < 0.25) { ovHitFoe(t, base * 0.6, {}); ovBlog("🐉 Tứ Rồng ra đòn liên hoàn — thêm một đòn nữa!"); } // Tứ Rồng: 25% đánh bồi 60%
+  if (G.starterId === 15 && t.hp > 0 && Math.random() < 0.35) { t.taunted = 2; ovBlog("😏 Xuân Bắc chọc tức " + t.name + " — phòng thủ của nó lơi lỏng (chịu thêm 15% sát thương)!"); }
   await ovWait(280); if (OV.battle !== B) return;
   ovAfterAction(); }
 function ovActDodge() { const B = OV.battle; if (!B || B.busy || !B.active.isPlayer) return;
@@ -5789,7 +5974,7 @@ async function ovCastSkill(id) {
   try { useSkill(id); } catch (e) {}
   const isVar = variantOn(id), vElem = isVar ? varElemOf(id) : null;
   const lv = skillLv(id);
-  const base = pAtk() * (sk.mul || 1) * (isVar ? 1.15 : 1) * (1 + (lv - 1) * 0.12) * tamMul(id, sk);
+  const base = pAtk() * (sk.mul || 1) * (isVar ? 1.15 : 1) * (1 + (lv - 1) * 0.12) * tamMul(id, sk) * aptMul(id); // x Tư chất hệ chiêu
   try { sfxWhoosh(skillProfile(id, sk)); } catch (e) {}
   /* ---- TRÌNH DIỄN như bản chính: banner gọi tên chiêu -> lao tới/giương chiêu -> đạn bay
      (chiêu xa) -> ảnh chiêu BÙNG TO phủ mục tiêu + hạt + knockback + hit-stop/rung theo cấp ---- */
@@ -5834,7 +6019,7 @@ async function ovCastSkill(id) {
         if (OV.battle !== B) return;
         if (!ranged && SIG_FX[id] !== "dragon") await ovWait(110); if (OV.battle !== B) return;
         foes.forEach(u => ovImpactFx(u, fxSrc, tier, { auraSrc: auraSrc, color: col })); // AoE: bùng phủ MỌI mục tiêu cùng lúc
-        foes.forEach(u => hitFoe(u, { stun: sk.stun, dot: sk.dot })); } }
+        foes.forEach(u => hitFoe(u, { stun: sk.stun ? sk.stun + ((SKILL_SYS[id] === "am" && G.starterId === 13) ? 1 : 0) : sk.stun, dot: sk.dot })); } } // Đen Vâu: Âm Công khống chế +1 lượt
   }
   if (sk.kind === "lifesteal" && dealt > 0) { const h = Math.round(dealt * 0.35);
     G.p.hp = Math.min(G.p.maxhp, G.p.hp + h); ovFloat(ovPlayerUnit(), "+" + h, "heal"); ovBlog("🩸 Hút máu: +" + h + " HP."); }
@@ -6329,11 +6514,12 @@ function socErrandReady(e) {
 function socCompleteErrand(e, remote) {
   const gi = SOC.errands.indexOf(e); if (gi >= 0) SOC.errands.splice(gi, 1);
   if (SOC.offers[e.giver] === e) delete SOC.offers[e.giver];
-  G.gold += e.gold; if (e.itemR) addItem(e.itemR, 1);
-  G.aff[e.giver] = (G.aff[e.giver] || 0) + e.affR;
+  const gtGold = G.starterId ? Math.round(e.gold * Math.max(0, (pStat("gt") - 5) * 0.02 + (G.starterId === 8 ? 0.15 : 0) + (G.starterId === 19 ? 0.10 : 0))) : 0; // Giao Tiếp cao + thiên phú: thưởng ủy thác hậu hơn
+  G.gold += e.gold + gtGold; if (e.itemR) addItem(e.itemR, 1);
+  const affGot = gainAff(socNpcByName(e.giver) || e.giver, e.affR);
   if (e.fameR) fameChange(e.fameR, 0);
   const m = socMem(e.giver); m.helped++; m.thanksDay = G.day;
-  toast("🧾 Hoàn thành ủy thác của " + e.giver + "! +" + e.gold + " vàng · Thiện cảm +" + e.affR + (e.fameR ? " · Danh tiếng +" + e.fameR : "") + (e.itemR ? " · Nhận " + e.itemR : ""));
+  toast("🧾 Hoàn thành ủy thác của " + e.giver + "! +" + (e.gold + gtGold) + " vàng · Thiện cảm +" + affGot + (e.fameR ? " · Danh tiếng +" + e.fameR : "") + (e.itemR ? " · Nhận " + e.itemR : ""));
   if (!remote) toast("💬 " + e.giver + ": “" + (SOC_THANKS[socPersOf(e.giver)] || "Đa tạ ngươi nhiều lắm!") + "”");
   else toast("📨 Tin tốt đã truyền về cho " + e.giver + " — họ ghi ơn ngươi.");
   try { sfxCoin(); } catch (_) {}
@@ -6446,8 +6632,8 @@ function socRenderErrandSection(npc) {
   const dlv = document.getElementById("ovErrDeliver");
   if (dlv) dlv.onclick = () => { const e = SOC.errands.find(x => x.type === "deliver" && x.state === "active" && x.targetName === npc.name); if (!e) return;
     if ((G.items[e.item] || 0) > 0) G.items[e.item]--;
-    G.aff[npc.name] = (G.aff[npc.name] || 0) + 2;
-    toast("📦 " + npc.name + " nhận được " + e.item + ": “Đa tạ! Ta sẽ hồi âm cho " + e.giver + " ngay.” (Thiện cảm với " + npc.name + " +2)");
+    gainAff(npc, 2);
+    toast("📦 " + npc.name + " nhận được " + e.item + ": “Đa tạ! Ta sẽ hồi âm cho " + e.giver + " ngay.” (Thiện cảm với " + npc.name + " tăng)");
     socCompleteErrand(e, true); openDialog(npc); };
 }
 function socDialogEnhance(npc) {
@@ -6956,7 +7142,7 @@ function s5RevealSecret(npc) {
   const ch = CHESTS[(Math.random() * CHESTS.length) | 0]; if (!ch) return "Thôi, để khi khác ta kể.";
   const zn = zoneAt(ch.x, ch.y).name;
   if (!S5.marks.some(mk => mk.label === ch.label)) S5.marks.push({ x: ch.x, y: ch.y, label: ch.label, day: G.day });
-  G.aff[npc.name] = (G.aff[npc.name] || 0) + 1;
+  gainAff(npc, 1);
   return "Nghe cho kỹ: ở " + zn + " có " + ch.label + " — đầy lại mỗi ngày, ít người biết lắm. Ta đã ghim dấu ✦ tím trên bản đồ nhỏ cho ngươi rồi đấy. Đừng nói là ta chỉ nhé!"; }
 function s5StartTea(npc) {
   S5.tea = { name: npc.name, start: OV.tick.total, rounds: 0, lastRound: 0 };
@@ -7142,8 +7328,8 @@ ovEndBattle = function (result) { const B = OV.battle;
   if (result === "win" && compU && S5.comp) { const n = s5CompanionNpc();
     if (n) { let add = 2, msg = "đồng hành cùng nhau qua trận thắng";
       if (compU.hp > 0 && compU.hp < compU.maxhp * 0.35) { add = 5; msg = "ngươi đã che chắn, cứu " + n.name + " lúc nguy kịch trong trận"; }
-      G.aff[n.name] = (G.aff[n.name] || 0) + add;
-      toast("🧭 " + n.name + ": “" + msg + "” — Thiện cảm +" + add + " → " + G.aff[n.name]); } }
+      const gotA = gainAff(n, add);
+      toast("🧭 " + n.name + ": “" + msg + "” — Thiện cảm +" + gotA + " → " + G.aff[n.name]); } }
   if (result === "win" && (mode === "boss" || mode === "bossx")) s5Deed("hiệp khách " + CHARS[G.charIdx].name + " đã hạ " + (bossName || "boss") + " trong trận quyết đấu", (typeof curZone !== "undefined" && curZone) ? curZone.name : ""); };
 /* Buff kết nghĩa: đồng hành là tri kỷ đã kết nghĩa -> công lực +8% */
 const _s5pAtk = pAtk;
@@ -7198,8 +7384,8 @@ function s5DropTick() { const d = S5.drop; if (!d || !OV.cell) return;
   const what = d.item ? ("1 " + d.item) : (d.gold + " vàng");
   const ok = s5Panel("🎁 Đồ đánh rơi", "Ngươi bước trúng một túi đồ nhỏ — bên trong có <b>" + what + "</b>. " + (owner ? "Hình như là của <b>" + d.owner + "</b> đánh rơi gần đây." : "") + " Ngươi tính sao?",
     [ { label: "↩️ Trả lại cho " + d.owner, run: () => { S5.drop = null;
-          if (owner) { G.aff[owner.name] = (G.aff[owner.name] || 0) + 8; fameChange(2, 0);
-            return d.owner + " nhận lại túi đồ, cảm động rối rít: “Đa tạ! Giang hồ hiếm người thật thà như ngươi!” (Thiện cảm với " + d.owner + " +8, Chính danh +2)"; }
+          if (owner) { const gA = gainAff(owner, 8); fameChange(2, 0);
+            return d.owner + " nhận lại túi đồ, cảm động rối rít: “Đa tạ! Giang hồ hiếm người thật thà như ngươi!” (Thiện cảm với " + d.owner + " +" + gA + ", Chính danh +2)"; }
           return "Không tìm thấy chủ nhân — ngươi cất túi đồ vào rương trấn để ai mất thì tới nhận."; } },
       { label: "🤫 Giữ luôn", run: () => { S5.drop = null;
           if (d.item) addItem(d.item, 1); else G.gold += d.gold;
@@ -7217,10 +7403,10 @@ function s5ArgTick() { const ar = S5.arg; if (!ar) return;
       const ok = s5Panel("🗣️ Khẩu chiến giữa đường", "<b>" + ar.a + "</b> và <b>" + ar.b + "</b> đang cãi nhau to giữa đường vì chuyện cũ. Dân quanh đó đứng xem, không ai dám can. Ngươi tính sao?",
         [ { label: "⚖️ Phân xử công bằng (cần Chính danh ≥ 20)", run: () => { S5.arg = null;
               if ((G.fame || 0) < 20) return "Ngươi chưa đủ danh tiếng — hai người chẳng ai nghe, lại quay sang cãi tiếp. (Cần Chính danh ≥ 20)"; 
-              G.aff[ar.a] = (G.aff[ar.a] || 0) + 4; G.aff[ar.b] = (G.aff[ar.b] || 0) + 4; fameChange(2, 0);
-              return "Ngươi phân xử rành mạch, hai bên nể mặt người có danh tiếng mà bắt tay giảng hòa. (Thiện cảm với cả hai +4, Chính danh +2)"; } },
+              const mA = gainAff(ar.a, 4), mB = gainAff(ar.b, 4); fameChange(2, 0);
+              return "Ngươi phân xử rành mạch, hai bên nể mặt người có danh tiếng mà bắt tay giảng hòa. (Thiện cảm: " + ar.a + " +" + mA + ", " + ar.b + " +" + mB + ", Chính danh +2)"; } },
           { label: "👉 Nghiêng về " + ar.a, run: () => { S5.arg = null;
-              G.aff[ar.a] = (G.aff[ar.a] || 0) + 6; G.aff[ar.b] = (G.aff[ar.b] || 0) - 4;
+              gainAff(ar.a, 6); G.aff[ar.b] = (G.aff[ar.b] || 0) - 4;
               return ar.a + " hả hê ra mặt, còn " + ar.b + " phẫn nộ bỏ đi. (Thiện cảm: " + ar.a + " +6, " + ar.b + " -4)"; } },
           { label: "🚶 Bỏ đi, kệ họ", run: () => { S5.arg = null; return "Ngươi lặng lẽ đi tiếp. Sau lưng, tiếng cãi vã vẫn chưa dứt…"; } } ]);
       if (!ok) ar.mediated = false; } } }
@@ -7229,9 +7415,9 @@ function s5ReactTick() { if (!G || !OV.cell || OV.battle) return;
   const day = G.day;
   if (G.p.hp < G.p.maxhp * 0.3) { const helpers = s5NearNpcs(4, n => socPers(n) === "Nhân hậu" || socPers(n) === "Trượng nghĩa");
     if (helpers.length) { const n = helpers[0], key = "aid|" + n.name + "|" + day;
-      if (!S5.react[key]) { S5.react[key] = 1; addItem("Kim Sang Dược", 1); G.aff[n.name] = (G.aff[n.name] || 0) + 2;
+      if (!S5.react[key]) { S5.react[key] = 1; addItem("Kim Sang Dược", 1); const gA = gainAff(n, 2);
         n.bubble = "Ngươi bị thương nặng quá! Cầm lấy Kim Sang Dược này, uống ngay đi!"; n.bubbleT = 3.4;
-        toast("💊 " + n.name + " lo lắng chạy lại, dúi cho ngươi 1 Kim Sang Dược! (Thiện cảm +2)"); } }
+        toast("💊 " + n.name + " lo lắng chạy lại, dúi cho ngươi 1 Kim Sang Dược! (Thiện cảm +" + gA + ")"); } }
     else { const near = s5NearNpcs(4); const key = "worry|" + day;
       if (near.length && !S5.react[key]) { S5.react[key] = 1; near[0].bubble = "Ngươi chảy máu nhiều quá… vào trấn nghỉ đi, đừng cố!"; near[0].bubbleT = 3; } } }
   const hasGod = (G.learned || []).some(id => ["tb1", "tb2", "tb3", "tb4", "tb5"].includes(id))
@@ -7266,7 +7452,7 @@ function s5PostTick() { if (!G) return;
     else if (OV.tick.total - S5.comp.startTick > 170) s5EndCompanion("đã đi cùng đủ lâu, họ còn việc riêng");
     else if (n.hp < n.maxhp * 0.2) s5EndCompanion("bị thương nặng, phải về dưỡng thương");
     else if (OV.tick.total - S5.comp.lastAffTick >= 25) { S5.comp.lastAffTick = OV.tick.total;
-      G.aff[n.name] = (G.aff[n.name] || 0) + 1; } }
+      gainAff(n, 1); } }
   // trà ở tửu lâu: NPC tới quán + người chơi kề bên -> ngồi nói chuyện vài nhịp
   if (S5.tea) { const n = s5Npc(S5.tea.name);
     if (!n || OV.tick.total - S5.tea.start > 110) { if (n && OV.tick.total - S5.tea.start > 110) toast("🍵 " + S5.tea.name + " chờ lâu không thấy ngươi tới tửu lâu nên đã về."); S5.tea = null; }
@@ -7274,8 +7460,8 @@ function s5PostTick() { if (!G) return;
       if (s && Math.hypot(s.px - n.tavx, s.py - n.tavy) < 90 && s5CellDist(n) <= 1 && OV.tick.total - S5.tea.lastRound >= 5) {
         S5.tea.lastRound = OV.tick.total; S5.tea.rounds++;
         n.bubble = S5_TEA_LINES[Math.min(S5.tea.rounds - 1, S5_TEA_LINES.length - 1)]; n.bubbleT = 3.2;
-        if (S5.tea.rounds >= 3) { G.aff[n.name] = (G.aff[n.name] || 0) + 4;
-          toast("🍵 Uống trà với " + n.name + " xong — Thiện cảm +4. Họ còn kể: “" + socRumorText(n) + "”");
+        if (S5.tea.rounds >= 3) { const gA = gainAff(n, 4);
+          toast("🍵 Uống trà với " + n.name + " xong — Thiện cảm +" + gA + ". Họ còn kể: “" + socRumorText(n) + "”");
           const st = socSt(n); if (st.visit) st.visit.until = OV.tick.total;
           S5.tea = null; saveGame(); } } } }
   s5ArgTick(); s5DropTick();
