@@ -149,12 +149,13 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div id="bTop">
     <div class="bside" id="bLeft"></div><div id="vs">VS</div><div class="bside right" id="bRight"></div>
   </div>
-  <div id="cvWrap"><canvas id="cv"></canvas><div id="cutin"><div class="ci"><img id="ciImg"><div><div class="cn" id="ciName"></div><div class="cs" id="ciSkill"></div></div></div></div></div>
+  <div id="cvWrap"><canvas id="cv"></canvas><div id="cutin"><div class="ci"><img id="ciImg"><img id="ciFx" style="width:92px;height:92px;object-fit:cover;border-radius:10px"><div><div class="cn" id="ciName"></div><div class="cs" id="ciSkill"></div></div></div></div></div>
   <div id="bBottom">
     <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
     <button id="skillBtn">⚡ Tung chiêu</button>
     <button id="spdBtn">⏩ Tốc độ x1</button>
     <button id="quitBtn">🏳️ Rút quân</button>
+    <button id="sndBtn" style="background:#3a2d1a;color:#f0e6d2;border:1px solid #6a5636;padding:11px 12px;border-radius:10px">🔊</button>
   </div>
 </div>
 
@@ -375,7 +376,7 @@ function openBattle(cfg){
   const mk=(gens,fac,troops)=>{const lead=gens[0]?HMAP[gens[0]]:null;return (lead?'<div class="portrait"><img src="'+lead.img+'"></div>':'')+'<div class="binfo"><div class="gname" style="color:'+FACTIONS[fac].color+'">'+(gens.join(', ')||'Quân trấn giữ')+'</div><div class="troops" data-tr> '+troops+'</div><div class="hpbar"><i data-hp style="width:100%"></i></div><div class="barlbl">HP tướng</div><div class="genhp"><i data-gen style="width:100%"></i></div><div class="barlbl">Sĩ khí</div><div class="morale"><i data-mor style="width:100%"></i></div></div>';};
   L.innerHTML=mk(cfg.atkGens,cfg.atkFac,cfg.atkTroops);
   R.innerHTML=mk(cfg.defGens,cfg.defFac,cfg.defTroops);
-  resizeCanvas();spawnUnits();buildBattlefield();updateStanceBtns();
+  resizeCanvas();spawnUnits();buildBattlefield();updateStanceBtns();spawnGenerals();startDrums();
   B.raf=requestAnimationFrame(battleLoop);
 }
 function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRect();cv.width=Math.max(320,r.width);cv.height=Math.max(240,r.height);}
@@ -393,7 +394,7 @@ function spawnUnits(){
       const x0=side==='atk'?16+c*((W*0.17)/cols):W-16-(cols-c)*((W*0.17)/cols);
       const y0=H*0.22+r*((H*0.62)/Math.max(1,rows-1||1))+((c%2)*5);
       const gname=gens.length?gens[i%gens.length]:null;const tr=gname?troopOf(gname):TROOPS[0];
-      const maxHp=per*2.4*(tr?(0.65+tr.def/11):1)*form.hp;
+      const maxHp=per*2.9*(tr?(0.65+tr.def/11):1)*form.hp;
       if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
       const cls=tr?tr.cls:'kiem';
       B.units.push({side,x:x0,y:Math.min(H-24,y0),hx:x0,hy:Math.min(H-24,y0),hp:maxHp,maxHp,per,fac,cls,img:tr?tr.img:null,
@@ -485,12 +486,14 @@ function drawFlags(ctx,t){
   }
 }
 /* ================= SKILLS (Spectral Force style: SP tiers, formation-depth targeting, cut-in) ================= */
+const SKILL_FX={'Võ tướng':'assets/fx/fx-thunder.png','Mưu sĩ':'assets/fx/fx-fire.png','Quân chủ':'assets/fx/fx-sun.png'};
 function spTier(side){const sp=B.sp[side];return sp>=100?3:sp>=67?2:sp>=34?1:0;}
 function showCutin(side,tier){
   const gens=side==='atk'?B.atkGens:B.defGens;const lead=gens[0];if(!lead)return;
   const h=HMAP[lead];
   $('ciImg').src=h.img;$('ciName').textContent=lead+' · '+FACTIONS[side==='atk'?B.atkFac:B.defFac].name;
   $('ciSkill').textContent='⚡ '+h.skill+' Lv'+(tier||spTier(side));
+  $('ciFx').src=SKILL_FX[h.role]||SKILL_FX['Võ tướng'];
   const c=$('cutin');c.style.display='flex';
   clearTimeout(B.ciT);B.ciT=setTimeout(()=>{c.style.display='none';},1150);
 }
@@ -501,7 +504,12 @@ function useSkill(side){
   const role=HMAP[lead].role;const foe=side==='atk'?'def':'atk';
   const cv=$('cv');const enemies=B.units.filter(u=>u.side===foe&&!u.dead);
   const mine=B.units.filter(u=>u.side===side&&!u.dead);
-  showCutin(side,tier);B.shake=Math.max(B.shake,6);
+  showCutin(side,tier);B.shake=Math.max(B.shake,6);sfxBoom();
+  {const fxSrc=SKILL_FX[role];if(fxSrc){if(!B.fx)B.fx={};if(!B.fx[fxSrc]){const im=new Image();im.src=fxSrc;B.fx[fxSrc]=im;}
+   const pool=role==='Quân chủ'?mine:enemies;
+   const cx=pool.length?pool.reduce((a,u)=>a+u.x,0)/pool.length:cv.width/2;
+   const cy=pool.length?pool.reduce((a,u)=>a+u.y,0)/pool.length:cv.height/2;
+   B.effects.push({x:cx,y:cy,life:32,type:'fxbig',img:B.fx[fxSrc],size:170+45*tier});}}
   if(role==='Mưu sĩ'){
     // Hỏa Công: deep strike — hits the enemy centre/back near their own general
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
@@ -534,12 +542,87 @@ function spawnReinforce(side,amount){
   for(let i=0;i<n;i++){
     const gname=gens.length?gens[i%gens.length]:null;const tr=gname?troopOf(gname):TROOPS[0];
     if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
-    const maxHp=per*2.4*(tr?(0.65+tr.def/11):1)*form.hp;
+    const maxHp=per*2.9*(tr?(0.65+tr.def/11):1)*form.hp;
     const x0=side==='atk'?18+Math.random()*W*0.10:W-18-Math.random()*W*0.10;
     const y0=H*0.24+Math.random()*H*0.55;
     B.units.push({side,x:x0,y:y0,hx:x0,hy:y0,hp:maxHp,maxHp,per,fac:side==='atk'?B.atkFac:B.defFac,cls:tr?tr.cls:'kiem',img:tr?tr.img:null,
       dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28});
   }
+}
+/* ================= GENERALS ON THE FIELD ================= */
+function spawnGenerals(){
+  const cv=$('cv'),W=cv.width,H=cv.height;B.genUnits=[];B.texts=[];
+  const mk=(names,side)=>{
+    const pool=side==='atk'?B.genAtk.max:B.genDef.max;
+    names.forEach((n,i)=>{
+      const share=i===0?0.55:(0.45/Math.max(1,names.length-1));
+      const hp=Math.round(pool*share);
+      B.genUnits.push({side,name:n,img:HMAP[n].img,vo:HMAP[n].vo,lead:i===0,dead:false,fleeing:false,
+        x:side==='atk'?W*0.075:W*0.925,y:H*(0.34+0.20*i),hp,maxHp:hp,cd:20+i*9,flash:0,ph:Math.random()*6.28});
+    });
+  };
+  mk(B.atkGens,'atk');mk(B.defGens,'def');
+  if(!B.fx)B.fx={};
+  ['assets/fx/fx-thunder.png','assets/fx/fx-fire.png','assets/fx/fx-sun.png','assets/fx/fx-slash.png'].forEach(src=>{const im=new Image();im.src=src;B.fx[src]=im;});
+}
+function leadGen(side){return B.genUnits?B.genUnits.find(g=>g.side===side&&g.lead):null;}
+function syncGenHp(){
+  if(!B.genUnits)return;
+  const a=leadGen('atk'),d=leadGen('def');
+  if(a){B.genAtk.hp=Math.max(0,a.hp);B.genAtk.max=a.maxHp;}
+  if(d){B.genDef.hp=Math.max(0,d.hp);B.genDef.max=d.maxHp;}
+}
+function killGeneral(g){
+  g.dead=true;B.shake=Math.max(B.shake,9);sfxBoom();
+  B.effects.push({x:g.x,y:g.y,life:26,type:'boom'});
+  B.texts.push({x:g.x,y:g.y-58,life:70,txt:'⚔️ '+g.name+' TỬ TRẬN!',color:'#ff6b5e',big:true});
+  toast('⚔️ '+g.name+' tử trận giữa chiến trường!');
+  if(g.lead&&!B.over){B.over=true;B.winner=g.side==='atk'?'def':'atk';B.endReason='general';B.endT=performance.now();setTimeout(finishBattle,1200);}
+  else B.moraleBonus[g.side]=Math.max(-30,B.moraleBonus[g.side]-14);
+}
+function drawGeneralUnit(ctx,g,t){
+  const img=(B.gimgs&&B.gimgs[g.name]);
+  const h=96,w=h*0.86;
+  const bob=g.moving?Math.abs(Math.sin(t/95+g.ph))*3.4:Math.sin(t/600+g.ph)*1.1;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.30)';ctx.beginPath();ctx.ellipse(g.x,g.y+6,w*0.36,6.5,0,0,6.29);ctx.fill();
+  if(img&&img.complete&&img.naturalWidth){
+    if(g.side==='def'){ctx.translate(g.x,g.y-bob);ctx.scale(-1,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore();ctx.save();}
+    else ctx.drawImage(img,g.x-w/2,g.y-h-bob,w,h);
+  }
+  if(g.flash>0){ctx.globalAlpha=Math.min(0.55,g.flash/10);ctx.globalCompositeOperation='lighter';ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.x,g.y-h/2,26,0,6.29);ctx.fill();ctx.globalCompositeOperation='source-over';}
+  ctx.restore();
+  // name + HP bar
+  ctx.save();ctx.font='bold 10.5px sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,.45)';const tw=ctx.measureText(g.name).width+10;
+  ctx.fillRect(g.x-tw/2,g.y-h-bob-24,tw,13);
+  ctx.fillStyle=g.lead?'#ffd94a':'#e8e2d2';ctx.fillText((g.lead?'👑 ':'')+g.name,g.x,g.y-h-bob-14);
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(g.x-21,g.y-h-bob-10,42,5);
+  ctx.fillStyle=g.side==='atk'?'#7ec8ff':'#ff9a8a';ctx.fillRect(g.x-20,g.y-h-bob-9,40*Math.max(0,g.hp/g.maxHp),3);
+  ctx.restore();
+}
+/* ================= WAR DRUMS (synth) ================= */
+let AC=null;
+function sfxInit(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();}catch(e){}}
+function sfxDrum(alt){
+  if(!AC||(B&&B.muted))return;
+  try{const t0=AC.currentTime,o=AC.createOscillator(),gn=AC.createGain();
+  o.type='sine';o.frequency.setValueAtTime(alt?82:68,t0);o.frequency.exponentialRampToValueAtTime(38,t0+0.16);
+  gn.gain.setValueAtTime(0.20,t0);gn.gain.exponentialRampToValueAtTime(0.001,t0+0.22);
+  o.connect(gn);gn.connect(AC.destination);o.start(t0);o.stop(t0+0.24);}catch(e){}
+}
+function sfxBoom(){
+  if(!AC||(B&&B.muted))return;
+  try{const t0=AC.currentTime,len=AC.sampleRate*0.3,buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+  const src=AC.createBufferSource();src.buffer=buf;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=420;
+  const gn=AC.createGain();gn.gain.setValueAtTime(0.30,t0);gn.gain.exponentialRampToValueAtTime(0.001,t0+0.3);
+  src.connect(f);f.connect(gn);gn.connect(AC.destination);src.start(t0);}catch(e){}
+}
+function startDrums(){
+  sfxInit();let alt=false;
+  clearInterval(B.drumInt);
+  B.drumInt=setInterval(()=>{if(B&&!B.over){sfxDrum(alt);alt=!alt;}},640);
 }
 /* ================= STANCES (SF2 commands: Break Through / Defense) ================= */
 function stanceMult(side){
@@ -562,12 +645,14 @@ $('stanceBtn2').onclick=()=>setStance('def');
 function moraleOf(side){
   const max=side==='atk'?B.atkMax:B.defMax,cur=aliveTroops(side);
   const gen=side==='atk'?B.genAtk:B.genDef;
-  return Math.max(0,Math.min(100,100-(1-cur/Math.max(1,max))*112-(1-gen.hp/gen.max)*28+B.moraleBonus[side]));
+  return Math.max(0,Math.min(100,100-(1-cur/Math.max(1,max))*112-(1-gen.hp/gen.max)*18+B.moraleBonus[side]));
 }
 function battleLoop(ts){
   if(!B||B.over&&B.endT&&ts-B.endT>1400){return;}
   const cv=$('cv'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
   const rawDt=B.lastTs?Math.min(2.4,Math.max(0.4,(ts-B.lastTs)/16.67)):1;B.lastTs=ts;
+  syncGenHp();
+  if(!B.gimgs){B.gimgs={};(B.genUnits||[]).forEach(g=>{const im=new Image();im.src=g.img;B.gimgs[g.name]=im;});}
   const dt=rawDt*B.speed;
   B.t+=dt;
   if(B.bg&&B.bg.width===W&&B.bg.height===H)ctx.drawImage(B.bg,0,0);else{ctx.fillStyle='#56743a';ctx.fillRect(0,0,W,H);}
@@ -587,17 +672,44 @@ function battleLoop(ts){
       B.stance[sd]=myF<foF-0.10?'def':(myF>foF+0.12?'break':'normal');}
   }
   if(B.aiT>560)B.aiT=0;
-  // generals strike back at soldiers who reach them
-  for(const sd of ['atk','def']){
-    B.genCd[sd]-=dt;
-    if(B.genCd[sd]<=0){
-      const gp=genPos[sd],foe=sd==='atk'?'def':'atk';
-      let near=null,nd=54;
-      for(const u of alive){if(u.side!==foe)continue;const d=Math.hypot(u.x-gp.x,u.y-gp.y);if(d<nd){nd=d;near=u;}}
-      if(near){near.hp-=near.maxHp*1.25;B.genCd[sd]=52;B.effects.push({x:near.x,y:near.y,life:16,type:'bolt'});
-        if(near.hp<=0&&!near.dead){near.dead=1;B.sp[sd]=Math.min(100,B.sp[sd]+0.8);}}
-      else B.genCd[sd]=14;
+  // generals fight IN the field: advance with their troops, AoE swings, duel enemy generals
+  const morNow={atk:moraleOf('atk'),def:moraleOf('def')};
+  for(const g of (B.genUnits||[])){
+    if(g.dead)continue;
+    g.flash=Math.max(0,(g.flash||0)-dt);g.moving=false;
+    if(!g.fleeing&&morNow[g.side]<30&&Math.random()<0.010*dt)g.fleeing=true;
+    const dirG=g.side==='atk'?1:-1;
+    if(g.fleeing){g.x-=dirG*1.5*dt;g.moving=true;g.x=Math.max(16,Math.min(W-16,g.x));continue;}
+    let tgt=null,td=96;
+    for(const u of alive){if(u.side===g.side||u.fleeing)continue;const d=Math.hypot(u.x-g.x,u.y-g.y);if(d<td){td=d;tgt=u;}}
+    let gtgt=null,gtd=128;
+    for(const og of B.genUnits){if(og.side===g.side||og.dead)continue;const d=Math.hypot(og.x-g.x,og.y-g.y);if(d<gtd){gtd=d;gtgt=og;}}
+    const foe = (gtgt&&gtd<td+16)?gtgt:tgt;
+    if(foe){
+      const fd=Math.hypot(foe.x-g.x,foe.y-g.y)||1;
+      const reach=foe.maxHp&&foe.name?46:36;
+      if(fd>reach){
+        const step=Math.min(0.62*dt,fd-reach*0.8);
+        g.x+=(foe.x-g.x)/fd*step;g.y+=(foe.y-g.y)/fd*step*0.8;g.moving=step>0.15;
+      }else if((g.cd-=dt)<=0){
+        g.cd=40+Math.random()*10;g.atkAnim=6;
+        const slash=B.fx&&B.fx['assets/fx/fx-slash.png'];
+        B.effects.push({x:foe.x,y:foe.y-8,life:13,type:'fximg',img:slash,size:64});
+        if(foe.name){ // struck an enemy general
+          const dmg=foe.maxHp*0.030*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
+          foe.hp-=dmg;foe.flash=8;
+          B.texts.push({x:foe.x,y:foe.y-104,life:44,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
+          if(foe.hp<=0)killGeneral(foe);
+        }else{ // AoE swing through nearby soldiers
+          for(const u of alive){if(u.side===g.side)continue;if(Math.hypot(u.x-foe.x,u.y-foe.y)<32||Math.hypot(u.x-g.x,u.y-g.y)<34){
+            u.hp-=u.per*(1.5+g.vo/55)*stanceMult(g.side).dealt;
+            if(u.hp<=0&&!u.dead){u.dead=1;B.sp[g.side]=Math.min(100,B.sp[g.side]+0.8);}}}
+        }
+      }
+    }else{
+      g.x+=dirG*0.5*dt;g.moving=true; // no enemies in reach — advance
     }
+    g.x=Math.max(16,Math.min(W-16,g.x));g.y=Math.max(H*0.16,Math.min(H-12,g.y));
   }
   const morA=moraleOf('atk'),morD=moraleOf('def');
   for(const u of alive){
@@ -613,17 +725,18 @@ function battleLoop(ts){
     if(!best){let nd=1e18;for(const v of alive){if(v.side===u.side)continue;const d=(v.x-u.x)*(v.x-u.x)+(v.y-u.y)*(v.y-u.y);if(d<nd){nd=d;best=v;}}}
     const dir=u.side==='atk'?1:-1;u.atkAnim=Math.max(0,(u.atkAnim||0)-dt);u.moving=false;
     const foeSide=u.side==='atk'?'def':'atk';
-    const egp=genPos[foeSide],genDist=Math.hypot(egp.x-u.x,egp.y-u.y);
+    let egu=null,genDist=1e9;
+    for(const og of (B.genUnits||[])){if(og.side!==foeSide||og.dead)continue;const d=Math.hypot(og.x-u.x,og.y-u.y);if(d<genDist){genDist=d;egu=og;}}
     const bestDist=best?Math.hypot(best.x-u.x,best.y-u.y):1e9;
-    if(genDist<50&&bestDist>30){
-      // broken through the line — attack the enemy general directly
-      if(genDist>30){u.x+=(egp.x-u.x)*0.03*dt*u.spdF;u.y+=(egp.y-u.y)*0.03*dt*u.spdF;u.moving=true;}
+    if(egu&&genDist<58&&bestDist>30){
+      // broken through the line — attack the enemy general in the field
+      if(genDist>30){u.x+=(egu.x-u.x)*0.03*dt*u.spdF;u.y+=(egu.y-u.y)*0.03*dt*u.spdF;u.moving=true;}
       else if((u.cd-=dt)<=0){
         u.cd=30+Math.random()*14;u.atkAnim=6;
-        const gen=foeSide==='atk'?B.genAtk:B.genDef;
         const myPow=u.side==='atk'?atkPow:defPow;
-        gen.hp-=u.per*0.34*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
-        if(gen.hp<=0&&!B.over){B.over=true;B.winner=u.side;B.endReason='general';B.endT=ts;setTimeout(finishBattle,1000);}
+        egu.hp-=u.per*0.30*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
+        egu.flash=6;
+        if(egu.hp<=0)killGeneral(egu);
       }
     }else if(best){
       const range=u.cls==='giao'?21:15;
@@ -638,9 +751,11 @@ function battleLoop(ts){
         u.cd=27+Math.random()*20;u.atkAnim=6;
         const myPow=u.side==='atk'?atkPow:defPow;
         const fd=FORMS[u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa'].dmg;
-        best.hp-=u.per*0.115*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd
+        if(!B.clashed){B.clashed=true;B.shake=Math.max(B.shake,5);}
+        best.hp-=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd
           *stanceMult(u.side).dealt*stanceMult(best.side).taken*B.rpsMult[u.side];
-        if(best.hp<=0&&!best.dead){best.dead=1;B.sp[u.side]=Math.min(100,B.sp[u.side]+0.8);}
+        if(u.cls==='ky'&&!best.chargeHit){best.chargeHit=1;best.x+=(u.side==='atk'?1:-1)*8;best.y+=(Math.random()*6-3);}
+        if(best.hp<=0&&!best.dead){best.dead=1;B.sp[u.side]=Math.min(100,B.sp[u.side]+0.8);B.effects.push({x:best.x,y:best.y-6,life:10,type:'spark'});}
       }
     }else{
       u.x+=dir*0.8*dt;u.moving=true; // no soldiers left to fight — march on the general
@@ -648,16 +763,11 @@ function battleLoop(ts){
     u.x=Math.max(12,Math.min(W-12,u.x));u.y=Math.max(H*0.14,Math.min(H-14,u.y));
   }
   for(const u of B.units)if(u.dead&&u.dead<41)u.dead+=dt;
-  // generals: big sprites at rear
-  const drawGen=(gens,side)=>{
-    if(!gens.length)return;const img=B.imgs&&B.imgs[gens[0]];
-    if(img&&img.complete){const gh=H*0.34;ctx.drawImage(img,side==='atk'?W*0.03:W-gh*0.8-W*0.03,H-gh-6,gh*0.8,gh);}
-  };
-  if(!B.imgs){B.imgs={};[...B.atkGens,...B.defGens].forEach(n=>{const im=new Image();im.src=HMAP[n].img;B.imgs[n]=im;});}
-  drawGen(B.atkGens,'atk');drawGen(B.defGens,'def');
+  const genAlive=(B.genUnits||[]).filter(g=>!g.dead).sort((a,b)=>a.y-b.y);
   alive.sort((a,b)=>a.y-b.y);
   for(const u of B.units)if(u.dead)drawSoldier(ctx,u,B.t*16);
   for(const u of alive)drawSoldier(ctx,u,B.t*16);
+  for(const g of genAlive)drawGeneralUnit(ctx,g,B.t*16);
   // effects
   B.effects=B.effects.filter(e=>(e.life-=dt)>0);
   for(const e of B.effects){ctx.save();
@@ -665,8 +775,19 @@ function battleLoop(ts){
     else if(e.type==='boom'){ctx.globalAlpha=Math.min(1,e.life/16);ctx.fillStyle='#ff8a3c';ctx.beginPath();ctx.arc(e.x,e.y,(26-e.life)*1.5+4,0,6.29);ctx.fill();ctx.fillStyle='#ffd94a';ctx.beginPath();ctx.arc(e.x,e.y,(26-e.life)*0.8+2,0,6.29);ctx.fill();}
     else if(e.type==='bolt'){ctx.globalAlpha=Math.min(1,e.life/12);ctx.strokeStyle='#bfe8ff';ctx.lineWidth=2.4;ctx.beginPath();let bx=e.x-7,by=e.y-24;ctx.moveTo(bx,by);for(let i2=1;i2<=4;i2++){ctx.lineTo(bx+i2*3.4+(i2%2?3.4:-1),by+i2*6);}ctx.lineTo(e.x,e.y);ctx.stroke();}
     else if(e.type==='heal'){ctx.globalAlpha=Math.min(1,e.life/18);ctx.fillStyle='#8fe38f';ctx.font='bold 13px sans-serif';ctx.fillText('+',e.x,e.y-(24-e.life)*0.9);}
+    else if(e.type==='fxbig'||e.type==='fximg'){
+      if(e.img&&e.img.complete&&e.img.naturalWidth){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,e.life/(e.type==='fxbig'?16:8))*0.95;
+        const sz=e.size*(e.type==='fxbig'?(1+(32-e.life)/32*0.22):1);ctx.drawImage(e.img,e.x-sz/2,e.y-sz/2,sz,sz);ctx.globalCompositeOperation='source-over';}
+    }
+    else if(e.type==='spark'){ctx.globalAlpha=Math.min(1,e.life/8);ctx.strokeStyle='#fff3b0';ctx.lineWidth=2;const r=(10-e.life)*1.6+2;
+      ctx.beginPath();ctx.moveTo(e.x-r,e.y);ctx.lineTo(e.x+r,e.y);ctx.moveTo(e.x,e.y-r);ctx.lineTo(e.x,e.y+r);ctx.stroke();}
     else{ctx.globalAlpha=Math.min(1,e.life/18);ctx.strokeStyle=e.color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,(30-e.life)*2.6,0,6.29);ctx.stroke();}
     ctx.restore();}
+  // floating combat texts
+  if(B.texts){B.texts=B.texts.filter(tx=>(tx.life-=dt)>0);
+    for(const tx of B.texts){ctx.save();ctx.globalAlpha=Math.min(1,tx.life/22);ctx.font=(tx.big?'900 19px':'bold 12.5px')+' sans-serif';ctx.textAlign='center';
+      ctx.strokeStyle='rgba(0,0,0,.65)';ctx.lineWidth=3.4;const yy=tx.y-(70-tx.life)*0.55;
+      ctx.strokeText(tx.txt,tx.x,yy);ctx.fillStyle=tx.color;ctx.fillText(tx.txt,tx.x,yy);ctx.restore();}}
   if(B.shake>0){B.shake-=dt;cv.style.transform='translate('+(Math.random()*8-4)+'px,'+(Math.random()*6-3)+'px)';}else cv.style.transform='';
   // HUD
   const at=aliveTroops('atk'),df=aliveTroops('def');
@@ -693,8 +814,9 @@ function battleLoop(ts){
 $('skillBtn').onclick=()=>{if(!B||B.over)return;useSkill(B.playerSide);};
 $('spdBtn').onclick=()=>{if(!B)return;B.speed=B.speed>=3?1:B.speed+1;$('spdBtn').textContent='⏩ Tốc độ x'+B.speed;};
 $('quitBtn').onclick=()=>{if(!B||B.over)return;B.over=true;B.winner=B.playerSide==='atk'?'def':'atk';B.retreat=true;setTimeout(finishBattle,300);};
+$('sndBtn').onclick=()=>{if(!B)return;B.muted=!B.muted;$('sndBtn').textContent=B.muted?'🔇':'🔊';if(!B.muted)sfxInit();};
 function finishBattle(){
-  cancelAnimationFrame(B.raf);
+  cancelAnimationFrame(B.raf);if(B.drumInt)clearInterval(B.drumInt);
   const at=aliveTroops('atk'),df=aliveTroops('def');
   const atkWin=B.winner==='atk';
   const to=S.regions[B.toId],from=S.regions[B.fromId];
