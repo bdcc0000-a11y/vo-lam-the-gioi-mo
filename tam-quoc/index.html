@@ -1127,10 +1127,11 @@ function setOrder(side,od){
 function updateOrderBtns(){
   if(!B)return;const od=B.order[B.playerSide],cd=B.orderCd[B.playerSide];
   [['ordBtn1','tongcong'],['ordBtn2','cothu'],['ordBtn3','san']].forEach(([id,o])=>{
-    const b=$(id);if(!b)return;b.classList.toggle('on',od===o);b.disabled=cd>0&&od!==o;
-    if(od===o)b.textContent=b.textContent.split(' (')[0]+' ('+Math.ceil(B.orderT[B.playerSide]/60)+'s)';
-    else if(cd>0)b.textContent=b.textContent.split(' (')[0]+' ⏳'+Math.ceil(cd/60)+'s';
-    else b.textContent=b.textContent.split(' (')[0];
+    const b=$(id);if(!b)return;if(!b.dataset.lbl)b.dataset.lbl=b.textContent;
+    b.classList.toggle('on',od===o);b.disabled=cd>0&&od!==o;
+    if(od===o)b.textContent=b.dataset.lbl+' ('+Math.ceil(B.orderT[B.playerSide]/60)+'s)';
+    else if(cd>0)b.textContent=b.dataset.lbl+' ⏳'+Math.ceil(cd/60)+'s';
+    else b.textContent=b.dataset.lbl;
   });
 }
 function updateStanceBtns(){
