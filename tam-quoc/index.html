@@ -344,13 +344,13 @@ function showPrep(cfg){
   $('prepInfo').innerHTML='Quân ta xuất trận: <b>'+(cfg.playerSide==='atk'?cfg.atkTroops:cfg.defTroops)+'</b> · Quân địch: <b>'+(cfg.playerSide==='atk'?cfg.defTroops:cfg.atkTroops)+'</b> · Đội hình địch: <b>'+FORMS[foeForm].name+'</b><span id="prepRps">'+rpsLine()+'</span>';
   PREP.rpsLine=rpsLine;
   const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
-  const card=(n,fac)=>{const h=HMAP[n],t=troopOf(n);return '<div class="pcard"><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'">'+n+'</div><div class="pt">Quân: '+(t?t.name+' ('+t.clsLabel+', cấp '+t.tier+')':'—')+' · Võ '+h.vo+'</div></div></div>';};
+  const card=(n,fac,lead)=>{const h=HMAP[n],t=troopOf(n);return '<div class="pcard"><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'">'+n+(lead?' 👑':'')+'</div><div class="pt">'+(lead?'<b style="color:#ffd94a">Chủ tướng — chết là thua trận!</b><br>':'')+'Quân: '+(t?t.name+' ('+t.clsLabel+', cấp '+t.tier+')':'—')+' · Võ '+h.vo+'</div></div></div>';};
   let rows='';
   for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
     const m=myGens[i],f=foeGens[i];
     let badge='<span class="khac draw">—</span>';
     if(m&&f){const cm=counterMult(troopOf(m).cls,troopOf(f).cls);badge=cm>1?'<span class="khac win">▲ Khắc chế</span>':(cm<1?'<span class="khac lose">▼ Bị khắc</span>':'<span class="khac draw">● Hòa hệ</span>');}
-    rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac):'<div class="pcard"></div>')+'</div>';
+    rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac,i===0):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac,i===0):'<div class="pcard"></div>')+'</div>';
   }
   $('prepVs').innerHTML=rows||'<div class="info">Không có tướng đối đầu.</div>';
   const pf=$('prepForms');
@@ -509,7 +509,7 @@ function useSkill(side){
    const pool=role==='Quân chủ'?mine:enemies;
    const cx=pool.length?pool.reduce((a,u)=>a+u.x,0)/pool.length:cv.width/2;
    const cy=pool.length?pool.reduce((a,u)=>a+u.y,0)/pool.length:cv.height/2;
-   B.effects.push({x:cx,y:cy,life:88,type:'fxbig',img:B.fx[fxSrc],size:190+55*tier});}}
+   B.effects.push({x:cx,y:cy,life:135,type:'fxbig',img:B.fx[fxSrc],size:190+55*tier});}}
   if(role==='Mưu sĩ'){
     // Hỏa Công: deep strike — hits the enemy centre/back near their own general
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
@@ -699,7 +699,7 @@ function battleLoop(ts){
         if(foe.name){ // struck an enemy general
           const dmg=foe.maxHp*0.030*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
           foe.hp-=dmg;foe.flash=8;
-          B.texts.push({x:foe.x,y:foe.y-104,life:44,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
+          B.texts.push({x:foe.x,y:foe.y-104,life:58,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
           if(foe.hp<=0)killGeneral(foe);
         }else{ // AoE swing through nearby soldiers
           for(const u of alive){if(u.side===g.side)continue;if(Math.hypot(u.x-foe.x,u.y-foe.y)<32||Math.hypot(u.x-g.x,u.y-g.y)<34){
@@ -777,8 +777,8 @@ function battleLoop(ts){
     else if(e.type==='bolt'){ctx.globalAlpha=Math.min(1,e.life/12);ctx.strokeStyle='#bfe8ff';ctx.lineWidth=2.4;ctx.beginPath();let bx=e.x-7,by=e.y-24;ctx.moveTo(bx,by);for(let i2=1;i2<=4;i2++){ctx.lineTo(bx+i2*3.4+(i2%2?3.4:-1),by+i2*6);}ctx.lineTo(e.x,e.y);ctx.stroke();}
     else if(e.type==='heal'){ctx.globalAlpha=Math.min(1,e.life/18);ctx.fillStyle='#8fe38f';ctx.font='bold 13px sans-serif';ctx.fillText('+',e.x,e.y-(24-e.life)*0.9);}
     else if(e.type==='fxbig'||e.type==='fximg'){
-      if(e.img&&e.img.complete&&e.img.naturalWidth){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,e.life/(e.type==='fxbig'?16:8))*0.95;
-        const sz=e.size*(e.type==='fxbig'?(1+Math.max(0,(88-e.life))/88*0.22):1);ctx.drawImage(e.img,e.x-sz/2,e.y-sz/2,sz,sz);ctx.globalCompositeOperation='source-over';}
+      if(e.img&&e.img.complete&&e.img.naturalWidth){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(e.type==='fxbig'?Math.min(1,e.life/45):Math.min(1,e.life/8))*0.95;
+        const sz=e.size*(e.type==='fxbig'?(1+Math.max(0,(135-e.life))/135*0.22):1);ctx.drawImage(e.img,e.x-sz/2,e.y-sz/2,sz,sz);ctx.globalCompositeOperation='source-over';}
     }
     else if(e.type==='spark'){ctx.globalAlpha=Math.min(1,e.life/8);ctx.strokeStyle='#fff3b0';ctx.lineWidth=2;const r=(10-e.life)*1.6+2;
       ctx.beginPath();ctx.moveTo(e.x-r,e.y);ctx.lineTo(e.x+r,e.y);ctx.moveTo(e.x,e.y-r);ctx.lineTo(e.x,e.y+r);ctx.stroke();}
