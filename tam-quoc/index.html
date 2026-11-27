@@ -742,40 +742,54 @@ function nodeClicked(id){
   selectRegion(id);
 }
 function selectRegion(id){S.sel=id;refreshNodes();renderPanel();openCityMenu(id);}
+let PANEL_TAB='mil';
 function renderPanel(){
   const p=$('panel');
   if(!S.sel){p.innerHTML='<h3>🗺️ Chọn một vùng đất</h3><div class="info">Bấm vào bất kỳ thành nào — menu sẽ bật ngay cạnh thành: tuyển quân, tấn công, rồi vào màn chuẩn bị để chọn tướng xuất chinh. Mỗi lượt mỗi thành được đánh 1 trận và tuyển quân 1 lần.</div>';return;}
   const r=RMAP[S.sel],st=S.regions[r.id],f=FACTIONS[st.owner],mine=st.owner===S.player;
   let html='<h3>'+r.name+' — '+f.icon+' '+f.name+(CAPITALS[st.owner]===r.id?' (kinh đô)':'')+'</h3>';
-  html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b>/'+cityCap(st)+' · Thu nhập/lượt: <b>'+cityGold(st)+'</b> vàng · Lương: <b>'+cityFood(st)+'</b>/lượt<br>Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>';
-  if(mine){
-    const acted=S.acted[r.id]||{};
+  html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b>/'+cityCap(st)+' · Thu nhập/lượt: <b>'+cityGold(st)+'</b> vàng · Lương: <b>'+cityFood(st)+'</b>/lượt</div>';
+  if(!mine){
+    html+='<div class="info" style="margin-top:6px">Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>'
+      +'<div class="info">Thành của địch — muốn đánh, hãy chọn một thành của mình kề bên rồi bấm nút tấn công.</div>';
+    p.innerHTML=html;
+    p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
+    return;
+  }
+  const acted=S.acted[r.id]||{};
+  const tabBtn=(id,icon,label)=>'<button data-ptab="'+id+'" style="flex:1;padding:7px 4px;border-radius:8px;border:1px solid '+(PANEL_TAB===id?'#e8c85a':'#5a4a2a')+';background:'+(PANEL_TAB===id?'#4a3a14':'#241a0c')+';color:'+(PANEL_TAB===id?'#ffe9a0':'#cbbd93')+';font-weight:'+(PANEL_TAB===id?'700':'400')+';cursor:pointer">'+icon+' '+label+'</button>';
+  html+='<div style="display:flex;gap:6px;margin:8px 0">'+tabBtn('gen','🎖️','Tướng')+tabBtn('mil','⚔️','Quân sự')+tabBtn('noi','🏯','Nội chính')+'</div>';
+  if(PANEL_TAB==='gen'){
+    html+='<div class="garr">'+garrisonHTML(st)+'</div><div class="info">Bấm vào thẻ tướng để xem chi tiết, nâng binh kỹ hoặc điều tướng sang thành khác.</div>';
+  }else if(PANEL_TAB==='mil'){
     html+='<div class="acts">'
       +'<button id="actRecruit" '+(acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[r.id])?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>'
       +'<button class="atk" id="actWar" '+(acted.attack?'disabled':'')+'>⚔️ WAR — chọn thành muốn đánh</button>'
       +'</div><div class="info" style="margin-top:6px">Xuất chinh: chọn tối đa 3 tướng ở thành này mang theo (bấm để chọn/bỏ):</div><div class="garr" id="pickRow">'
       +st.garrison.map(n=>{const h=HMAP[n];const on=(S.pick||[]).includes(n);return '<span class="gchip '+(on?'':'off')+'" data-pick="'+n+'" style="cursor:pointer"><img src="'+h.img+'" alt=""><span><b><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>';
-    const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><span style="width:128px">'+icon+' '+label+' <b>'+v+'</b></span><span style="flex:1;height:8px;background:#2a2013;border-radius:4px;overflow:hidden"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+'>+8 ('+cost+'💰)</button></div>';};
-    html+='<h4 style="margin:12px 0 4px">🏯 Nội chính — mỗi lượt: phát triển 1 lần + xây/nâng 1 công trình</h4>'
+  }else{
+    const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:6px;margin:4px 0"><span style="width:88px;font-size:13px;white-space:nowrap">'+icon+' '+label+'</span><b style="width:26px;text-align:right">'+v+'</b><span style="flex:1;height:8px;background:#2a2013;border-radius:4px;overflow:hidden;min-width:50px"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+' style="white-space:nowrap">+8 · '+cost+'💰</button></div>';};
+    html+='<div class="info">Mỗi lượt: phát triển 1 lần + xây/nâng 1 công trình.</div>'
       +devB('agri','🌾','Nông nghiệp')+devB('comm','💰','Thương nghiệp')+devB('pop','👥','Dân số')
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'
       +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
-        return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;flex:1 1 30%">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng cấp':'Xây')+': '+cost+' vàng</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
+        return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:6px 8px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
       +'</div>';
-    p.innerHTML=html;
-    p.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(r.id,b.dataset.dev));
-    p.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(r.id,b.dataset.bld));
+  }
+  p.innerHTML=html;
+  p.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{PANEL_TAB=b.dataset.ptab;renderPanel();});
+  if(PANEL_TAB==='mil'){
     const rb=$('actRecruit');if(rb)rb.onclick=()=>{const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[r.id]=S.acted[r.id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();};
     const wb=$('actWar');if(wb)wb.onclick=()=>startWar(r.id);
-    p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
     p.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.pick=S.pick||[];const n=c.dataset.pick;const i=S.pick.indexOf(n);if(i>=0)S.pick.splice(i,1);else{if(S.pick.length>=3){toast('Tối đa 3 tướng xuất chinh');return;}S.pick.push(n);}renderPanel();});
-    if(S.pickFor!==r.id){S.pickFor=r.id;S.pick=st.garrison.slice(0,3);}
+    if(S.pickFor!==r.id){S.pickFor=r.id;S.pick=st.garrison.slice(0,3);renderPanel();}
+  }else if(PANEL_TAB==='noi'){
+    p.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(r.id,b.dataset.dev));
+    p.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(r.id,b.dataset.bld));
   }else{
-    html+='<div class="info">Thành của địch — muốn đánh, hãy chọn một thành của mình kề bên rồi bấm nút tấn công.</div>';
-    p.innerHTML=html;
+    p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
   }
-}
-</script>
+}</script>
 <script>
 'use strict';
 /* ================= BATTLE ================= */
