@@ -1102,7 +1102,8 @@ function startDrums(){
   playSmp('thud2',0.42,0.68);sfxTaiko(true);
   startDrumLoop();
 }
-function startDrumLoop(){try{if(AC&&(SMP['bgm-battle']||SMP['drum-loop'])&&typeof B!=='undefined'&&B&&!B.over&&!B.drumSrc){const src=AC.createBufferSource();src.buffer=SMP['bgm-battle']||SMP['drum-loop'];src.loop=true;const g=AC.createGain();g.gain.value=(B.muted?0:0.3);src.connect(g);g.connect(MG);src.start();B.drumSrc={src,g};}}catch(e){}}
+function sndState(){try{return localStorage.getItem('tq_snd')||'nomusic';}catch(e){return 'nomusic';}}
+function startDrumLoop(){try{if(sndState()!=='all')return;if(AC&&(SMP['bgm-battle']||SMP['drum-loop'])&&typeof B!=='undefined'&&B&&!B.over&&!B.drumSrc){const src=AC.createBufferSource();src.buffer=SMP['bgm-battle']||SMP['drum-loop'];src.loop=true;const g=AC.createGain();g.gain.value=(B.muted?0:0.3);src.connect(g);g.connect(MG);src.start();B.drumSrc={src,g};}}catch(e){}}
 function stopDrums(){if(!B)return;clearInterval(B.drumInt);if(B.drumSrc){try{B.drumSrc.src.stop();B.drumSrc.g.disconnect();}catch(e){}B.drumSrc=null;}if(B.drone){try{B.drone.o1.stop();B.drone.o2.stop();B.drone.g.disconnect();}catch(e){}B.drone=null;}}
 /* ================= STANCES (SF2 commands: Break Through / Defense) ================= */
 function stanceMult(side){
@@ -1426,7 +1427,12 @@ function battleLoop(ts){
 $('skillBtn').onclick=()=>{if(!B||B.over)return;useSkill(B.playerSide,B.selGen);};
 $('spdBtn').onclick=()=>{if(!B)return;B.speed=B.speed>=3?1:B.speed+1;$('spdBtn').textContent='⏩ Tốc độ x'+B.speed;};
 $('quitBtn').onclick=()=>{if(!B||B.over)return;B.over=true;B.winner=B.playerSide==='atk'?'def':'atk';B.retreat=true;setTimeout(finishBattle,300);};
-$('sndBtn').onclick=()=>{if(!B)return;B.muted=!B.muted;$('sndBtn').textContent=B.muted?'🔇':'🔊';if(B.drone)B.drone.g.gain.value=B.muted?0:0.045;if(!B.muted)sfxInit();};
+$('sndBtn').onclick=()=>{if(!B)return;const order=['nomusic','all','mute'];const nx=order[(order.indexOf(sndState())+1)%3];
+  try{localStorage.setItem('tq_snd',nx);}catch(e){}
+  B.muted=(nx==='mute');$('sndBtn').textContent=nx==='mute'?'🔇':(nx==='all'?'🔊🎵':'🔊');
+  if(nx!=='all'&&B.drumSrc){try{B.drumSrc.src.stop();B.drumSrc.g.disconnect();}catch(e){}B.drumSrc=null;}
+  if(nx==='all'){sfxInit();startDrumLoop();}
+  toast(nx==='mute'?'🔇 Tắt hết tiếng':(nx==='all'?'🔊🎵 Bật cả nhạc nền':'🔊 Chỉ tiếng đánh trận, tắt nhạc nền'));};
 function finishBattle(){
   cancelAnimationFrame(B.raf);stopDrums();
   if(B.winner===B.playerSide){playSmp('thud2',0.42,0.7);setTimeout(()=>playSmp('thud2',0.42,0.82),190);setTimeout(()=>{playSmp('thud2',0.46,0.98);playSmp('boom',0.2,0.9);},390);}else{playSmp('boom',0.32,0.7);playSmp('thud2',0.4,0.55);}
