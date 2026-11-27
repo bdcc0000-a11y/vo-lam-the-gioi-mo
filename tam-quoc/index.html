@@ -803,6 +803,7 @@ function openCityMenu(id){
     else if(mtNow==='noi')tabDefs.push(['noi','🏯','Nội chính']);
     else if(mtNow==='ke')tabDefs.push(['ke','🎭','Kế sách']);
     else tabDefs.push(['ngoai','🤝','Ngoại giao']);
+    tabDefs.push(['talent','✦','Talent']);
     const effTab=tabDefs.some(t=>t[0]===PANEL_TAB)?PANEL_TAB:monthTab;
     const tabBtn=(tid,icon,label)=>'<button data-mtab="'+tid+'" style="flex:1;padding:6px 2px;border-radius:8px;border:1px solid '+(effTab===tid?'#e8c85a':'#5a4a2a')+';background:'+(effTab===tid?'#4a3a14':'#241a0c')+';color:'+(effTab===tid?'#ffe9a0':'#cbbd93')+';font-weight:'+(effTab===tid?'700':'400')+';cursor:pointer;font-size:13px">'+icon+' '+label+'</button>';
     h+='<div style="display:flex;gap:5px;margin:7px 0">'+tabDefs.map(t=>tabBtn(t[0],t[1],t[2])).join('')+'</div>';
@@ -810,14 +811,14 @@ function openCityMenu(id){
       h+='<div class="garr">'+garrisonHTML(st)+'</div><div class="cmInfo">Bấm vào thẻ tướng để xem chi tiết / nâng binh kỹ / điều tướng.</div>';
     }else if(effTab==='noi'){
       const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:5px;margin:4px 0"><span style="width:74px;font-size:12.5px;white-space:nowrap">'+icon+' '+label+'</span><b style="width:24px;text-align:right">'+v+'</b><span style="flex:1;height:7px;background:#2a2013;border-radius:4px;overflow:hidden;min-width:36px"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((monthType()!=='noi'||acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+' style="white-space:nowrap">+8 · '+cost+'💰</button></div>';};
-      h+='<div class="cmInfo">Mỗi tháng: phát triển 1 lần + xây/nâng 1 công trình.</div>'
+      h+='<button class="cmBtn" id="cmRecruit" '+((monthType()!=='noi'||acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>'
+        +'<div class="cmInfo">Mỗi tháng: tuyển quân 1 lần, phát triển 1 lần, xây/nâng 1 công trình.</div>'
         +devB('agri','🌾','Nông')+devB('comm','💰','Thương')+devB('pop','👥','Dân')
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">'
         +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=monthType()!=='noi'||lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
           return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:5px 7px;font-size:12.5px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
         +'</div>';
     }else if(effTab==='mil'){
-      h+='<button class="cmBtn" id="cmRecruit" '+((monthType()!=='noi'||acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>';
       const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
       if(foes.length){
         h+='<button class="cmBtn atk" id="cmWar" '+((acted.attack||monthType()!=='war')?'disabled':'')+'>⚔️ WAR</button>';
@@ -825,16 +826,31 @@ function openCityMenu(id){
       }else h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
       h+='<div class="cmInfo" style="margin-top:4px">Xuất chinh — chọn tối đa 3 tướng mang theo:</div><div class="garr">'
         +st.garrison.map(n=>{const hh=HMAP[n];const on=(S.pick||[]).includes(n);return '<span class="gchip '+(on?'':'off')+'" data-pick="'+n+'" style="cursor:pointer"><img src="'+hh.img+'" alt=""><span><b><span class="tier t'+hh.tier+'">'+hh.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>';
+    }else if(effTab==='ke'){
+      const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
+      h+='<div class="cmInfo">🕵️ Do thám — thành địch kề bên '+r.name+':</div>';
+      if(!foes.length)h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
+      h+=foes.map(n=>{const es=S.regions[n],ef=FACTIONS[es.owner];return '<div style="margin:5px 0"><b>'+RMAP[n].name+'</b> · '+ef.icon+' '+ef.name+' · 🪖 '+es.troops+' quân<br><small>'+(es.garrison.length?es.garrison.map(g=>'<span class="tier t'+HMAP[g].tier+'">'+HMAP[g].tier+'</span> '+g).join(' · '):'Không có tướng trấn giữ')+'</small></div>';}).join('');
+      h+='<div class="cmInfo">Dùng talent Kế sách ở tab ✦ Talent bên cạnh.</div>';
+    }else if(effTab==='ngoai'){
+      h+='<div class="cmInfo">🤝 Quan hệ với các phe khác:</div>'
+        +Object.keys(FACTIONS).filter(f=>f!==S.player&&REGIONS.some(x=>S.regions[x.id].owner===f)).map(f=>{const key=[S.player,f].sort().join('|');const left=(S.truce&&S.truce[key])||0;return '<div style="margin:4px 0">'+FACTIONS[f].icon+' <b>'+FACTIONS[f].name+'</b> — '+(left>0?'🤝 đang đình chiến, còn '+left+' tháng':'⚔️ đang giao tranh')+'</div>';}).join('')
+        +'<button class="cmBtn" id="cmPris">🔒 Tù binh ('+Object.keys(S.prisoners||{}).filter(n=>S.prisoners[n].holder===S.player).length+') — chiêu hàng / thả / chém</button>'
+        +'<div class="cmInfo">Dùng talent Ngoại giao ở tab ✦ Talent bên cạnh.</div>';
     }else{
-      const dom=effTab,tdn=TALENT_DOM[dom];
-      h+='<div class="cmInfo">✦ Talent mảng '+tdn+' của tướng ở thành này · Tháng này còn <b>'+talentLeft(S.player)+'/3</b> lần dùng talent.</div>';
-      const list=st.garrison.filter(n=>HMAP[n].talentDom===dom);
-      if(!list.length)h+='<div class="cmInfo">Thành này không có tướng nào có talent '+tdn+'. Hãy điều tướng phù hợp về đây vào tháng 🏯 Nội chính.</div>';
-      h+=list.map(n=>{const hh=HMAP[n];const tt=TALENT_DB[hh.talent];const cd=(S.talentCd||{})[n]||0;
-        return '<div style="display:flex;gap:7px;align-items:center;margin:5px 0"><img src="'+hh.img+'" style="width:34px;height:34px;border-radius:6px"><span style="flex:1"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+(tt?tt.icon+' ':'')+hh.talent+' · thành công '+(tt?Math.round((tt.rate||0.8)*100):0)+'%'+(cd?' · ⏳ hồi '+cd+' tháng':'')+'</small></span>'
-        +'<button data-tuse="'+n+'" '+((cd>0||talentLeft(S.player)<=0)?'disabled':'')+'>✦ Dùng</button></div>';}).join('');
-      if(dom==='ngoai')h+='<button class="cmBtn" id="cmPris">🔒 Tù binh ('+Object.keys(S.prisoners||{}).filter(n=>S.prisoners[n].holder===S.player).length+') — chiêu hàng / thả / chém</button>';
-      h+='<div id="cmTalentBox" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>';
+      const left=talentLeft(S.player);
+      const domGens=st.garrison.filter(n=>HMAP[n].talentDom===mtNow);
+      const ready=domGens.filter(n=>!(((S.talentCd||{})[n]||0)>0));
+      if(mtNow==='war')h+='<div class="cmInfo">⚔️ Tháng Chiến tranh không dùng được talent — talent dùng vào tháng 🏯 Nội chính, 🎭 Kế sách và 🤝 Ngoại giao.</div>';
+      else{
+        h+='<div class="cmInfo">✦ Tướng dùng được talent tháng này ('+MONTH_TYPES[mtNow].icon+' '+TALENT_DOM[mtNow]+') · còn <b>'+left+'/3</b> lần dùng.</div>';
+        if(!domGens.length)h+='<div class="cmInfo">Thành này không có tướng nào có talent mảng '+TALENT_DOM[mtNow]+' — điều tướng phù hợp về đây vào tháng 🏯 Nội chính.</div>';
+        else if(!ready.length)h+='<div class="cmInfo">Tướng có talent mảng này ở đây đang hồi chiêu hết rồi.</div>';
+        h+=ready.map(n=>{const hh=HMAP[n];const tt=TALENT_DB[hh.talent];
+          return '<div style="display:flex;gap:7px;align-items:center;margin:5px 0"><img src="'+hh.img+'" style="width:34px;height:34px;border-radius:6px"><span style="flex:1"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+(tt?tt.icon+' ':'')+hh.talent+' · thành công '+(tt?Math.round((tt.rate||0.8)*100):0)+'% · hồi '+(tt?tt.cd:0)+' tháng</small></span>'
+          +'<button data-tuse="'+n+'" '+(left<=0?'disabled':'')+'>✦ Dùng</button></div>';}).join('');
+        h+='<div id="cmTalentBox" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>';
+      }
     }
   }else{
     h+='<div class="garr">'+garrisonHTML(st)+'</div>';
