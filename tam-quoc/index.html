@@ -755,7 +755,7 @@ $('prepCancel').onclick=()=>{if(!PREP)return;const cfg=PREP.cfg;PREP=null;$('pre
   const from=S.regions[cfg.fromId];from.troops+=cfg.atkTroops;if(S.acted[cfg.fromId])delete S.acted[cfg.fromId].attack;save();refreshNodes();renderPanel();toast('Đã hủy xuất chinh — quân trở về thành.');};
 function openBattle(cfg){
   B={...cfg,over:false,speed:1,t:0,units:[],effects:[],shake:0,winner:null,endReason:null,
-     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0,projs:[],pending:[],anims:[],selGen:null,hasteT:{atk:0,def:0},order:{atk:null,def:null},orderT:{atk:0,def:0},orderCd:{atk:0,def:0},slowmo:0,banner:null,freeze:0,routNote:{},deployT:75};
+     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0,projs:[],pending:[],anims:[],selGen:null,hasteT:{atk:0,def:0},order:{atk:null,def:null},orderT:{atk:0,def:0},orderCd:{atk:0,def:0},slowmo:0,banner:null,freeze:0,routNote:{},deployT:75,duel:null,zones:[]};
   const gHp=(gens,troops)=>Math.round(troops*0.16)+220;
   B.genAtk={hp:gHp(cfg.atkGens,cfg.atkTroops),name:cfg.atkGens[0]||'Chủ tướng'};B.genAtk.max=B.genAtk.hp;
   B.genDef={hp:gHp(cfg.defGens,cfg.defTroops),name:cfg.defGens[0]||'Chủ tướng'};B.genDef.max=B.genDef.hp;
@@ -802,7 +802,7 @@ function spawnUnits(){
       if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
       const cls=tr?tr.cls:'kiem';
       B.units.push({side,x:fx0,y:Math.min(H-24,y0),hx:fx0,hy:Math.min(H-24,y0),hp:maxHp,maxHp,per,fac,cls,img:tr?tr.img:null,
-        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28});
+        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28,rowF:rd,wing:y0<H/2?-1:1,spear:fid2==='phongthi'&&rd<0.36});
     }
   };
   mk('atk',B.atkTroops,B.atkFac);mk('def',B.defTroops,B.defFac);
@@ -913,14 +913,14 @@ function useSkill(side,gen){
   B.shake=Math.max(B.shake,8);B.slowmo=48;sfxSkillSfx(sk.fx);
   const fxSrc=FXSRC[sk.fx];if(!B.fx)B.fx={};if(!B.fx[fxSrc]){const im=new Image();im.src=fxSrc;B.fx[fxSrc]=im;}
   const pattern=FX_PATTERN[sk.fx]||'Võ tướng';
-  const dmgM=(gen.passive&&gen.passive.skillDmg)||1;
+  const dmgM=(gen.passive&&gen.passive.skillDmg)||1;let zoneC=null;
   const centroid=pool=>pool.length?{x:pool.reduce((a,u)=>a+u.x,0)/pool.length,y:pool.reduce((a,u)=>a+u.y,0)/pool.length}:{x:cv.width/2,y:cv.height/2};
   if(sk.drain)B.moraleBonus[foe]=Math.max(-30,B.moraleBonus[foe]-sk.drain*tier);
   if(sk.sp)B.sp[side]=Math.min(100,B.sp[side]+sk.sp);
   if(sk.kind==='deep'){
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
     const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));
-    const c=centroid(targets);
+    const c=centroid(targets);zoneC=c;
     B.anims.push({role:pattern,tier,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     targets.forEach((u,i)=>B.pending.push({at:B.t+22+i*6,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:24,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }else if(sk.kind==='buff'){
@@ -935,9 +935,19 @@ function useSkill(side,gen){
   }else{
     const myCx=mine.length?mine.reduce((a,u)=>a+u.x,0)/mine.length:cv.width/2;
     const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));
-    const c=centroid(targets);
+    const c=centroid(targets);zoneC=c;
     B.anims.push({role:pattern,tier,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     targets.forEach((u,i)=>B.pending.push({at:B.t+16+i*5,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
+  }
+  if(zoneC&&sk.kind!=='buff'){
+    if(!B.zones)B.zones=[];
+    if(sk.fx==='fire'||sk.fx==='phoenix'||sk.fx==='flamearc')B.zones.push({kind:'fire',x:zoneC.x,y:zoneC.y,r:98,side,t:0,dur:470});
+    else if(sk.fx==='ice'||sk.fx==='water')B.zones.push({kind:'frost',x:zoneC.x,y:zoneC.y,r:102,side,t:0,dur:470});
+    if((sk.mult||1)>=1.4){
+      for(const u of enemies){if(u.dead)continue;const dx=u.x-zoneC.x,dy=u.y-zoneC.y,dd=Math.hypot(dx,dy);if(dd<135&&dd>1){u.x+=dx/dd*46;u.y+=dy/dd*30;u.cd=Math.max(u.cd,26);}}
+      B.effects.push({x:zoneC.x,y:zoneC.y,life:30,type:'ring',color:'#ffd94a'});
+      playSmp('boom',0.3,0.9);B.shake=Math.max(B.shake,9);
+    }
   }
   return true;
 }
@@ -987,6 +997,36 @@ function syncGenHp(){
   const a=leadGen('atk'),d=leadGen('def');
   if(a){B.genAtk.hp=Math.max(0,a.hp);B.genAtk.max=a.maxHp;}
   if(d){B.genDef.hp=Math.max(0,d.hp);B.genDef.max=d.maxHp;}
+}
+function startDuel(a,d){
+  const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,ang=Math.atan2(d.y-a.y,d.x-a.x);
+  a.x=mx-Math.cos(ang)*34;a.y=my-Math.sin(ang)*34;d.x=mx+Math.cos(ang)*34;d.y=my+Math.sin(ang)*34;
+  B.duel={t:0,hit:0,a,d,done:false,first:a.vo>=d.vo?a:d,second:a.vo>=d.vo?d:a};
+  B.banner={txt:'⚔️ ĐƠN ĐẤU: '+a.name+' — '+d.name,t:150};
+  for(const u of B.units){if(u.dead)continue;const dx=u.x-mx,dy=u.y-my,dd=Math.hypot(dx,dy);if(dd<95&&dd>1){u.x=mx+dx/dd*95;u.y=my+dy/dd*95;}}
+  playSmp('clang',0.3,0.8);playSmp('thud2',0.35,0.7);
+}
+function runDuel(rawDt){
+  const D=B.duel;if(!D)return;D.t+=rawDt;
+  for(const g of [D.a,D.d]){g.atkAnim=Math.max(0,(g.atkAnim||0)-rawDt);g.flash=Math.max(0,(g.flash||0)-rawDt);}
+  const hitTimes=[46,100,154,208,262,316];
+  if(D.hit<hitTimes.length&&D.t>=hitTimes[D.hit]){
+    const atk=D.hit%2===0?D.first:D.second,def=atk===D.a?D.d:D.a;D.hit++;
+    const pct=Math.max(0.03,Math.min(0.13,0.075+(atk.vo-def.vo)*0.0016));
+    atk.atkAnim=16;def.flash=8;B.freeze=Math.max(B.freeze||0,3);B.shake=Math.max(B.shake,6);
+    def.hp-=def.maxHp*pct;
+    B.effects.push({x:def.x,y:def.y-30,life:9,type:'spark'});B.effects.push({x:def.x,y:def.y-14,life:16,type:'boom'});
+    B.texts.push({x:def.x,y:def.y-80,life:55,txt:'-'+Math.round(def.maxHp*pct*10),color:'#ffd94a'});
+    sfxHit('kiem',(def.x/Math.max(1,$('cv').width))*1.3-0.65);playSmp('clang',0.22,0.95);
+    if(def.hp<=0){killGeneral(def);D.done=true;B.banner={txt:'🏆 '+atk.name+' thắng đơn đấu!',t:150};return;}
+  }
+  if(!D.done&&D.t>=380){D.done=true;
+    const wa=D.a.hp/D.a.maxHp>=D.d.hp/D.d.maxHp?D.a:D.d,lo=wa===D.a?D.d:D.a;
+    B.moraleBonus[wa.side]=Math.min(24,B.moraleBonus[wa.side]+8);
+    B.moraleBonus[lo.side]=Math.max(-30,B.moraleBonus[lo.side]-12);
+    B.banner={txt:'🏆 '+wa.name+' thắng đơn đấu!',t:160};
+    playSmp('clang',0.25,0.8);playSmp('thud2',0.3,0.75);
+  }
 }
 function killGeneral(g){
   g.dead=true;B.shake=Math.max(B.shake,9);B.freeze=Math.max(B.freeze||0,5);sfxBoom();playSmp('boom',0.42,0.9);playSmp('cannon',0.2,1.15);
@@ -1162,9 +1202,12 @@ function battleLoop(ts){
   let dt=rawDt*B.speed*(B.slowmo>0?0.22:1);if(B.slowmo>0)B.slowmo-=rawDt;
   if(B.freeze>0){B.freeze-=rawDt;dt=0;}
   if(B.deployT>0){B.deployT-=rawDt;if(B.deployT<=0){B.banner={txt:'⚔️ XUNG PHONG!',t:110};playSmp('thud2',0.4,0.7);playSmp('gallop',0.10,1);}dt=0;}
+  if(B.duel&&!B.duel.done){runDuel(rawDt);dt=0;}
+  const edt=(B.duel&&!B.duel.done)?rawDt:dt;
   B.t+=dt;
   if(B.bg&&B.bg.width===W&&B.bg.height===H)ctx.drawImage(B.bg,0,0);else{ctx.fillStyle='#56743a';ctx.fillRect(0,0,W,H);}
   drawFlags(ctx,B.t*16);
+  if(B.zones)for(const z of B.zones){ctx.save();ctx.globalAlpha=0.20+0.05*Math.sin(B.t*0.3+z.x);ctx.fillStyle=z.kind==='fire'?'#ff6a1e':'#6fc4ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.29);ctx.fill();ctx.globalAlpha=0.5;ctx.strokeStyle=z.kind==='fire'?'#ffb03a':'#bfe6ff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
   const atkPow=B.atkGens.length?B.atkGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.atkGens.length:45;
   const defPow=B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45;
   const alive=B.units.filter(u=>!u.dead);
@@ -1262,8 +1305,20 @@ function battleLoop(ts){
       return true;
     });
   }
+  if(!B.duel&&!B.over&&B.deployT<=0){const la=leadGen('atk'),ld=leadGen('def');if(la&&ld&&!la.dead&&!ld.dead&&Math.hypot(la.x-ld.x,la.y-ld.y)<150)startDuel(la,ld);}
+  if(B.zones&&B.zones.length){B.zones=B.zones.filter(z=>(z.t+=dt)<z.dur);
+    for(const z of B.zones){const foeZ=z.side==='atk'?'def':'atk';
+      for(const u of B.units){if(u.dead||u.side!==foeZ)continue;const dx=u.x-z.x,dy=u.y-z.y;if(dx*dx+dy*dy<z.r*z.r){
+        if(z.kind==='fire'){u.hp-=u.maxHp*0.0011*dt;if(Math.random()<0.05)B.effects.push({x:u.x,y:u.y-6,life:14,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;u.vx=(Math.random()*2-1)*1.5;B.sp[z.side]=Math.min(100,B.sp[z.side]+0.5);}}
+        else u.inFrost=6;}}
+      for(const g of B.genUnits){if(g.dead||g.side!==foeZ)continue;if(z.kind==='fire'&&Math.hypot(g.x-z.x,g.y-z.y)<z.r){g.hp-=g.maxHp*0.00035*dt;if(g.hp<=0)killGeneral(g);}}
+      if(Math.random()<0.3){const a2=Math.random()*6.28,rr2=Math.random()*z.r*0.8;B.effects.push({x:z.x+Math.cos(a2)*rr2,y:z.y+Math.sin(a2)*rr2*0.7,life:z.kind==='fire'?13:10,type:z.kind==='fire'?'boom':'spark'});}
+    }}
   const morA=moraleOf('atk'),morD=moraleOf('def');
   for(const sd of ['atk','def']){const mm=sd==='atk'?morA:morD;if(mm<24&&mm>4&&!B.routNote[sd]){B.routNote[sd]=1;B.banner={txt:sd===B.playerSide?'⚠️ Quân ta đang nao núng!':'🏳️ Quân địch đang nao núng!',t:150};}}
+  const centX={atk:0,def:0},centN={atk:0,def:0};
+  for(const u of alive){centX[u.side]+=u.x;centN[u.side]++;}
+  centX.atk/=Math.max(1,centN.atk);centX.def/=Math.max(1,centN.def);
   for(const u of alive){
     if(!u.fleeing){const m=u.side==='atk'?morA:morD;if(m<24&&Math.random()<0.010*dt)u.fleeing=true;}
     if(u.fleeing){
@@ -1272,10 +1327,13 @@ function battleLoop(ts){
       u.x=Math.max(12,Math.min(W-12,u.x));u.y=Math.max(H*0.14,Math.min(H-14,u.y));
       continue;
     }
+    const myFid=u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa';
     let best=null,bd=1e9;
     for(const v of alive){if(v.side===u.side)continue;const dx=Math.abs(v.x-u.x),dy=Math.abs(v.y-u.y);if(dx<70&&dy<34){const d=dx+dy*2;if(d<bd){bd=d;best=v;}}}
     if(!best){let nd=1e18;for(const v of alive){if(v.side===u.side)continue;const d=(v.x-u.x)*(v.x-u.x)+(v.y-u.y)*(v.y-u.y);if(d<nd){nd=d;best=v;}}}
-    const dir=u.side==='atk'?1:-1;u.atkAnim=Math.max(0,(u.atkAnim||0)-dt);u.moving=false;
+    if(myFid==='hacduc'&&u.wing&&best){const passed=u.side==='atk'?u.x>centX.def-6:u.x<centX.atk+6;
+      if(passed&&Math.random()<0.3){let bk=null,bkd=-1e18;for(const v of alive){if(v.side===u.side)continue;const behind=u.side==='atk'?v.x:-v.x;if(behind>bkd){bkd=behind;bk=v;}}if(bk)best=bk;}}
+    const dir=u.side==='atk'?1:-1;u.atkAnim=Math.max(0,(u.atkAnim||0)-dt);u.inFrost=Math.max(0,(u.inFrost||0)-dt);u.moving=false;
     const foeSide=u.side==='atk'?'def':'atk';
     let egu=null,genDist=1e9;
     for(const og of (B.genUnits||[])){if(og.side!==foeSide||og.dead)continue;const d=Math.hypot(og.x-u.x,og.y-u.y);if(d<genDist){genDist=d;egu=og;}}
@@ -1295,9 +1353,11 @@ function battleLoop(ts){
       if(Math.abs(best.x-u.x)>range||Math.abs(best.y-u.y)>7){
         // advance — running straight at the enemy, pushing through the field
         const dx=best.x-u.x,dy=best.y-u.y,d=Math.hypot(dx,dy)||1;
-        const run=(u.cls==='ky'?1.55:1.05)*u.spdF*FORMS[u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa'].spd*dt*(B.hasteT&&B.hasteT[u.side]>0?1.3:1);
+        let runF=(u.spear?1.3:1)*(u.inFrost>0?0.55:1);if(myFid==='huyenvu'&&d<85)runF*=0.3;
+        const run=(u.cls==='ky'?1.55:1.05)*u.spdF*FORMS[myFid].spd*dt*(B.hasteT&&B.hasteT[u.side]>0?1.3:1)*runF;
         const step=Math.min(run,Math.max(0,d-range*0.7));
         u.x+=dx/d*step;u.y+=dy/d*step*0.8;u.moving=step>0.2;
+        if(myFid==='hacduc'&&u.wing){const passed=u.side==='atk'?u.x>centX.def-6:u.x<centX.atk+6;if(!passed)u.y+=u.wing*0.5*dt;}
         if(u.moving&&Math.random()<(u.cls==='ky'&&!u.chargeUsed?0.17:0.07)&&B.effects.length<70)B.effects.push({x:u.x-dir*6,y:u.y+5,life:12,type:'dust'});
       }else if((u.cd-=dt)<=0){
         u.cd=27+Math.random()*20;u.atkAnim=6;
@@ -1309,7 +1369,7 @@ function battleLoop(ts){
         if(u.cls==='ky'&&!u.chargeUsed){chM=2.2;u.chargeUsed=1;best.x+=(u.side==='atk'?1:-1)*22;best.y+=(Math.random()*10-5);best.cd=Math.max(best.cd,14);
           B.effects.push({x:best.x,y:best.y+4,life:14,type:'dust'});B.effects.push({x:best.x,y:best.y-4,life:11,type:'dust'});if(Math.random()<0.6)playSmp('thud2',0.2,1,(best.x/W)*1.3-0.65);
           if(!B.lastGallop||B.t-B.lastGallop>75){B.lastGallop=B.t;playSmp('gallop',0.17,1,(best.x/W)*1.3-0.65);}}
-        best.hp-=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM
+        best.hp-=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM*(u.inFrost>0?0.8:1)
           *stanceMult(u.side).dealt*stanceMult(best.side).taken*B.rpsMult[u.side];
         if(Math.random()<0.45)sfxHit(u.cls,(u.x/W)*1.3-0.65);
         if(Math.random()<0.5&&B.effects.length<90)B.effects.push({x:best.x,y:best.y-8,life:7,type:'spark'});
@@ -1328,7 +1388,7 @@ function battleLoop(ts){
   for(const u of alive)drawSoldier(ctx,u,B.t*16);
   for(const g of genAlive)drawGeneralUnit(ctx,g,B.t*16);
   // effects
-  B.effects=B.effects.filter(e=>(e.life-=dt)>0);
+  B.effects=B.effects.filter(e=>(e.life-=edt)>0);
   for(const e of B.effects){ctx.save();
     if(e.type==='dust'){ctx.globalAlpha=Math.max(0,e.life/12)*0.45;ctx.fillStyle='#cdbb92';ctx.beginPath();ctx.arc(e.x,e.y,Math.max(0.6,(12-e.life)*0.8+2.5),0,6.29);ctx.fill();}
     else if(e.type==='boom'){ctx.globalAlpha=Math.min(1,e.life/16);ctx.fillStyle='#ff8a3c';ctx.beginPath();ctx.arc(e.x,e.y,(26-e.life)*1.5+4,0,6.29);ctx.fill();ctx.fillStyle='#ffd94a';ctx.beginPath();ctx.arc(e.x,e.y,(26-e.life)*0.8+2,0,6.29);ctx.fill();}
@@ -1345,7 +1405,7 @@ function battleLoop(ts){
   // animated skill sequences on the field (slow, readable, no banners)
   if(B.anims&&B.anims.length){
     B.anims=B.anims.filter(an=>{
-      an.t+=dt;const p=an.t/an.dur;if(p>=1)return false;
+      an.t+=edt;const p=an.t/an.dur;if(p>=1)return false;
       const ease=1-Math.pow(1-p,3);
       ctx.save();ctx.globalCompositeOperation='lighter';
       const fade=p<0.14?p/0.14:(p>0.78?(1-p)/0.22:1);
@@ -1395,7 +1455,7 @@ function battleLoop(ts){
       ctx.fillStyle='rgba(10,6,2,.55)';const bw=ctx.measureText(ba.txt).width+44;ctx.fillRect(W/2-bw/2,H*0.16-30,bw,52);
       ctx.strokeStyle='#e8c766';ctx.lineWidth=1.6;ctx.strokeRect(W/2-bw/2,H*0.16-30,bw,52);
       ctx.fillStyle='#ffd94a';ctx.fillText(ba.txt,W/2,H*0.16+6);ctx.restore();}}
-  if(B.texts){B.texts=B.texts.filter(tx=>(tx.life-=dt)>0);
+  if(B.texts){B.texts=B.texts.filter(tx=>(tx.life-=edt)>0);
     for(const tx of B.texts){ctx.save();ctx.globalAlpha=Math.min(1,tx.life/22);ctx.font=(tx.big?'900 19px':'bold 12.5px')+' sans-serif';ctx.textAlign='center';
       ctx.strokeStyle='rgba(0,0,0,.65)';ctx.lineWidth=3.4;const yy=tx.y-(70-tx.life)*0.55;
       ctx.strokeText(tx.txt,tx.x,yy);ctx.fillStyle=tx.color;ctx.fillText(tx.txt,tx.x,yy);ctx.restore();}}
