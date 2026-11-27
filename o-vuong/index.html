@@ -298,10 +298,7 @@ body.inGame{position:fixed;inset:0;width:100%;height:var(--appH,100dvh);overflow
 /* ===== NÚT ẨN/HIỆN GIAO DIỆN (👁️): màn hình sạch để đi ô =====
    Nút là con trực tiếp của body (position:fixed, z-index 1200 — trên cả lớp trận #ovBattle z 999),
    JS ở cuối file tự hiện khi vào game / ẩn ở màn chọn nhân vật. Bán trong suốt, luôn thấy, không tự ẩn. */
-#uiHideBtn{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:1200;display:none;align-items:center;gap:6px;min-height:46px;padding:8px 12px;border-radius:999px;border:2px solid rgba(224,170,78,.75);background:rgba(24,15,7,.55);color:#ffe9bd;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-#uiHideBtn #uiHideLbl{font-size:11.5px;white-space:nowrap}
-#uiHideBtn.mini{padding:8px 11px}
-#uiHideBtn.mini #uiHideLbl{display:none}
+#uiHideBtn{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:1200;display:none;align-items:center;justify-content:center;width:46px;height:46px;min-height:46px;padding:0;border-radius:50%;border:2px solid rgba(224,170,78,.75);background:rgba(24,15,7,.55);color:#ffe9bd;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.4);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 #uiHideBtn[aria-pressed="true"]{background:rgba(24,15,7,.35);border-color:rgba(245,207,135,.95)}
 @media(max-width:820px){#uiHideBtn{right:8px}}
 /* Lớp ẩn: fade 180ms bằng opacity/visibility + pointer-events:none — KHÔNG đổi kích thước khung game/canvas.
@@ -374,9 +371,8 @@ body.vlPanelOpen #uiHideBtn{opacity:0 !important;visibility:hidden !important;po
   #sysMoreBtn{display:block;flex:0 0 58px}
   body.sysOpen #joy,body.sysOpen #actBtns{visibility:hidden}
 }
-/* Giao diện đang bị ẩn bằng 👁️: giữ NGUYÊN nhãn chữ trên nút (kể cả khi nút đã thu thành dạng mini)
-   và JS đổi chữ thành "Hiện giao diện" -> người chơi luôn thấy rõ bấm vào đâu để menu hiện lại. */
-#uiHideBtn[aria-pressed="true"] #uiHideLbl{display:inline !important}
+/* Nút 👁️ LUÔN chỉ là icon tròn, không chữ ở mọi trạng thái (yêu cầu người chơi 2026-11-27):
+   nhìn con mắt là hiểu ẩn/hiện giao diện; aria-label vẫn giữ cho trợ năng, không hiện chữ. */
 </style>
 </head>
 <body>
@@ -493,8 +489,8 @@ body.vlPanelOpen #uiHideBtn{opacity:0 !important;visibility:hidden !important;po
 </section>
 
 <!-- Nút 👁️ Ẩn/Hiện toàn bộ giao diện: ngoài #gameScreen để luôn nổi trên mọi lớp (kể cả màn trận);
-     JS cuối file đồng bộ hiển thị theo màn game, nhãn "Ẩn giao diện" chỉ hiện tới lần bấm đầu tiên -->
-<button id="uiHideBtn" type="button" style="display:none" aria-label="Ẩn giao diện" aria-pressed="false" title="Ẩn/Hiện giao diện (Tab)">👁️<span id="uiHideLbl">Ẩn giao diện</span></button>
+     JS cuối file đồng bộ hiển thị theo màn game. Nút LUÔN chỉ là icon 👁️ tròn, không chữ. -->
+<button id="uiHideBtn" type="button" style="display:none" aria-label="Ẩn giao diện" aria-pressed="false" title="Ẩn/Hiện giao diện (Tab)">👁️</button>
 
 <script>
 "use strict";
@@ -1636,7 +1632,7 @@ function drawParts(){ for(const pt of PARTS){ if(!pt.on) continue; const lf=Math
   else { ctx.globalAlpha=Math.min(1,lf*1.7); ctx.fillStyle=pt.c; ctx.fillRect(px-pt.s/2,py-pt.s/2,pt.s,pt.s); } } ctx.globalAlpha=1; }
 function drawDmgs(){ ctx.textAlign="center";
   for(const d of DMGS){ if(!d.on) continue; ctx.globalAlpha=Math.min(1,d.life*1.6); ctx.fillStyle=d.c;
-    ctx.font="bold "+(d.sz?19:14)+"px 'Be Vietnam Pro'";
+    ctx.font="bold "+Math.round((d.sz?19:14)*LBLK)+"px 'Be Vietnam Pro'";
     ctx.shadowColor="#000"; ctx.shadowBlur=3; ctx.fillText(d.txt,d.x-cam.x,d.y-cam.y); }
   ctx.shadowBlur=0; ctx.globalAlpha=1; drawCombo(); }
 /* Bộ đếm liên kích: chỉ hiển thị (không cộng sát thương) — trúng đòn liên tiếp trong 3s */
@@ -2044,7 +2040,7 @@ function showEvent(forceId){ const ev=forceId==="win"?null:EVENTS[(Math.random()
 /* ================= RENDER ================= */
 const cv=$("cv"), ctx=cv.getContext("2d");
 const atlasImgs=SHEETS.map((_,i)=>{ const im=new Image(); im.src=`assets/atlas${i+1}.png`; return im; });
-let VW=0,VH=0,DPR=1,VSCALE=1; /* VSCALE: hệ số phóng THẾ GIỚI — phone (pointer:coarse) = 0.8: mỗi ô 40px chỉ còn 32px trên màn hình, thấy rộng hơn 1/0,8² ≈ 1,56 lần diện tích; desktop = 1 (giữ nguyên). VW/VH là kích thước THẾ GIỚI nhìn thấy (CSS px / VSCALE); canvas backing vẫn theo CSS px thật. */
+let VW=0,VH=0,DPR=1,VSCALE=1,LBLK=1; /* VSCALE: hệ số phóng THẾ GIỚI — phone (pointer:coarse) = 0.6: mỗi ô 40px chỉ còn 24px trên màn hình, thấy rộng hơn 1/0,6² ≈ 2,78 lần diện tích so với desktop; desktop = 1 (giữ nguyên). LBLK: hệ số BÙ CỠ CHỮ cho nhãn vẽ theo tọa độ thế giới (tên NPC/người chơi/quái/boss, bong bóng thoại, lời nhắc [E], số sát thương...) để ở 0.6 chữ không bị thu nhỏ tới mức mất đọc được — LBLK giữ nguyên cỡ chữ TRÊN MÀN HÌNH như bản 0.8. VW/VH là kích thước THẾ GIỚI nhìn thấy (CSS px / VSCALE); canvas backing vẫn theo CSS px thật. */
 let _lvw=0,_lvh=0,_lorient="";
 function applyViewportSize(force){ const vv=window.visualViewport;
   /* Kích thước theo visualViewport = phần màn hình THẬT đang nhìn thấy. innerHeight trên iOS Safari /
@@ -2060,8 +2056,8 @@ function applyViewportSize(force){ const vv=window.visualViewport;
      GPU điện thoại đuối -> giật + có lúc bị thu hồi bề mặt vẽ thành ĐEN THUI. 1.5 vẫn nét ở cỡ màn hình này. */
   const coarse=!!(window.matchMedia&&matchMedia("(pointer:coarse)").matches);
   DPR=Math.min(coarse?1.5:2,window.devicePixelRatio||1);
-  /* Thu nhỏ thế giới trên phone để nhìn bao quát: VSCALE 0.8 -> tầm nhìn 390x844 từ ~9,8x21,1 ô thành ~12,2x26,4 ô (ngang 844x390: 21,1x9,8 -> 26,4x12,2). Mọi culling/camera vốn so theo VW/VH + cam (tọa độ thế giới) nên tự khớp; handler chạm->ô dùng tỉ lệ VW/r.width nên tọa độ chạm vẫn chính xác; bán kính sương mù OV_VIEW_R là số thế giới — KHÔNG đổi. */
-  VSCALE=(coarse||Math.min(w,h)<=480)?0.8:1; VW=Math.round(w/VSCALE); VH=Math.round(h/VSCALE); cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); }
+  /* Thu nhỏ thế giới trên phone để nhìn bao quát: VSCALE 0.6 -> tầm nhìn 390x844 từ ~9,8x21,1 ô thành ~16,3x35,2 ô (ngang 844x390: ~35,2x16,3 ô) — rộng hơn bản 0.8 trước đó ~1,78 lần diện tích. Mọi culling/camera vốn so theo VW/VH + cam (tọa độ thế giới) nên tự khớp; handler chạm->ô dùng tỉ lệ VW/r.width nên tọa độ chạm vẫn chính xác; bán kính sương mù OV_VIEW_R là số thế giới — KHÔNG đổi. LBLK = 0.8/VSCALE (ở 0.6 ≈ 1,33, trần 1,4): bù cỡ chữ nhãn thế giới để giữ nguyên cỡ trên màn hình như bản 0.8. */
+  VSCALE=(coarse||Math.min(w,h)<=480)?0.6:1; LBLK=VSCALE<1?Math.min(1.4,0.8/VSCALE):1; VW=Math.round(w/VSCALE); VH=Math.round(h/VSCALE); cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); }
 function resize(){ applyViewportSize(true); }
 window.addEventListener("resize",()=>applyViewportSize(false));
 /* Xoay máy: orientationchange + visualViewport bắt được cả webview Messenger/iOS nơi resize đến trễ hoặc không đến; gọi lại sau 380ms khi kích thước đã ổn định */
@@ -2425,7 +2421,7 @@ function drawEnemyBody(e,sx,sy,now){ now=now||0;
   const topY={wolf:47,snake:32,seasnake:32,spider:50,jiangshi:64,imp:47,wraith:60,swordspirit:64}[kind]||56;
   ctx.fillStyle="rgba(0,0,0,.55)"; ctx.fillRect(sx-18,sy-topY*s,36,5);
   ctx.fillStyle=e.elite?"#f5cf87":"#e04a35"; ctx.fillRect(sx-17,sy-topY*s+1,34*Math.max(0,e.hp/e.maxhp),3);
-  ctx.fillStyle="#fff"; ctx.font="bold 10px 'Be Vietnam Pro'"; ctx.textAlign="center";
+  ctx.fillStyle="#fff"; ctx.font="bold "+Math.round(10*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
   ctx.fillText((e.elite?"⭐ ":"")+t.n,sx,sy-(topY+5)*s); }
 function render(now){
   if(window.__inCave&&__inCave()){ __caveRender(now); return; }
@@ -2462,7 +2458,7 @@ function render(now){
   // NPC
   NPCS.forEach(n=>{ const sx=n.x-cam.x, sy=n.y-cam.y; if(sx<-60||sx>VW+60||sy<-80||sy>VH+60) return;
     const nb=entBob(n); drawShadow(sx,sy,14*(1+nb.bob*0.022)); drawSprite(n.ci,sx,sy,46,false,nb.bob,nb.tilt);
-    ctx.fillStyle="#ffe9bd"; ctx.font="bold 11px 'Be Vietnam Pro'"; ctx.textAlign="center";
+    ctx.fillStyle="#ffe9bd"; ctx.font="bold "+Math.round(11*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
     ctx.shadowColor="#000"; ctx.shadowBlur=4; ctx.fillText((n.isLeader?"🏯 ":n.isElder?"📜 ":"")+n.name,sx,sy-52); ctx.shadowBlur=0;
     if(n.fight||n.hp<n.maxhp){ const bw=44, pct=Math.max(0,n.hp/n.maxhp); // thanh máu trên đầu khi giao chiến / đang hồi phục
       ctx.fillStyle="rgba(10,6,3,.72)"; ctx.fillRect(sx-bw/2-1,sy-50,bw+2,5);
@@ -2471,9 +2467,9 @@ function render(now){
     else if(n.hp<n.maxhp*0.45){ ctx.font="12px serif"; ctx.fillText("🩹",sx+16,sy-62); }
     if(!n.generic&&!G.story2.done&&STORY2[G.story2.step]&&STORY2[G.story2.step].giver===n.ci){ ctx.font="16px serif"; ctx.fillText("❗",sx+18,sy-58+Math.sin(now/300)*2); }
     if(G.spouse===n.name){ ctx.font="12px serif"; ctx.fillText("💑",sx-18,sy-58); }
-    if(n.bubbleT>0&&n.bubble){ ctx.font="11px 'Be Vietnam Pro'"; const w=ctx.measureText(n.bubble).width+14;
-      ctx.fillStyle="rgba(255,250,235,.94)"; ctx.beginPath(); ctx.roundRect(sx-w/2,sy-92,w,19,7); ctx.fill();
-      ctx.fillStyle="#2b1c0d"; ctx.fillText(n.bubble,sx,sy-79); }
+    if(n.bubbleT>0&&n.bubble){ const bfs=11*LBLK, bh=bfs+8; ctx.font=bfs+"px 'Be Vietnam Pro'"; const w=ctx.measureText(n.bubble).width+14*LBLK;
+      ctx.fillStyle="rgba(255,250,235,.94)"; ctx.beginPath(); ctx.roundRect(sx-w/2,sy-82.5-bh/2,w,bh,7); ctx.fill();
+      ctx.fillStyle="#2b1c0d"; ctx.fillText(n.bubble,sx,sy-82.5+bfs*0.32); }
     if(Math.hypot(n.x-p.x,n.y-p.y)<70){ ctx.fillStyle="#f5cf87"; ctx.fillText(n.act==="Ngủ"?"💤 Đang ngủ":"[E] Nói chuyện",sx,sy-66); } });
   // con cái: sprite nhỏ + vòng màu theo thiên phú (vàng=thiên tài, xanh lam=tốt, xanh lá=khá)
   (G.children||[]).forEach(ch=>{ if(ch.x===undefined) return; const sx=ch.x-cam.x, sy=ch.y-cam.y;
@@ -2482,10 +2478,10 @@ function render(now){
     ctx.strokeStyle=ch.talent.mul>=1.6?"#ffd23e":ch.talent.mul>=1.3?"#7fd1f2":ch.talent.mul>=1.1?"#9fe08a":"rgba(255,255,255,.55)"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(sx,sy-size/2+cb.bob,size/2+3,0,6.29); ctx.stroke();
     drawSprite(ch.sprite,sx,sy,size,false,cb.bob,cb.tilt);
-    ctx.fillStyle="#ffe9bd"; ctx.font="bold 10.5px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
+    ctx.fillStyle="#ffe9bd"; ctx.font="bold "+Math.round(10.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText(ch.name+" · "+ch.age+" tuổi",sx,sy-size-8); ctx.shadowBlur=0;
     if(childEventReady(ch)){ ctx.font="15px serif"; ctx.fillText("❗",sx+16,sy-size+2); }
-    if(Math.hypot(ch.x-p.x,ch.y-p.y)<70){ ctx.fillStyle="#f5cf87"; ctx.font="bold 11px 'Be Vietnam Pro'"; ctx.fillText("[E] Con cái",sx,sy-size-20); } });
+    if(Math.hypot(ch.x-p.x,ch.y-p.y)<70){ ctx.fillStyle="#f5cf87"; ctx.font="bold "+Math.round(11*LBLK)+"px 'Be Vietnam Pro'"; ctx.fillText("[E] Con cái",sx,sy-size-20); } });
   // điểm thu thập linh thảo + điểm tuần tra môn phái
   GATHER.forEach(gp=>{ if(gp.got) return; const sx=gp.x-cam.x, sy=gp.y-cam.y; if(sx<-40||sx>VW+40||sy<-40||sy>VH+40) return;
     ctx.fillStyle="rgba(127,176,105,.35)"; ctx.beginPath(); ctx.arc(sx,sy,16+Math.sin(now/300)*3,0,6.29); ctx.fill();
@@ -2498,7 +2494,7 @@ function render(now){
     ctx.font="17px serif"; ctx.textAlign="center"; ctx.fillText("🔎",sx,sy+6); });
   if(TREASURE_PT){ const sx=TREASURE_PT.x-cam.x, sy=TREASURE_PT.y-cam.y;
     if(sx>-40&&sx<VW+40&&sy>-40&&sy<VH+40){ ctx.fillStyle="rgba(245,207,135,.35)"; ctx.beginPath(); ctx.arc(sx,sy,18+Math.sin(now/280)*3,0,6.29); ctx.fill();
-      ctx.font="18px serif"; ctx.textAlign="center"; ctx.fillText("💰",sx,sy+7); ctx.fillStyle="#ffe9bd"; ctx.font="bold 10.5px 'Be Vietnam Pro'"; ctx.fillText("[E] Đào báu",sx,sy+30); } }
+      ctx.font="18px serif"; ctx.textAlign="center"; ctx.fillText("💰",sx,sy+7); ctx.fillStyle="#ffe9bd"; ctx.font="bold "+Math.round(10.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.fillText("[E] Đào báu",sx,sy+30); } }
   if(MISSING_PT){ const sx=MISSING_PT.x-cam.x, sy=MISSING_PT.y-cam.y;
     if(sx>-40&&sx<VW+40&&sy>-40&&sy<VH+40){ ctx.fillStyle="rgba(127,209,242,.3)"; ctx.beginPath(); ctx.arc(sx,sy,18+Math.sin(now/280)*3,0,6.29); ctx.fill();
       ctx.font="18px serif"; ctx.textAlign="center"; ctx.fillText("💠",sx,sy+7); } }
@@ -2506,7 +2502,7 @@ function render(now){
   [6,7].forEach(zi=>{ const hs=HOUSE_SPOTS[zi]; if(!hs) return; const hp=housePos(zi); const sx=hp.x-cam.x, sy=hp.y-cam.y;
     if(sx<-70||sx>VW+70||sy<-90||sy>VH+70) return; const owned=G.house===zi;
     drawDecor({k:"house",s:1.5,v:"home",x:hp.x,y:hp.y},sx,sy);
-    ctx.fillStyle=owned?"#9fe08a":"#ffe9bd"; ctx.font="bold 11px 'Be Vietnam Pro'"; ctx.textAlign="center";
+    ctx.fillStyle=owned?"#9fe08a":"#ffe9bd"; ctx.font="bold "+Math.round(11*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
     ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText(owned?"🏠 Nhà của ngươi":`🏠 Bán nhà · ${hs.price} vàng`,sx,sy-52);
     if(Math.hypot(p.x-hp.x,p.y-hp.y)<80) ctx.fillText("[E] "+(owned?"Vào nhà":"Xem nhà"),sx,sy-38);
@@ -2529,7 +2525,7 @@ function render(now){
   if(BOSS&&!BOSS.dead){ const sx=BOSS.x-cam.x, sy=BOSS.y-cam.y;
     if(sx>-100&&sx<VW+100&&sy>-120&&sy<VH+100){ drawShadow(sx,sy,26); drawSprite(11,sx,sy,86,false);
       if(BOSS.flashT>0){ ctx.globalCompositeOperation="lighter"; ctx.globalAlpha=0.55; drawSprite(11,sx,sy,86,false); ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over"; }
-      ctx.fillStyle="#ff9d8a"; ctx.font="bold 12px 'Be Vietnam Pro'"; ctx.textAlign="center";
+      ctx.fillStyle="#ff9d8a"; ctx.font="bold "+Math.round(12*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
       ctx.shadowColor="#000"; ctx.shadowBlur=4; ctx.fillText("ĐÔNG PHƯƠNG BẤT BẠI",sx,sy-96); ctx.shadowBlur=0; } }
   // boss chương 2 / boss ẩn đêm
   if(BOSSX&&!BOSSX.dead){ const sx=BOSSX.x-cam.x, sy=BOSSX.y-cam.y;
@@ -2537,7 +2533,7 @@ function render(now){
       if(BOSSX.kind==="au"){ ctx.fillStyle="rgba(127,176,105,.3)"; ctx.beginPath(); ctx.arc(sx,sy-30,44+Math.sin(now/300)*5,0,6.29); ctx.fill(); }
       drawSprite(BOSSX.ci,sx,sy,86,false);
       if(BOSSX.flashT>0){ ctx.globalCompositeOperation="lighter"; ctx.globalAlpha=0.55; drawSprite(BOSSX.ci,sx,sy,86,false); ctx.globalAlpha=1; ctx.globalCompositeOperation="source-over"; }
-      ctx.fillStyle=BOSSX.kind==="nham"?"#e8b7ff":"#b7ffb0"; ctx.font="bold 12px 'Be Vietnam Pro'"; ctx.textAlign="center";
+      ctx.fillStyle=BOSSX.kind==="nham"?"#e8b7ff":"#b7ffb0"; ctx.font="bold "+Math.round(12*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
       ctx.shadowColor="#000"; ctx.shadowBlur=4; ctx.fillText(BOSSX.kind==="nham"?"NHẬM NGÃ HÀNH":"ÂU DƯƠNG PHONG",sx,sy-96); ctx.shadowBlur=0; } }
   // Cự Mãng Nam Cương (boss dã ngoại phía Nam — thân rắn nhiều đốt vẽ riêng, lớn hơn quái thường nhiều lần)
   if(typeof MANG!=="undefined"&&MANG&&!MANG.dead) drawMangBody(now);
@@ -2552,11 +2548,11 @@ function render(now){
     if(p.hurtT>0&&((now/60)|0)%2===0) ctx.globalAlpha=0.55;
     drawSprite(G.charIdx,sx,sy,46,p.face<0,MV.bobY,MV.tilt); ctx.globalAlpha=1;
     /* vệt chém đòn thường: đã chuyển sang ảnh vfx-slash sinh trong doAttack (drawFX), bỏ cung tròn vẽ tay */
-    ctx.fillStyle="#fff"; ctx.font="bold 11.5px 'Be Vietnam Pro'"; ctx.textAlign="center";
+    ctx.fillStyle="#fff"; ctx.font="bold "+Math.round(11.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
     ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText(`${CHARS[G.charIdx].name}${G.title?" · "+G.title:""} · Cấp ${G.lv}`,sx,sy-62); ctx.shadowBlur=0;
     const bf=[]; if(G.buffs.reflect>0)bf.push("🌀 Phản kình"); if(G.buffs.crit>0)bf.push("⚔️ Chí mạng"); if(G.buffs.regen>0)bf.push("🧘 Hồi phục");
-    if(bf.length){ ctx.fillStyle="#bfe3f2"; ctx.font="10.5px 'Be Vietnam Pro'"; ctx.fillText(bf.join(" · "),sx,sy-76); }
+    if(bf.length){ ctx.fillStyle="#bfe3f2"; ctx.font=Math.round(10.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.fillText(bf.join(" · "),sx,sy-76); }
     // khiên khí hộ thể khi buff còn hiệu lực: phản kình = vòng khiên xanh, hồi phục = vòng xanh lá, chí mạng = vòng lửa
     if(G.buffs.reflect>0){ const pu=1+Math.sin(now/220)*0.05; ctx.strokeStyle="rgba(127,209,242,.78)"; ctx.lineWidth=2.4;
       ctx.beginPath(); ctx.arc(sx,sy-24,35*pu,0,6.29); ctx.stroke();
@@ -4302,7 +4298,7 @@ function drawMangBody(now){ const m=MANG; const sx=m.x-cam.x, sy=m.y-cam.y;
   ctx.fillStyle="#1c0f04"; ctx.beginPath(); ctx.arc(hx-11,hy-8,2,0,6.29); ctx.arc(hx+11,hy-8,2,0,6.29); ctx.fill();
   if(Math.sin(now/240)>0.2){ ctx.strokeStyle="#e23b3b"; ctx.lineWidth=2; ctx.beginPath();
     ctx.moveTo(hx,hy+16); ctx.lineTo(hx,hy+27); ctx.moveTo(hx,hy+27); ctx.lineTo(hx-5,hy+33); ctx.moveTo(hx,hy+27); ctx.lineTo(hx+5,hy+33); ctx.stroke(); }
-  ctx.fillStyle="#ff8a7a"; ctx.font="bold 12.5px 'Be Vietnam Pro'"; ctx.textAlign="center";
+  ctx.fillStyle="#ff8a7a"; ctx.font="bold "+Math.round(12.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center";
   ctx.shadowColor="#000"; ctx.shadowBlur=4; ctx.fillText("🐍 CỰ MÃNG NAM CƯƠNG",hx,hy-40); ctx.shadowBlur=0;
   if(Math.hypot(m.x-G.p.x,m.y-G.p.y)<620){ const bw=92, pct=Math.max(0,m.hp/m.maxhp);
     ctx.fillStyle="rgba(10,6,3,.72)"; ctx.fillRect(hx-bw/2-1,hy-36,bw+2,6);
@@ -4350,7 +4346,7 @@ function openHerbalist(n){ const S=G.south; const box=$("eventBox"); const p=G.p
 /* ---------- Vẽ toàn bộ cảnh quan phía Nam (gọi trong render, culling theo camera) ---------- */
 function poiLabel(x,y,txt,big){ const sx=x-cam.x, sy=y-cam.y; if(sx<-160||sx>VW+160||sy<-120||sy>VH+120) return;
   if(Math.hypot(x-G.p.x,y-G.p.y)>760) return;
-  ctx.fillStyle="#ffe9bd"; ctx.font=(big?"900 15px":"bold 11.5px")+" 'Noto Serif',serif"; ctx.textAlign="center";
+  ctx.fillStyle="#ffe9bd"; ctx.font=(big?"900 "+Math.round(15*LBLK)+"px":"bold "+Math.round(11.5*LBLK)+"px")+" 'Noto Serif',serif"; ctx.textAlign="center";
   ctx.shadowColor="#000"; ctx.shadowBlur=5; ctx.fillText(txt,sx,sy); ctx.shadowBlur=0; }
 function drawSouth(now){ const p=G.p;
   const inView=(x,y,m)=>{ const sx=x-cam.x, sy=y-cam.y; return sx>-(m||260)&&sx<VW+(m||260)&&sy>-(m||260)&&sy<VH+(m||260); };
@@ -4669,7 +4665,7 @@ window.__caveRender=function(now){ ctx.setTransform(DPR*VSCALE,0,0,DPR*VSCALE,0,
     /* vệt chém đòn thường trong hang: dùng chung ảnh vfx-slash từ doAttack, bỏ cung tròn vẽ tay */
     if(G.buffs.reflect>0){ const pu=1+Math.sin(now/220)*0.05; ctx.strokeStyle="rgba(127,209,242,.78)"; ctx.lineWidth=2.4;
       ctx.beginPath(); ctx.arc(sx,sy-24,35*pu,0,6.29); ctx.stroke(); }
-    ctx.fillStyle="#fff"; ctx.font="bold 11.5px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
+    ctx.fillStyle="#fff"; ctx.font="bold "+Math.round(11.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText(CHARS[G.charIdx].name+" · "+CAVE.def.name+(CAVE.secret?" · ⏰ "+Math.ceil(CAVE.time)+"s":""),sx,sy-62); ctx.shadowBlur=0; }
   drawParts();
   drawDmgs();
@@ -4680,18 +4676,18 @@ window.__caveRender=function(now){ ctx.setTransform(DPR*VSCALE,0,0,DPR*VSCALE,0,
 window.__renderHook=function(now){ if(!G||CAVE) { drawPet(now); return; }
   const p=G.p;
   for(const cv of CAVES){ if(Math.abs(cv.x-p.x)<340&&Math.abs(cv.y-p.y)<340){ const sx=cv.x-cam.x, sy=cv.y-cam.y;
-    ctx.fillStyle="#ffe9bd"; ctx.font="bold 11px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
+    ctx.fillStyle="#ffe9bd"; ctx.font="bold "+Math.round(11*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
     ctx.fillText("🕳️ "+cv.name+" · Khuyến nghị cấp "+cv.rec+(G.cavesDone&&G.cavesDone[cv.id]?" · ✅ Đã chinh phục":""),sx,sy-64);
     if(Math.hypot(cv.x-p.x,cv.y-p.y)<84) ctx.fillText("[E] Vào hang",sx,sy-50); ctx.shadowBlur=0; } }
   if(PORTAL){ const sx=PORTAL.x-cam.x, sy=PORTAL.y-cam.y;
-    if(sx>-40&&sx<VW+40&&sy>-60&&sy<VH+40){ ctx.fillStyle="#e8b7ff"; ctx.font="bold 12px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
+    if(sx>-40&&sx<VW+40&&sy>-60&&sy<VH+40){ ctx.fillStyle="#e8b7ff"; ctx.font="bold "+Math.round(12*LBLK)+"px 'Be Vietnam Pro'"; ctx.textAlign="center"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
       ctx.fillText("🌀 Bí cảnh: "+PORTAL.def.name+" — [E] Vào ngay!",sx,sy-58); ctx.shadowBlur=0; } }
   drawPet(now); };
 function drawPet(now){ if(!G||!G.pet||!G.pet.active||G.pet.x===undefined) return; const pt=G.pet;
   const sx=pt.x-cam.x, sy=pt.y-cam.y; if(sx<-50||sx>VW+50||sy<-70||sy>VH+50) return;
   drawShadow(sx,sy,13); ctx.font="30px serif"; ctx.textAlign="center";
   ctx.fillText(pt.name==="Thần Điêu"?"🦅":pt.name==="Bạch Mã"?"🐴":"🦄",sx,sy-8+Math.sin(now/300)*2);
-  ctx.fillStyle="#ffe9bd"; ctx.font="bold 10.5px 'Be Vietnam Pro'"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
+  ctx.fillStyle="#ffe9bd"; ctx.font="bold "+Math.round(10.5*LBLK)+"px 'Be Vietnam Pro'"; ctx.shadowColor="#000"; ctx.shadowBlur=4;
   ctx.fillText("🐾 "+pt.name,sx,sy-40); ctx.shadowBlur=0; }
 
 /* ---------- BẢN ĐỒ LỚN (M) · XA PHU · THUYỀN · NGỰA ---------- */
@@ -7874,7 +7870,7 @@ function ovDrawRestMarks() {
     ctx.font = Math.round(17 * pl) + "px serif";
     ctx.fillText(rp.kind === "house" ? "🏠" : "⛺", sx, sy - 50);
     const d = Math.hypot(rp.x - G.p.x, rp.y - G.p.y);
-    if (d < 300) { ctx.font = "bold 11px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+    if (d < 300) { ctx.font = "bold " + Math.round(11 * LBLK) + "px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
       ctx.fillText(rp.name + (d < 84 ? " — [E] Nghỉ" : ""), sx, sy - 66); }
     ctx.restore();
   }
@@ -8053,8 +8049,7 @@ function uihSet(h) {
   const b = document.getElementById("uiHideBtn");
   if (b) { b.setAttribute("aria-pressed", UIH_HIDDEN ? "true" : "false");
     b.setAttribute("aria-label", UIH_HIDDEN ? "Hiện giao diện" : "Ẩn giao diện");
-    b.title = UIH_HIDDEN ? "Hiện giao diện (Tab)" : "Ẩn giao diện (Tab)";
-    if (UIH_USED) b.classList.add("mini"); } // sau lần bấm đầu: thu về nút tròn chỉ còn icon
+    b.title = UIH_HIDDEN ? "Hiện giao diện (Tab)" : "Ẩn giao diện (Tab)"; } // nút luôn chỉ là icon 👁️ tròn ở mọi trạng thái, không nhãn chữ
 }
 function uihToggle() {
   UIH_USED = true;
@@ -8382,10 +8377,10 @@ function ov7Draw(now) {
   if (labelNode) { const node = labelNode, def = OV7_DEFS[node.kind], left = ov7Left(node);
     const sx = node.x - cam.x, sy = node.y - cam.y;
     ctx.save(); ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
-    ctx.font = "bold 11.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+    ctx.font = "bold " + Math.round(11.5 * LBLK) + "px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
     ctx.fillText(def.icon + " " + node.name + " · còn " + left + "/" + node.hits + " lượt", sx, sy - 66);
-    ctx.fillStyle = "#bfe3f2"; ctx.font = "11px 'Be Vietnam Pro'";
-    ctx.fillText("[E] " + def.verb + " — tốn " + ov7Cost(node) + "⚡ · " + OV7_YIELD_TXT[node.kind], sx, sy - 52);
+    ctx.fillStyle = "#bfe3f2"; ctx.font = Math.round(11 * LBLK) + "px 'Be Vietnam Pro'";
+    ctx.fillText("[E] " + def.verb + " — tốn " + ov7Cost(node) + "⚡ · " + OV7_YIELD_TXT[node.kind], sx, sy - 66 + Math.round(14 * LBLK));
     ctx.restore(); }
 }
 const _ov7Render = render;
@@ -9487,7 +9482,7 @@ function warDraw() {
     ctx.save(); ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 5;
     ctx.font = (20 + Math.sin(now / 300) * 2.5) + "px serif";
     ctx.fillText("⚔️", csx, csy - 64);
-    ctx.font = "bold 11.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
+    ctx.font = "bold " + Math.round(11.5 * LBLK) + "px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd";
     ctx.fillText(cur.a + " " + cur.scoreA + " — " + cur.scoreB + " " + cur.b, csx, csy - 46);
     ctx.restore();
   }
@@ -9510,7 +9505,7 @@ function warDraw() {
     const pct = Math.max(0, warHp(u) / u.maxhp);
     ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(sx - 16, sy - 40, 32, 4.5);
     ctx.fillStyle = u.side === "A" ? "#7fd1f2" : "#ff8a7a"; ctx.fillRect(sx - 15, sy - 39.2, 30 * pct, 2.8);
-    ctx.font = "bold 9.5px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd"; ctx.shadowColor = "#000"; ctx.shadowBlur = 3;
+    ctx.font = "bold " + Math.round(9.5 * LBLK) + "px 'Be Vietnam Pro'"; ctx.fillStyle = "#ffe9bd"; ctx.shadowColor = "#000"; ctx.shadowBlur = 3;
     ctx.fillText(u.name, sx, sy + 14);
     ctx.restore();
   }
@@ -10083,7 +10078,7 @@ function homeDraw() {
   const seenCell = (px, py) => !(typeof OVF !== "undefined" && OVF.on && OVF.seen) || ovFogSeen(Math.floor(px / OVF.CS), Math.floor(py / OVF.CS)); // ovFogSeen nhận tọa độ LƯỚI SƯƠNG (pixel/CS) như dấu ⚔️ chiến sự
   const near = (x, y) => Math.hypot(x - G.p.x, y - G.p.y) <= (typeof OV_VIEW_R !== "undefined" ? OV_VIEW_R : 260);
   const drawSign = (sx, sy, txt) => { ctx.save(); ctx.textAlign = "center";
-    ctx.font = "bold 11px 'Be Vietnam Pro'"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
+    ctx.font = "bold " + Math.round(11 * LBLK) + "px 'Be Vietnam Pro'"; ctx.shadowColor = "#000"; ctx.shadowBlur = 4;
     ctx.fillStyle = "#ffe9bd"; ctx.fillText(txt, sx, sy); ctx.restore(); };
   if (!HOME.built) {
     for (const p of HOME_PLOTS) {
@@ -10095,7 +10090,7 @@ function homeDraw() {
       ctx.strokeStyle = "#8a6428"; ctx.lineWidth = 3; ctx.setLineDash([7, 5]); ctx.strokeRect(sx - 58, sy - 38, 116, 84); ctx.setLineDash([]);
       ctx.fillStyle = "#6b4213"; ctx.fillRect(sx - 3, sy - 30, 6, 26);
       ctx.fillStyle = "#e8cf9a"; ctx.fillRect(sx - 30, sy - 44, 60, 17);
-      ctx.fillStyle = "#2b1c0d"; ctx.font = "bold 10.5px 'Be Vietnam Pro'"; ctx.textAlign = "center";
+      ctx.fillStyle = "#2b1c0d"; ctx.font = "bold " + Math.round(10.5 * LBLK) + "px 'Be Vietnam Pro'"; ctx.textAlign = "center";
       ctx.fillText("🏠 ĐẤT TRỐNG", sx, sy - 31);
       ctx.restore();
       if (near(p.x, p.y)) drawSign(sx, sy + 62, "🏠 Nền đất trống — bấm E xem đất & xây nhà");
@@ -10217,8 +10212,7 @@ window.__HOME = {
    - Nút do khối khác nối thẳng vào #sysBtns về sau được MutationObserver tự xếp vào
      đúng cụm (#ovCampBtn luôn về hàng ghim, còn lại vào lưới). Listener trên từng nút
      được giữ nguyên vì chỉ di chuyển node, không tạo lại.
-   - Nút 👁️ khi giao diện đang ẩn: nhãn đổi thành "Hiện giao diện" và không bị thu mất
-     chữ (CSS ở cuối <style>) để người chơi luôn biết bấm vào đâu cho menu hiện lại.
+   - Nút 👁️ luôn chỉ là icon tròn không chữ ở mọi trạng thái (kể cả khi giao diện đang ẩn).
    ===================================================================================== */
 (function sysPinInit() {
   var sys = document.getElementById("sysBtns"); if (!sys) return;
@@ -10255,12 +10249,6 @@ window.__HOME = {
     if (sys.classList.contains("sysOpen") &&
         (document.body.classList.contains("uiHidden") || document.body.classList.contains("vlPanelOpen"))) setOpen(false);
   }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
-  var eye = document.getElementById("uiHideBtn"), lbl = document.getElementById("uiHideLbl");
-  if (eye && lbl) {
-    var syncEye = function () { lbl.textContent = eye.getAttribute("aria-pressed") === "true" ? "Hiện giao diện" : "Ẩn giao diện"; };
-    syncEye();
-    new MutationObserver(syncEye).observe(eye, { attributes: true, attributeFilter: ["aria-pressed"] });
-  }
   window.__SYSPIN = { version: "syspin-1", setOpen: setOpen,
     state: () => ({ pin: Array.prototype.map.call(pin.querySelectorAll("button"), b => b.id),
                     allCount: all.querySelectorAll("button").length,
