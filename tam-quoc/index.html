@@ -509,7 +509,7 @@ function useSkill(side){
    const pool=role==='Quân chủ'?mine:enemies;
    const cx=pool.length?pool.reduce((a,u)=>a+u.x,0)/pool.length:cv.width/2;
    const cy=pool.length?pool.reduce((a,u)=>a+u.y,0)/pool.length:cv.height/2;
-   B.effects.push({x:cx,y:cy,life:32,type:'fxbig',img:B.fx[fxSrc],size:170+45*tier});}}
+   B.effects.push({x:cx,y:cy,life:88,type:'fxbig',img:B.fx[fxSrc],size:190+55*tier});}}
   if(role==='Mưu sĩ'){
     // Hỏa Công: deep strike — hits the enemy centre/back near their own general
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
@@ -645,7 +645,7 @@ $('stanceBtn2').onclick=()=>setStance('def');
 function moraleOf(side){
   const max=side==='atk'?B.atkMax:B.defMax,cur=aliveTroops(side);
   const gen=side==='atk'?B.genAtk:B.genDef;
-  return Math.max(0,Math.min(100,100-(1-cur/Math.max(1,max))*112-(1-gen.hp/gen.max)*18+B.moraleBonus[side]));
+  return Math.max(0,Math.min(100,100-(1-cur/Math.max(1,max))*92-(1-gen.hp/gen.max)*18+B.moraleBonus[side]));
 }
 function battleLoop(ts){
   if(!B||B.over&&B.endT&&ts-B.endT>1400){return;}
@@ -677,14 +677,15 @@ function battleLoop(ts){
   for(const g of (B.genUnits||[])){
     if(g.dead)continue;
     g.flash=Math.max(0,(g.flash||0)-dt);g.moving=false;
-    if(!g.fleeing&&morNow[g.side]<30&&Math.random()<0.010*dt)g.fleeing=true;
+    if(!g.fleeing&&morNow[g.side]<22&&Math.random()<0.008*dt)g.fleeing=true;
     const dirG=g.side==='atk'?1:-1;
     if(g.fleeing){g.x-=dirG*1.5*dt;g.moving=true;g.x=Math.max(16,Math.min(W-16,g.x));continue;}
     let tgt=null,td=96;
     for(const u of alive){if(u.side===g.side||u.fleeing)continue;const d=Math.hypot(u.x-g.x,u.y-g.y);if(d<td){td=d;tgt=u;}}
-    let gtgt=null,gtd=128;
-    for(const og of B.genUnits){if(og.side===g.side||og.dead)continue;const d=Math.hypot(og.x-g.x,og.y-g.y);if(d<gtd){gtd=d;gtgt=og;}}
-    const foe = (gtgt&&gtd<td+16)?gtgt:tgt;
+    let gtgt=null,gtd=1e9;
+    for(const og of B.genUnits){if(og.side===g.side||og.dead||og.fleeing)continue;const d=Math.hypot(og.x-g.x,og.y-g.y);if(d<gtd){gtd=d;gtgt=og;}}
+    // generals hunt the enemy general for a duel once the lines have thinned (or always if close)
+    const foe = (gtgt&&gtd<340)?gtgt:tgt;
     if(foe){
       const fd=Math.hypot(foe.x-g.x,foe.y-g.y)||1;
       const reach=foe.maxHp&&foe.name?46:36;
@@ -694,7 +695,7 @@ function battleLoop(ts){
       }else if((g.cd-=dt)<=0){
         g.cd=40+Math.random()*10;g.atkAnim=6;
         const slash=B.fx&&B.fx['assets/fx/fx-slash.png'];
-        B.effects.push({x:foe.x,y:foe.y-8,life:13,type:'fximg',img:slash,size:64});
+        B.effects.push({x:foe.x,y:foe.y-8,life:20,type:'fximg',img:slash,size:80});
         if(foe.name){ // struck an enemy general
           const dmg=foe.maxHp*0.030*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
           foe.hp-=dmg;foe.flash=8;
@@ -713,7 +714,7 @@ function battleLoop(ts){
   }
   const morA=moraleOf('atk'),morD=moraleOf('def');
   for(const u of alive){
-    if(!u.fleeing){const m=u.side==='atk'?morA:morD;if(m<32&&Math.random()<0.012*dt)u.fleeing=true;}
+    if(!u.fleeing){const m=u.side==='atk'?morA:morD;if(m<24&&Math.random()<0.010*dt)u.fleeing=true;}
     if(u.fleeing){
       const dir2=u.side==='atk'?-1:1;
       u.x+=dir2*1.7*u.spdF*dt;u.moving=true;
@@ -734,7 +735,7 @@ function battleLoop(ts){
       else if((u.cd-=dt)<=0){
         u.cd=30+Math.random()*14;u.atkAnim=6;
         const myPow=u.side==='atk'?atkPow:defPow;
-        egu.hp-=u.per*0.30*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
+        egu.hp-=u.per*0.22*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
         egu.flash=6;
         if(egu.hp<=0)killGeneral(egu);
       }
@@ -777,7 +778,7 @@ function battleLoop(ts){
     else if(e.type==='heal'){ctx.globalAlpha=Math.min(1,e.life/18);ctx.fillStyle='#8fe38f';ctx.font='bold 13px sans-serif';ctx.fillText('+',e.x,e.y-(24-e.life)*0.9);}
     else if(e.type==='fxbig'||e.type==='fximg'){
       if(e.img&&e.img.complete&&e.img.naturalWidth){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,e.life/(e.type==='fxbig'?16:8))*0.95;
-        const sz=e.size*(e.type==='fxbig'?(1+(32-e.life)/32*0.22):1);ctx.drawImage(e.img,e.x-sz/2,e.y-sz/2,sz,sz);ctx.globalCompositeOperation='source-over';}
+        const sz=e.size*(e.type==='fxbig'?(1+Math.max(0,(88-e.life))/88*0.22):1);ctx.drawImage(e.img,e.x-sz/2,e.y-sz/2,sz,sz);ctx.globalCompositeOperation='source-over';}
     }
     else if(e.type==='spark'){ctx.globalAlpha=Math.min(1,e.life/8);ctx.strokeStyle='#fff3b0';ctx.lineWidth=2;const r=(10-e.life)*1.6+2;
       ctx.beginPath();ctx.moveTo(e.x-r,e.y);ctx.lineTo(e.x+r,e.y);ctx.moveTo(e.x,e.y-r);ctx.lineTo(e.x,e.y+r);ctx.stroke();}
