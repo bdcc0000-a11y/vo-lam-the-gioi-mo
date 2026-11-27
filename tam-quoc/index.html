@@ -90,6 +90,20 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 .mclose{float:right;background:#7e2d24;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:700}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99;background:#241b10;border:1.5px solid var(--gold);color:#ffe9a8;padding:10px 18px;border-radius:10px;font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.6);max-width:92vw;text-align:center}
 @media(max-width:560px){.node{width:64px}.node .dot{width:27px;height:27px;font-size:13px}.node .nm{font-size:10.5px}.node .tr{font-size:9.5px}.portrait{width:56px;height:56px}.bside .troops{font-size:23px}}
+
+.prepVs{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.prow{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(240,220,160,.18);border-radius:10px;padding:6px 8px}
+.prow .pcard{flex:1;display:flex;gap:8px;align-items:center;min-width:0}
+.prow .pcard img{width:44px;height:44px;object-fit:contain}
+.prow .pcard .pn{font-weight:700;font-size:14px}
+.prow .pcard .pt{font-size:11.5px;color:#c9b98f}
+.prow .mid{font-size:20px}
+.khac{font-weight:800;padding:2px 8px;border-radius:99px;font-size:12px;white-space:nowrap}
+.khac.win{background:#2e6b34;color:#c9f2cd}.khac.lose{background:#7a2e2a;color:#ffd7d2}.khac.draw{background:#5a5344;color:#e8dfc8}
+.forms{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.fbtn{flex:1;min-width:130px;text-align:left;background:rgba(255,255,255,.05);border:2px solid rgba(240,220,160,.25);border-radius:10px;padding:8px 10px;color:#efe6cf;cursor:pointer}
+.fbtn.on{border-color:#ffd94a;background:rgba(255,217,74,.12)}
+.fbtn b{display:block;font-size:14px}.fbtn small{color:#c9b98f;line-height:1.35;display:block}
 </style>
 </head>
 <body>
@@ -132,6 +146,17 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 </div>
 
 <!-- HERO MODAL -->
+<div id="prepModal" class="modal hidden"><div class="mbox" style="max-width:640px">
+  <h3 id="prepTitle">⚔️ Chuẩn bị xuất trận</h3>
+  <div class="info" id="prepInfo"></div>
+  <div class="prepVs" id="prepVs"></div>
+  <div class="info">Hệ khắc: <b>Giáo khắc Kỵ · Kỵ khắc Kiếm · Kiếm khắc Giáp · Giáp khắc Giáo</b> (khắc +18% sát thương, bị khắc −12%). Chọn đội hình của ba:</div>
+  <div class="forms" id="prepForms"></div>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+    <button id="prepGo" style="font-size:16px;padding:10px 22px">⚔️ Xuất trận</button>
+    <button id="prepCancel">✖ Hủy bỏ</button>
+  </div>
+</div></div>
 <div id="heroModal" class="modal hidden"><div class="mbox">
   <button class="mclose" data-close="heroModal">✕ Đóng</button>
   <h3>📜 Danh tướng thiên hạ — 160 người</h3>
@@ -148,6 +173,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 <div id="toast" class="hidden"></div>
 
 <script src="heroes.js"></script>
+<script src="troops.js"></script>
 <script>
 'use strict';
 /* ================= DATA ================= */
@@ -175,6 +201,16 @@ const REGIONS=[
  {id:'kiennghiep',name:'Kiến Nghiệp',x:78,y:58,owner:'ngo',nb:['thoxuan','truongsa','giaochau']},
  {id:'giaochau',name:'Giao Châu',x:63,y:87,owner:'ngo',nb:['truongsa','kiennghiep','vannam']}];
 const RMAP={}; REGIONS.forEach(r=>RMAP[r.id]=r);
+const TMAP={}; TROOPS.forEach(t=>TMAP[t.img]=t);
+const COUNTER={giao:'ky',ky:'kiem',kiem:'giap',giap:'giao'};
+function troopOf(name){const h=HMAP[name];return h?TMAP[h.troop]:null;}
+function counterMult(myCls,foeCls){if(!myCls||!foeCls)return 1;if(COUNTER[myCls]===foeCls)return 1.18;if(COUNTER[foeCls]===myCls)return 0.88;return 1;}
+const FORMS={
+ truongxa:{name:'🐍 Trường Xà Trận',dmg:1.05,hp:1.05,spd:1.0,desc:'Cân bằng: công +5%, máu +5%'},
+ phongthi:{name:'🏹 Phong Thỉ Trận',dmg:1.20,hp:0.92,spd:1.05,desc:'Công mạnh: công +20%, máu −8%'},
+ huyenvu:{name:'🛡️ Huyền Vũ Trận',dmg:0.92,hp:1.25,spd:0.9,desc:'Thủ chắc: máu +25%, công −8%'},
+ hacduc:{name:'🕊️ Hạc Dực Trận',dmg:1.08,hp:1.0,spd:1.28,desc:'Bao vây: tốc độ +28%, công +8%'}};
+const FORM_KEYS=Object.keys(FORMS);
 const CAPITALS={nguy:'lacduong',thuc:'thanhdo',ngo:'kiennghiep',quan:'truongan'};
 let S=null; // state
 const $=id=>document.getElementById(id);
@@ -231,7 +267,7 @@ function renderTop(){
 }
 function garrisonHTML(st){
   if(!st.garrison.length)return '<span style="color:#9a8a6a">Không có tướng trấn giữ</span>';
-  return st.garrison.map(n=>{const h=HMAP[n];return '<span class="gchip"><img src="'+h.img+'" alt=""><span><b>'+n+'</b><br><small style="color:#c9b98f">Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+'</small></span></span>';}).join('');
+  return st.garrison.map(n=>{const h=HMAP[n];const t=troopOf(n);return '<span class="gchip"><img src="'+h.img+'" alt=""><span><b>'+n+'</b><br><small style="color:#c9b98f">Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+(t?'<br>Quân: '+t.name+' ('+t.clsLabel+')':'')+'</small></span></span>';}).join('');
 }
 function selectRegion(id){S.sel=id;refreshNodes();renderPanel();}
 function renderPanel(){
@@ -262,7 +298,11 @@ function renderPanel(){
 'use strict';
 /* ================= BATTLE ================= */
 let B=null; // battle runtime
-function sidePower(gens,troops){const avg=gens.length?gens.reduce((a,n)=>a+HMAP[n].vo+HMAP[n].chi*0.6,0)/gens.length:40;return troops*(0.7+avg/130);}
+function sidePower(gens,troops,foeGens){const avg=gens.length?gens.reduce((a,n)=>a+HMAP[n].vo+HMAP[n].chi*0.6,0)/gens.length:40;
+  let tm=1,cm=1;
+  if(gens.length){tm=gens.reduce((a,n)=>{const t=troopOf(n);return a+(t?(t.atk+t.def)/14:1);},0)/gens.length;}
+  if(gens.length&&foeGens&&foeGens.length){let s2=0,c2=0;gens.forEach(n=>{const t=troopOf(n);if(!t)return;foeGens.forEach(m=>{const f=troopOf(m);if(f){s2+=counterMult(t.cls,f.cls);c2++;}});});if(c2)cm=s2/c2;}
+  return troops*(0.7+avg/130)*tm*cm;}
 function startAttack(fromId,toId){
   const from=S.regions[fromId],to=S.regions[toId];
   const gens=(S.pick&&S.pick.length?S.pick:from.garrison.slice(0,3)).filter(n=>from.garrison.includes(n));
@@ -271,8 +311,37 @@ function startAttack(fromId,toId){
   const atkTroops=Math.floor(from.troops*0.85);
   from.troops-=atkTroops;
   (S.acted[fromId]=S.acted[fromId]||{}).attack=true;
-  openBattle({atkFac:S.player,defFac:to.owner,atkGens:gens,defGens:to.garrison.slice(0,3),atkTroops,defTroops:to.troops,fromId,toId,playerSide:'atk'});
+  showPrep({atkFac:S.player,defFac:to.owner,atkGens:gens,defGens:to.garrison.slice(0,3),atkTroops,defTroops:to.troops,fromId,toId,playerSide:'atk'});
 }
+let PREP=null;
+function showPrep(cfg){
+  cfg.atkForm=FORM_KEYS[Math.floor(Math.random()*FORM_KEYS.length)];
+  cfg.defForm=FORM_KEYS[Math.floor(Math.random()*FORM_KEYS.length)];
+  PREP={cfg,form:cfg.playerSide==='atk'?'truongxa':'huyenvu'};
+  if(cfg.playerSide==='atk')cfg.atkForm=PREP.form;else cfg.defForm=PREP.form;
+  const foeForm=cfg.playerSide==='atk'?cfg.defForm:cfg.atkForm;
+  $('prepTitle').textContent=cfg.playerSide==='atk'?('⚔️ Chuẩn bị đánh '+RMAP[cfg.toId].name):('🛡️ Quân địch đánh '+RMAP[cfg.toId].name+' — chuẩn bị thủ thành!');
+  $('prepInfo').innerHTML='Quân ta xuất trận: <b>'+(cfg.playerSide==='atk'?cfg.atkTroops:cfg.defTroops)+'</b> · Quân địch: <b>'+(cfg.playerSide==='atk'?cfg.defTroops:cfg.atkTroops)+'</b> · Đội hình địch: <b>'+FORMS[foeForm].name+'</b>';
+  const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
+  const card=(n,fac)=>{const h=HMAP[n],t=troopOf(n);return '<div class="pcard"><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'">'+n+'</div><div class="pt">Quân: '+(t?t.name+' ('+t.clsLabel+', cấp '+t.tier+')':'—')+' · Võ '+h.vo+'</div></div></div>';};
+  let rows='';
+  for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
+    const m=myGens[i],f=foeGens[i];
+    let badge='<span class="khac draw">—</span>';
+    if(m&&f){const cm=counterMult(troopOf(m).cls,troopOf(f).cls);badge=cm>1?'<span class="khac win">▲ Khắc chế</span>':(cm<1?'<span class="khac lose">▼ Bị khắc</span>':'<span class="khac draw">● Hòa hệ</span>');}
+    rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac):'<div class="pcard"></div>')+'</div>';
+  }
+  $('prepVs').innerHTML=rows||'<div class="info">Không có tướng đối đầu.</div>';
+  const pf=$('prepForms');
+  pf.innerHTML=FORM_KEYS.map(k=>'<button class="fbtn'+(PREP.form===k?' on':'')+'" data-form="'+k+'"><b>'+FORMS[k].name+'</b><small>'+FORMS[k].desc+'</small></button>').join('');
+  pf.querySelectorAll('[data-form]').forEach(b=>b.onclick=()=>{PREP.form=b.dataset.form;if(PREP.cfg.playerSide==='atk')PREP.cfg.atkForm=PREP.form;else PREP.cfg.defForm=PREP.form;pf.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('on',x.dataset.form===PREP.form));});
+  $('prepGo').textContent=cfg.playerSide==='atk'?'⚔️ Xuất trận':'🛡️ Ứng chiến';
+  $('prepCancel').style.display=cfg.playerSide==='atk'?'':'none';
+  $('prepModal').classList.remove('hidden');
+}
+$('prepGo').onclick=()=>{if(!PREP)return;const cfg=PREP.cfg;PREP=null;$('prepModal').classList.add('hidden');openBattle(cfg);};
+$('prepCancel').onclick=()=>{if(!PREP)return;const cfg=PREP.cfg;PREP=null;$('prepModal').classList.add('hidden');
+  const from=S.regions[cfg.fromId];from.troops+=cfg.atkTroops;if(S.acted[cfg.fromId])delete S.acted[cfg.fromId].attack;save();refreshNodes();renderPanel();toast('Đã hủy xuất chinh — quân trở về thành.');};
 function openBattle(cfg){
   B={...cfg,over:false,speed:1,energy:0,t:0,units:[],effects:[],shake:0,winner:null};
   B.atkMax=cfg.atkTroops;B.defMax=cfg.defTroops;
@@ -288,14 +357,21 @@ function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRe
 window.addEventListener('resize',()=>{if(B)resizeCanvas();});
 function spawnUnits(){
   const cv=$('cv'),W=cv.width,H=cv.height;B.units=[];
+  B.timgs={};
+  const gensOf=side=>side==='atk'?B.atkGens:B.defGens;
   const mk=(side,troops,fac)=>{
+    const gens=gensOf(side);const form=FORMS[side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa'];
     const n=Math.max(18,Math.min(130,Math.round(troops/9)));
     const per=troops/n;const cols=Math.ceil(Math.sqrt(n*1.7));const rows=Math.ceil(n/cols);
     for(let i=0;i<n;i++){
       const c=i%cols,r=Math.floor(i/cols);
       const x0=side==='atk'?30+c*((W*0.34)/cols):W-30-(cols-c)*((W*0.34)/cols);
       const y0=H*0.22+r*((H*0.62)/Math.max(1,rows-1||1))+((c%2)*5);
-      B.units.push({side,x:x0,y:Math.min(H-24,y0),hp:per*2.4,per,fac,type:(r%3),cd:Math.random()*30,dead:0,ph:Math.random()*6.28});
+      const gname=gens.length?gens[i%gens.length]:null;const tr=gname?troopOf(gname):TROOPS[0];
+      if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
+      const cls=tr?tr.cls:'kiem';
+      B.units.push({side,x:x0,y:Math.min(H-24,y0),hp:per*2.4*(tr?(0.65+tr.def/11):1)*form.hp,per,fac,cls,img:tr?tr.img:null,
+        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28});
     }
   };
   mk('atk',B.atkTroops,B.atkFac);mk('def',B.defTroops,B.defFac);
@@ -303,6 +379,14 @@ function spawnUnits(){
 function aliveTroops(side){return Math.max(0,Math.round(B.units.filter(u=>u.side===side&&!u.dead).reduce((a,u)=>a+u.hp,0)/2.4));}
 function drawSoldier(ctx,u,t){
   const dir=u.side==='atk'?1:-1;const bob=u.dead?0:Math.sin(t/130+u.ph)*1.6;
+  const tim=B.timgs&&u.img?B.timgs[u.img]:null;
+  if(tim&&tim.complete&&tim.naturalWidth){
+    const hgt=u.cls==='ky'?46:34,wdt=hgt*(u.cls==='ky'?1.15:0.92);
+    ctx.save();ctx.translate(u.x,u.y+bob);ctx.scale(dir,1);
+    if(u.dead){ctx.rotate(1.25);ctx.globalAlpha=Math.max(0,1-u.dead/40);}
+    ctx.drawImage(tim,-wdt/2,-hgt+8,wdt,hgt);
+    ctx.restore();return;
+  }
   ctx.save();ctx.translate(u.x,u.y+bob);if(u.dead)ctx.rotate(dir*1.35);
   ctx.globalAlpha=u.dead?Math.max(0,1-u.dead/40):1;
   const col=FACTIONS[u.fac].color;
@@ -347,13 +431,14 @@ function battleLoop(ts){
     }
     const dir=u.side==='atk'?1:-1;u.atkAnim=Math.max(0,(u.atkAnim||0)-dt);
     if(best){
-      const range=u.type===2?58:(u.type===0?17:13);
+      const range=u.cls==='giao'?21:15;
       if(Math.abs(best.x-u.x)>range||Math.abs(best.y-u.y)>7){
-        u.x+=(best.x-u.x)*0.012*dt*3*(u.type===2?0.4:1);u.y+=(best.y-u.y)*0.02*dt;
+        u.x+=(best.x-u.x)*0.036*dt*u.spdF*(FORMS[u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa'].spd);u.y+=(best.y-u.y)*0.02*dt*u.spdF;
       }else if((u.cd-=dt)<=0){
         u.cd=27+Math.random()*20;u.atkAnim=6;
-        const myPow=u.side==='atk'?atkPow:defPow,foePow=u.side==='atk'?defPow:atkPow;
-        best.hp-=u.per*0.14*(0.6+myPow/90)*(0.9+Math.random()*0.3)*(u.type===2?0.75:1);
+        const myPow=u.side==='atk'?atkPow:defPow;
+        const fd=FORMS[u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa'].dmg;
+        best.hp-=u.per*0.14*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd;
         if(best.hp<=0&&!best.dead){best.dead=1;}
       }
     }else{
@@ -434,7 +519,7 @@ function checkEnd(){
 function instantBattle(atkFac,fromId,toId){
   const from=S.regions[fromId],to=S.regions[toId];
   const gens=from.garrison.slice(0,3);const atkTroops=Math.floor(from.troops*0.8);
-  const pa=sidePower(gens,atkTroops),pd=sidePower(to.garrison,Math.max(1,to.troops));
+  const pa=sidePower(gens,atkTroops,to.garrison),pd=sidePower(to.garrison,Math.max(1,to.troops),gens);
   from.troops-=atkTroops;
   if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));to.owner=atkFac;to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
@@ -452,13 +537,13 @@ function aiFaction(f){
   for(const r of borders.slice(0,2)){
     const targets=r.nb.map(id=>RMAP[id]).filter(o=>S.regions[o.id].owner!==f).sort((a,b)=>S.regions[a.id].troops-S.regions[b.id].troops);
     if(!targets.length)continue;const t=targets[0];
-    const myP=sidePower(S.regions[r.id].garrison,S.regions[r.id].troops*0.8);
-    const foP=sidePower(S.regions[t.id].garrison,Math.max(1,S.regions[t.id].troops));
+    const myP=sidePower(S.regions[r.id].garrison,S.regions[r.id].troops*0.8,S.regions[t.id].garrison);
+    const foP=sidePower(S.regions[t.id].garrison,Math.max(1,S.regions[t.id].troops),S.regions[r.id].garrison);
     if(myP>foP*1.12){
       if(S.regions[t.id].owner===S.player){
         // player defends visually
         const atkTroops=Math.floor(S.regions[r.id].troops*0.8);S.regions[r.id].troops-=atkTroops;
-        openBattle({atkFac:f,defFac:S.player,atkGens:S.regions[r.id].garrison.slice(0,3),defGens:S.regions[t.id].garrison.slice(0,3),atkTroops,defTroops:S.regions[t.id].troops,fromId:r.id,toId:t.id,playerSide:'def'});
+        showPrep({atkFac:f,defFac:S.player,atkGens:S.regions[r.id].garrison.slice(0,3),defGens:S.regions[t.id].garrison.slice(0,3),atkTroops,defTroops:S.regions[t.id].troops,fromId:r.id,toId:t.id,playerSide:'def'});
         toast('⚠️ Quân '+FACTIONS[f].name+' tấn công '+t.name+'!');
         return 'visual';
       }
@@ -479,7 +564,7 @@ $('endTurnBtn').onclick=()=>{
 };
 /* ================= HERO GALLERY / START ================= */
 function renderGallery(f){
-  $('hgrid').innerHTML=HEROES.filter(h=>f==='all'||h.faction===f).map(h=>'<div class="hcard"><img loading="lazy" src="'+h.img+'"><div class="hn" style="color:'+FACTIONS[h.faction].color+'">'+h.name+'</div><div class="hs">'+FACTIONS[h.faction].name+' · '+h.role+'<br>Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+'<br>Chiêu: '+h.skill+'</div></div>').join('');
+  $('hgrid').innerHTML=HEROES.filter(h=>f==='all'||h.faction===f).map(h=>{const t=troopOf(h.name);return '<div class="hcard"><img loading="lazy" src="'+h.img+'"><div class="hn" style="color:'+FACTIONS[h.faction].color+'">'+h.name+'</div><div class="hs">'+FACTIONS[h.faction].name+' · '+h.role+'<br>Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+'<br>Chiêu: '+h.skill+'<br>Quân: '+(t?t.name+' ('+t.clsLabel+' '+t.tier+')':'—')+'</div></div>';}).join('');
   document.querySelectorAll('#ftabs button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
 }
 $('ftabs').innerHTML='<button data-f="all" class="on">Tất cả</button>'+Object.keys(FACTIONS).map(f=>'<button data-f="'+f+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</button>').join('');
