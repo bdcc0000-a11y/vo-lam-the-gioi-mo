@@ -287,7 +287,7 @@ function renderPanel(){
     const rb=$('actRecruit');if(rb)rb.onclick=()=>{S.gold[S.player]-=150;st.troops+=250;(S.acted[r.id]=S.acted[r.id]||{}).recruit=true;log('Tuyển thêm 250 quân ở '+r.name+'.');save();refreshNodes();renderPanel();};
     p.querySelectorAll('[data-atk]').forEach(b=>b.onclick=()=>startAttack(r.id,b.dataset.atk));
     p.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.pick=S.pick||[];const n=c.dataset.pick;const i=S.pick.indexOf(n);if(i>=0)S.pick.splice(i,1);else{if(S.pick.length>=3){toast('Tối đa 3 tướng xuất chinh');return;}S.pick.push(n);}renderPanel();});
-    if(!S.pick)S.pick=st.garrison.slice(0,3);
+    if(S.pickFor!==r.id){S.pickFor=r.id;S.pick=st.garrison.slice(0,3);}
   }else{
     html+='<div class="info">Thành của địch — muốn đánh, hãy chọn một thành của mình kề bên rồi bấm nút tấn công.</div>';
     p.innerHTML=html;
@@ -368,20 +368,21 @@ function spawnUnits(){
       const x0=side==='atk'?30+c*((W*0.34)/cols):W-30-(cols-c)*((W*0.34)/cols);
       const y0=H*0.22+r*((H*0.62)/Math.max(1,rows-1||1))+((c%2)*5);
       const gname=gens.length?gens[i%gens.length]:null;const tr=gname?troopOf(gname):TROOPS[0];
+      const maxHp=per*2.4*(tr?(0.65+tr.def/11):1)*form.hp;
       if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
       const cls=tr?tr.cls:'kiem';
-      B.units.push({side,x:x0,y:Math.min(H-24,y0),hp:per*2.4*(tr?(0.65+tr.def/11):1)*form.hp,per,fac,cls,img:tr?tr.img:null,
+      B.units.push({side,x:x0,y:Math.min(H-24,y0),hp:maxHp,maxHp,per,fac,cls,img:tr?tr.img:null,
         dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28});
     }
   };
   mk('atk',B.atkTroops,B.atkFac);mk('def',B.defTroops,B.defFac);
 }
-function aliveTroops(side){return Math.max(0,Math.round(B.units.filter(u=>u.side===side&&!u.dead).reduce((a,u)=>a+u.hp,0)/2.4));}
+function aliveTroops(side){return Math.max(0,Math.round(B.units.filter(u=>u.side===side&&!u.dead).reduce((a,u)=>a+u.per*Math.max(0,u.hp/u.maxHp),0)));}
 function drawSoldier(ctx,u,t){
   const dir=u.side==='atk'?1:-1;const bob=u.dead?0:Math.sin(t/130+u.ph)*1.6;
   const tim=B.timgs&&u.img?B.timgs[u.img]:null;
   if(tim&&tim.complete&&tim.naturalWidth){
-    const hgt=u.cls==='ky'?46:34,wdt=hgt*(u.cls==='ky'?1.15:0.92);
+    const hgt=u.cls==='ky'?54:34,wdt=hgt*(u.cls==='ky'?1.25:0.92);
     ctx.save();ctx.translate(u.x,u.y+bob);ctx.scale(dir,1);
     if(u.dead){ctx.rotate(1.25);ctx.globalAlpha=Math.max(0,1-u.dead/40);}
     ctx.drawImage(tim,-wdt/2,-hgt+8,wdt,hgt);
@@ -509,7 +510,7 @@ function finishBattle(){
   }
   $('battleScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
   $('resTitle').textContent=title;$('resBody').innerHTML=body;$('resultModal').classList.remove('hidden');
-  B=null;S.pick=null;save();refreshNodes();renderPanel();checkEnd();
+  B=null;S.pick=null;S.pickFor=null;save();refreshNodes();renderPanel();checkEnd();
 }
 function checkEnd(){
   const owners=new Set(REGIONS.map(r=>S.regions[r.id].owner));
@@ -556,7 +557,7 @@ $('endTurnBtn').onclick=()=>{
   // player income
   const mine=REGIONS.filter(r=>S.regions[r.id].owner===S.player);
   S.gold[S.player]+=mine.reduce((a,r)=>a+90+Math.floor(S.regions[r.id].troops/10),0);
-  S.turn++;S.acted={};S.sel=null;S.pick=null;
+  S.turn++;S.acted={};S.sel=null;S.pick=null;S.pickFor=null;
   log('— Sang lượt '+S.turn+' —');
   for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();return;}}
   save();refreshNodes();renderPanel();renderLog();checkEnd();
