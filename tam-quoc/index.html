@@ -416,7 +416,8 @@ function drawSoldier(ctx,u,t){
 function battleLoop(ts){
   if(!B||B.over&&B.endT&&ts-B.endT>1400){return;}
   const cv=$('cv'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
-  const dt=Math.min(2.2,(B.speed))*1;
+  const rawDt=B.lastTs?Math.min(2.4,Math.max(0.4,(ts-B.lastTs)/16.67)):1;B.lastTs=ts;
+  const dt=rawDt*B.speed;
   B.t+=dt;
   // ground
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#57743a');g.addColorStop(1,'#39512a');
@@ -444,7 +445,7 @@ function battleLoop(ts){
       }
     }else if(B.phase==='regroup'){
       let avgD=0;for(const u of alive)avgD+=Math.hypot(u.hx-u.x,u.hy-u.y);avgD=alive.length?avgD/alive.length:0;
-      if(B.phaseT>200||avgD<15){
+      if(B.phaseT>340||avgD<15){
         B.round++;B.phase='charge';B.phaseT=0;
         const rl=$('roundLbl');if(rl)rl.textContent='Hiệp '+B.round;
         toast('⚔️ HIỆP '+B.round+' — quân còn sống tập hợp lại, tiếp tục xung phong!',1900);
@@ -468,7 +469,7 @@ function battleLoop(ts){
       }
     }else if(B.phase==='regroup'){
       const dx=u.hx-u.x,dy=u.hy-u.y,d=Math.hypot(dx,dy)||1;
-      const step=Math.min(2.4*u.spdF*dt,d);
+      const step=Math.min(2.9*u.spdF*dt,d);
       u.x+=dx/d*step;u.y+=dy/d*step;u.moving=d>4;
     }else{ // clash — fight in place, push and shove
       if(best){
