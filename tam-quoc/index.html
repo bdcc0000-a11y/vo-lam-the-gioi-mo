@@ -117,6 +117,10 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 #cutin .cs{font-size:25px;font-weight:900;color:#ffd94a;text-shadow:0 2px 10px rgba(255,150,0,.5)}
 #stanceBtn1,#stanceBtn2{background:#3a2d1a;color:#f0e6d2;border:2px solid #6a5636;padding:11px 13px;border-radius:10px;font-weight:700;cursor:pointer}
 #stanceBtn1.on,#stanceBtn2.on{border-color:#ffd94a;background:rgba(255,217,74,.16);color:#ffd94a}
+.gchip{display:flex;flex-direction:column;align-items:center;gap:1px;background:#2c2113;border:2px solid #6a5636;border-radius:10px;padding:4px 6px;cursor:pointer;color:#e8dfc8;font-size:10px;min-width:52px}
+.gchip img{width:32px;height:32px;object-fit:contain}
+.gchip.on{border-color:#ffd94a;background:rgba(255,217,74,.15)}
+.gchip.cd{opacity:.45;filter:grayscale(.7)}
 </style>
 </head>
 <body>
@@ -152,6 +156,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div id="cvWrap"><canvas id="cv"></canvas><div id="cutin"><div class="ci"><img id="ciImg"><img id="ciFx" style="width:92px;height:92px;object-fit:cover;border-radius:10px"><div><div class="cn" id="ciName"></div><div class="cs" id="ciSkill"></div></div></div></div></div>
   <div id="bBottom">
     <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
+    <div id="genChips" style="display:flex;gap:6px;align-items:center"></div>
     <button id="skillBtn">⚡ Tung chiêu</button>
     <button id="spdBtn">⏩ Tốc độ x1</button>
     <button id="quitBtn">🏳️ Rút quân</button>
@@ -365,7 +370,7 @@ $('prepCancel').onclick=()=>{if(!PREP)return;const cfg=PREP.cfg;PREP=null;$('pre
   const from=S.regions[cfg.fromId];from.troops+=cfg.atkTroops;if(S.acted[cfg.fromId])delete S.acted[cfg.fromId].attack;save();refreshNodes();renderPanel();toast('Đã hủy xuất chinh — quân trở về thành.');};
 function openBattle(cfg){
   B={...cfg,over:false,speed:1,t:0,units:[],effects:[],shake:0,winner:null,endReason:null,
-     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0};
+     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0,projs:[],pending:[],anims:[],selGen:null};
   const gHp=(gens,troops)=>Math.round(troops*0.16)+220;
   B.genAtk={hp:gHp(cfg.atkGens,cfg.atkTroops),name:cfg.atkGens[0]||'Chủ tướng'};B.genAtk.max=B.genAtk.hp;
   B.genDef={hp:gHp(cfg.defGens,cfg.defTroops),name:cfg.defGens[0]||'Chủ tướng'};B.genDef.max=B.genDef.hp;
@@ -377,6 +382,11 @@ function openBattle(cfg){
   L.innerHTML=mk(cfg.atkGens,cfg.atkFac,cfg.atkTroops);
   R.innerHTML=mk(cfg.defGens,cfg.defFac,cfg.defTroops);
   resizeCanvas();spawnUnits();buildBattlefield();updateStanceBtns();spawnGenerals();startDrums();
+  B.selGen=leadGen(B.playerSide);renderGenChips();
+  $('cv').onclick=e=>{const cv=$('cv'),r=cv.getBoundingClientRect();
+    const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
+    const g=playerGens().find(g=>Math.hypot(g.x-x,g.y-40-y)<52);
+    if(g){B.selGen=g;renderGenChips();}};
   B.raf=requestAnimationFrame(battleLoop);
 }
 function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRect();cv.width=Math.max(320,r.width);cv.height=Math.max(240,r.height);}
@@ -488,48 +498,44 @@ function drawFlags(ctx,t){
 /* ================= SKILLS (Spectral Force style: SP tiers, formation-depth targeting, cut-in) ================= */
 const SKILL_FX={'Võ tướng':'assets/fx/fx-thunder.png','Mưu sĩ':'assets/fx/fx-fire.png','Quân chủ':'assets/fx/fx-sun.png'};
 function spTier(side){const sp=B.sp[side];return sp>=100?3:sp>=67?2:sp>=34?1:0;}
-function showCutin(side,tier){
-  const gens=side==='atk'?B.atkGens:B.defGens;const lead=gens[0];if(!lead)return;
-  const h=HMAP[lead];
-  $('ciImg').src=h.img;$('ciName').textContent=lead+' · '+FACTIONS[side==='atk'?B.atkFac:B.defFac].name;
-  $('ciSkill').textContent='⚡ '+h.skill+' Lv'+(tier||spTier(side));
-  $('ciFx').src=SKILL_FX[h.role]||SKILL_FX['Võ tướng'];
-  const c=$('cutin');c.style.display='flex';
-  clearTimeout(B.ciT);B.ciT=setTimeout(()=>{c.style.display='none';},1150);
+function playerGens(){return (B.genUnits||[]).filter(g=>g.side===B.playerSide&&!g.dead);}
+function renderGenChips(){
+  const box=$('genChips');if(!box||!B)return;
+  box.innerHTML=playerGens().map(g=>'<button class="gchip'+(B.selGen===g?' on':'')+(g.skillCd>0?' cd':'')+'" data-gen="'+g.name+'"><img src="'+g.img+'"><span>'+(g.lead?'👑 ':'')+g.name+'</span><span>'+(g.skillCd>0?'⏳ '+Math.ceil(g.skillCd/60)+'s':'⚡ '+HMAP[g.name].skill)+'</span></button>').join('');
+  box.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>{const g=playerGens().find(x=>x.name===b.dataset.gen);if(g){B.selGen=g;renderGenChips();}});
 }
-function useSkill(side){
+function useSkill(side,gen){
   const tier=spTier(side);if(!tier||B.over)return false;
-  B.sp[side]=0;
-  const gens=side==='atk'?B.atkGens:B.defGens;const lead=gens[0];if(!lead)return false;
-  const role=HMAP[lead].role;const foe=side==='atk'?'def':'atk';
+  if(!gen)gen=side===B.playerSide?B.selGen:leadGen(side);
+  if(!gen||gen.dead||gen.skillCd>0)return false;
+  B.sp[side]=0;gen.skillCd=900;gen.casting=42;gen.atkAnim=12;
+  const role=gen.role;const foe=side==='atk'?'def':'atk';
   const cv=$('cv');const enemies=B.units.filter(u=>u.side===foe&&!u.dead);
   const mine=B.units.filter(u=>u.side===side&&!u.dead);
-  showCutin(side,tier);B.shake=Math.max(B.shake,6);sfxBoom();
-  {const fxSrc=SKILL_FX[role];if(fxSrc){if(!B.fx)B.fx={};if(!B.fx[fxSrc]){const im=new Image();im.src=fxSrc;B.fx[fxSrc]=im;}
-   const pool=role==='Quân chủ'?mine:enemies;
-   const cx=pool.length?pool.reduce((a,u)=>a+u.x,0)/pool.length:cv.width/2;
-   const cy=pool.length?pool.reduce((a,u)=>a+u.y,0)/pool.length:cv.height/2;
-   B.effects.push({x:cx,y:cy,life:135,type:'fxbig',img:B.fx[fxSrc],size:190+55*tier});}}
+  B.shake=Math.max(B.shake,5);sfxBoom();
+  const fxSrc=SKILL_FX[role];if(!B.fx)B.fx={};if(!B.fx[fxSrc]){const im=new Image();im.src=fxSrc;B.fx[fxSrc]=im;}
+  const centroid=pool=>pool.length?{x:pool.reduce((a,u)=>a+u.x,0)/pool.length,y:pool.reduce((a,u)=>a+u.y,0)/pool.length}:{x:cv.width/2,y:cv.height/2};
   if(role==='Mưu sĩ'){
-    // Hỏa Công: deep strike — hits the enemy centre/back near their own general
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
     const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,7+5*tier);
-    targets.forEach((u,i)=>{u.hp-=u.per*(1.05*tier);if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}if(i<9)B.effects.push({x:u.x,y:u.y,life:26,type:'boom'});});
+    const c=centroid(targets);
+    B.anims.push({role,tier,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],targets:targets.map(u=>({x:u.x,y:u.y}))});
+    targets.forEach((u,i)=>B.pending.push({at:B.t+22+i*6,fn:()=>{if(u.dead)return;u.hp-=u.per*(1.05*tier);B.effects.push({x:u.x,y:u.y,life:24,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }else if(role==='Quân chủ'){
-    // Hiệu Triệu: SF2-style heal — restores troop count + morale + general HP
     const maxT=side==='atk'?B.atkMax:B.defMax;
     const amount=Math.round(maxT*0.05*tier);
-    spawnReinforce(side,amount);
-    B.moraleBonus[side]=Math.min(24,B.moraleBonus[side]+7*tier);
-    const gen=side==='atk'?B.genAtk:B.genDef;gen.hp=Math.min(gen.max,gen.hp+gen.max*0.12*tier);
-    const gp=side==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
-    for(let i=0;i<7;i++)B.effects.push({x:gp.x+(Math.random()*70-35),y:gp.y+(Math.random()*90-45),life:24,type:'heal'});
-    if(side===B.playerSide)toast('⚡ '+lead+' hiệu triệu — viện quân +'+amount+', sĩ khí tăng!');
+    const c=centroid(mine);
+    B.anims.push({role,tier,x:gen.x,y:gen.y-30,t:0,dur:110,img:B.fx[fxSrc],targets:[]});
+    B.pending.push({at:B.t+34,fn:()=>{spawnReinforce(side,amount);
+      B.moraleBonus[side]=Math.min(24,B.moraleBonus[side]+7*tier);
+      gen.hp=Math.min(gen.maxHp,gen.hp+gen.maxHp*0.12*tier);syncGenHp();
+      for(let i=0;i<8;i++)B.effects.push({x:gen.x+(Math.random()*80-40),y:gen.y+(Math.random()*90-45),life:24,type:'heal'});}});
   }else{
-    // Võ tướng: front-line cleave — hits the enemy front closest to our army
     const myCx=mine.length?mine.reduce((a,u)=>a+u.x,0)/mine.length:cv.width/2;
     const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,8+5*tier);
-    targets.forEach((u,i)=>{u.hp-=u.per*(1.15*tier);if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}if(i<8)B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});});
+    const c=centroid(targets);
+    B.anims.push({role,tier,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],targets:targets.map(u=>({x:u.x,y:u.y}))});
+    targets.forEach((u,i)=>B.pending.push({at:B.t+16+i*5,fn:()=>{if(u.dead)return;u.hp-=u.per*(1.15*tier);B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }
   return true;
 }
@@ -557,7 +563,11 @@ function spawnGenerals(){
     names.forEach((n,i)=>{
       const share=i===0?0.55:(0.45/Math.max(1,names.length-1));
       const hp=Math.round(pool*share);
-      B.genUnits.push({side,name:n,img:HMAP[n].img,vo:HMAP[n].vo,lead:i===0,dead:false,fleeing:false,
+      const h=HMAP[n],tr=troopOf(n);
+      const isBow=tr&&tr.name.includes('Cung');
+      const range=h.role==='Mưu sĩ'?128:(isBow?118:(tr&&tr.cls==='giao'?50:38));
+      B.genUnits.push({side,name:n,img:h.img,vo:h.vo,role:h.role,lead:i===0,dead:false,fleeing:false,
+        range,projType:h.role==='Mưu sĩ'?'magic':(isBow?'arrow':null),skillCd:0,face:side==='atk'?1:-1,
         x:side==='atk'?W*0.075:W*0.925,y:H*(0.34+0.20*i),hp,maxHp:hp,cd:20+i*9,flash:0,ph:Math.random()*6.28});
     });
   };
@@ -584,11 +594,37 @@ function drawGeneralUnit(ctx,g,t){
   const img=(B.gimgs&&B.gimgs[g.name]);
   const h=96,w=h*0.86;
   const bob=g.moving?Math.abs(Math.sin(t/95+g.ph))*3.4:Math.sin(t/600+g.ph)*1.1;
+  // attack swing: body rotates and lunges like an arm striking (atkAnim 12 -> 0)
+  let swing=0,lunge=0;
+  if(g.atkAnim>0){const p=1-g.atkAnim/12;swing=Math.sin(p*Math.PI);lunge=swing*(g.projType?2.5:8);}
+  const rock=g.moving?Math.sin(t/90+g.ph)*0.035:Math.sin(t/700+g.ph)*0.012;
+  const dirS=g.side==='atk'?1:-1;
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,.30)';ctx.beginPath();ctx.ellipse(g.x,g.y+6,w*0.36,6.5,0,0,6.29);ctx.fill();
   if(img&&img.complete&&img.naturalWidth){
-    if(g.side==='def'){ctx.translate(g.x,g.y-bob);ctx.scale(-1,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore();ctx.save();}
-    else ctx.drawImage(img,g.x-w/2,g.y-h-bob,w,h);
+    ctx.translate(g.x+dirS*lunge,g.y-bob);
+    ctx.rotate(rock+dirS*swing*0.20);
+    if(g.side==='def')ctx.scale(-1,1);
+    if(g.casting>0)ctx.scale(1.06,1.06);
+    ctx.drawImage(img,-w/2,-h,w,h);
+  }
+  ctx.restore();ctx.save();
+  // weapon swoosh sweeping in front while swinging (melee) / casting glow (ranged)
+  if(swing>0.05){
+    if(g.projType){
+      ctx.globalCompositeOperation='lighter';ctx.globalAlpha=swing*0.8;
+      ctx.fillStyle=g.projType==='magic'?'#c9a0ff':'#ffe9a8';
+      ctx.beginPath();ctx.arc(g.x+dirS*30,g.y-h+26,7+swing*7,0,6.29);ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+    }else{
+      const sl=B.fx&&B.fx['assets/fx/fx-slash.png'];
+      if(sl&&sl.complete&&sl.naturalWidth){
+        ctx.globalCompositeOperation='lighter';ctx.globalAlpha=swing*0.95;
+        ctx.translate(g.x+dirS*34,g.y-h/2);ctx.rotate(dirS*(-0.7+swing*1.15));if(g.side==='def')ctx.scale(-1,1);
+        const sz=64+swing*30;ctx.drawImage(sl,-sz/2,-sz/2,sz,sz);
+        ctx.globalCompositeOperation='source-over';
+      }
+    }
   }
   if(g.flash>0){ctx.globalAlpha=Math.min(0.55,g.flash/10);ctx.globalCompositeOperation='lighter';ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.x,g.y-h/2,26,0,6.29);ctx.fill();ctx.globalCompositeOperation='source-over';}
   ctx.restore();
@@ -661,13 +697,16 @@ function battleLoop(ts){
   const defPow=B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45;
   const alive=B.units.filter(u=>!u.dead);
   const genPos={atk:{x:W*0.055,y:H*0.60},def:{x:W*0.945,y:H*0.60}};
+  if(B.pending&&B.pending.length)B.pending=B.pending.filter(p=>{if(B.t>=p.at){try{p.fn();}catch(e){}return false;}return true;});
+  if(!B.selGen||B.selGen.dead||B.selGen.side!==B.playerSide)B.selGen=playerGens()[0]||null;
+  if(Math.floor(B.t)%25===0)renderGenChips();
   // SP accrues while armies fight (SF2 Skill Points)
   for(const sd of ['atk','def'])B.sp[sd]=Math.min(100,B.sp[sd]+dt*0.05*stanceMult(sd).sp);
   // AI: skills + stance decisions
   B.aiT+=dt;
   for(const sd of ['atk','def']){
     if(sd===B.playerSide||B.over)continue;
-    if(spTier(sd)>=2&&Math.random()<0.005*dt)useSkill(sd);
+    if(spTier(sd)>=2&&Math.random()<0.005*dt){const gs=(B.genUnits||[]).filter(g=>g.side===sd&&!g.dead&&g.skillCd<=0);if(gs.length)useSkill(sd,gs.sort((a,b)=>(b.lead-a.lead)||(b.vo-a.vo))[0]);}
     if(B.aiT>560){const myF=aliveTroops(sd)/(sd==='atk'?B.atkMax:B.defMax),foF=aliveTroops(sd==='atk'?'def':'atk')/(sd==='atk'?B.defMax:B.atkMax);
       B.stance[sd]=myF<foF-0.10?'def':(myF>foF+0.12?'break':'normal');}
   }
@@ -677,6 +716,7 @@ function battleLoop(ts){
   for(const g of (B.genUnits||[])){
     if(g.dead)continue;
     g.flash=Math.max(0,(g.flash||0)-dt);g.moving=false;
+    g.atkAnim=Math.max(0,(g.atkAnim||0)-dt);g.skillCd=Math.max(0,(g.skillCd||0)-dt);g.casting=Math.max(0,(g.casting||0)-dt);
     if(!g.fleeing&&morNow[g.side]<22&&Math.random()<0.008*dt)g.fleeing=true;
     const dirG=g.side==='atk'?1:-1;
     if(g.fleeing){g.x-=dirG*1.5*dt;g.moving=true;g.x=Math.max(16,Math.min(W-16,g.x));continue;}
@@ -688,15 +728,17 @@ function battleLoop(ts){
     const foe = (gtgt&&gtd<340)?gtgt:tgt;
     if(foe){
       const fd=Math.hypot(foe.x-g.x,foe.y-g.y)||1;
-      const reach=foe.maxHp&&foe.name?46:36;
+      const reach=foe.name?Math.max(g.range,46):g.range;
+      // ranged generals keep their distance (kiting)
+      if(g.projType&&fd<g.range*0.55){g.x-=(foe.x-g.x)/fd*0.8*dt;g.y-=(foe.y-g.y)/fd*0.5*dt;g.moving=true;}
       if(fd>reach){
-        const step=Math.min(0.62*dt,fd-reach*0.8);
+        const step=Math.min(1.12*dt,fd-reach*0.8);
         g.x+=(foe.x-g.x)/fd*step;g.y+=(foe.y-g.y)/fd*step*0.8;g.moving=step>0.15;
       }else if((g.cd-=dt)<=0){
-        g.cd=40+Math.random()*10;g.atkAnim=6;
-        const slash=B.fx&&B.fx['assets/fx/fx-slash.png'];
-        B.effects.push({x:foe.x,y:foe.y-8,life:20,type:'fximg',img:slash,size:80});
-        if(foe.name){ // struck an enemy general
+        g.cd=40+Math.random()*10;g.atkAnim=12;
+        if(g.projType&&fd>44){ // ranged attack: arrow / magic bolt flies to the target
+          B.projs.push({x:g.x+dirG*30,y:g.y-56,foe,side:g.side,from:g,type:g.projType,t:0});
+        }else if(foe.name){ // struck an enemy general
           const dmg=foe.maxHp*0.030*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
           foe.hp-=dmg;foe.flash=8;
           B.texts.push({x:foe.x,y:foe.y-104,life:58,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
@@ -711,6 +753,26 @@ function battleLoop(ts){
       g.x+=dirG*0.5*dt;g.moving=true; // no enemies in reach — advance
     }
     g.x=Math.max(16,Math.min(W-16,g.x));g.y=Math.max(H*0.16,Math.min(H-12,g.y));
+  }
+  // projectiles fly and strike
+  if(B.projs&&B.projs.length){
+    B.projs=B.projs.filter(p=>{
+      const foe=p.foe;if(!foe||foe.dead===true||foe.dead>=1&&foe.maxHp===undefined){}
+      if(!foe||(foe.name&&foe.dead)||(!foe.name&&foe.dead))return false;
+      const tx=foe.x,ty=foe.y-(foe.name?52:8);
+      const dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy)||1;
+      const sp=(p.type==='magic'?5.4:7.2)*dt;
+      if(d<13){
+        if(foe.name){const dmg=foe.maxHp*0.026*(0.65+p.from.vo/70)*stanceMult(p.side).dealt*B.rpsMult[p.side];
+          foe.hp-=dmg;foe.flash=8;B.texts.push({x:foe.x,y:foe.y-104,life:52,txt:'-'+Math.round(dmg*10),color:p.type==='magic'?'#d9b3ff':'#ffe9a8'});
+          if(foe.hp<=0)killGeneral(foe);}
+        else{foe.hp-=foe.per*(1.25+p.from.vo/60)*stanceMult(p.side).dealt;
+          if(foe.hp<=0&&!foe.dead){foe.dead=1;B.sp[p.side]=Math.min(100,B.sp[p.side]+0.8);}}
+        B.effects.push({x:tx,y:ty,life:9,type:'spark'});
+        return false;
+      }
+      p.x+=dx/d*sp;p.y+=dy/d*sp;p.t+=dt;return true;
+    });
   }
   const morA=moraleOf('atk'),morD=moraleOf('def');
   for(const u of alive){
@@ -784,6 +846,42 @@ function battleLoop(ts){
       ctx.beginPath();ctx.moveTo(e.x-r,e.y);ctx.lineTo(e.x+r,e.y);ctx.moveTo(e.x,e.y-r);ctx.lineTo(e.x,e.y+r);ctx.stroke();}
     else{ctx.globalAlpha=Math.min(1,e.life/18);ctx.strokeStyle=e.color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,(30-e.life)*2.6,0,6.29);ctx.stroke();}
     ctx.restore();}
+  // animated skill sequences on the field (slow, readable, no banners)
+  if(B.anims&&B.anims.length){
+    B.anims=B.anims.filter(an=>{
+      an.t+=dt;const p=an.t/an.dur;if(p>=1)return false;
+      const ease=1-Math.pow(1-p,3);
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      const fade=p<0.14?p/0.14:(p>0.78?(1-p)/0.22:1);
+      if(an.img&&an.img.complete&&an.img.naturalWidth){
+        const sz=(170+50*an.tier)*(0.55+0.55*ease);
+        ctx.globalAlpha=fade*0.92;ctx.translate(an.x,an.y);ctx.rotate(Math.sin(an.t/38)*0.06);
+        ctx.drawImage(an.img,-sz/2,-sz/2,sz,sz);ctx.rotate(-Math.sin(an.t/38)*0.06);ctx.translate(-an.x,-an.y);
+      }
+      if(an.role==='Võ tướng'){ // staggered lightning on the front line
+        ctx.globalAlpha=fade;ctx.strokeStyle='#bfe8ff';ctx.lineWidth=2.6;
+        an.targets.forEach((tp,i)=>{const lp=(p*1.25-i*0.07);if(lp>0&&lp<0.55){ctx.beginPath();let bx=tp.x-8,by=tp.y-52;ctx.moveTo(bx,by);for(let k=1;k<=4;k++)ctx.lineTo(bx+k*4+(k%2?4:-1),by+k*11);ctx.lineTo(tp.x,tp.y-4);ctx.stroke();}});
+      }else if(an.role==='Mưu sĩ'){ // meteors rain diagonally, staggered
+        an.targets.forEach((tp,i)=>{const lp=(p*1.35-i*0.06);if(lp>0&&lp<1){const mx=tp.x+70-120*lp,my=tp.y-130+150*lp;
+          ctx.globalAlpha=fade;ctx.fillStyle='#ffb35c';ctx.beginPath();ctx.arc(mx,my,4.6,0,6.29);ctx.fill();
+          ctx.strokeStyle='rgba(255,120,40,.75)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(mx+16,my-20);ctx.lineTo(mx,my);ctx.stroke();
+          if(lp>0.92){ctx.fillStyle='rgba(255,160,60,.5)';ctx.beginPath();ctx.arc(tp.x,tp.y,16,0,6.29);ctx.fill();}}});
+      }else{ // Quân chủ: radiant rings expanding from the caster
+        for(let r2=0;r2<2;r2++){const rp=((p*1.4+r2*0.5)%1);ctx.globalAlpha=(1-rp)*0.55*fade;ctx.strokeStyle='#ffe98a';ctx.lineWidth=3.4;
+          ctx.beginPath();ctx.arc(an.x,an.y+18,rp*135,0,6.29);ctx.stroke();}
+        ctx.globalAlpha=fade;ctx.fillStyle='#fff3b0';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+        for(let i=0;i<6;i++){const sx=an.x-52+i*20,sy=an.y+26-ease*64-((an.t+i*13)%22);ctx.fillText('+',sx,sy);}
+      }
+      ctx.restore();return true;
+    });
+  }
+  if(B.projs)for(const p of B.projs){ctx.save();
+    if(p.type==='magic'){ctx.globalCompositeOperation='lighter';ctx.fillStyle='#c9a0ff';ctx.beginPath();ctx.arc(p.x,p.y,5.5,0,6.29);ctx.fill();
+      ctx.fillStyle='rgba(220,190,255,.5)';ctx.beginPath();ctx.arc(p.x,p.y,10,0,6.29);ctx.fill();ctx.globalCompositeOperation='source-over';}
+    else{const a=Math.atan2((p.foe?p.foe.y-8:0)-p.y,(p.foe?p.foe.x:0)-p.x);ctx.translate(p.x,p.y);ctx.rotate(a);
+      ctx.strokeStyle='#e8dcc0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-7,0);ctx.lineTo(5,0);ctx.stroke();
+      ctx.fillStyle='#cfd6dd';ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(3,-3);ctx.lineTo(3,3);ctx.closePath();ctx.fill();}
+    ctx.restore();}
   // floating combat texts
   if(B.texts){B.texts=B.texts.filter(tx=>(tx.life-=dt)>0);
     for(const tx of B.texts){ctx.save();ctx.globalAlpha=Math.min(1,tx.life/22);ctx.font=(tx.big?'900 19px':'bold 12.5px')+' sans-serif';ctx.textAlign='center';
@@ -801,9 +899,10 @@ function battleLoop(ts){
   R.querySelector('[data-mor]').style.width=moraleOf('def')+'%';
   const front=alive.length?alive.reduce((a,u)=>a+u.x,0)/alive.length/W:0.5;
   $('tugL').style.width=(100-front*100)+'%';
-  if(B.playerSide){const sp=B.sp[B.playerSide],tier=spTier(B.playerSide);
-    $('skillBtn').disabled=tier<1||B.over;
-    $('skillBtn').textContent=tier>=1?('⚡ '+ (B[B.playerSide+'Gens'][0]?HMAP[B[B.playerSide+'Gens'][0]].skill:'Chiêu')+' Lv'+tier+' (SP '+Math.floor(sp)+')'):('⚡ Chiêu — cần SP 34+ ('+Math.floor(sp)+')');}
+  if(B.playerSide){const sp=B.sp[B.playerSide],tier=spTier(B.playerSide),sg=B.selGen;
+    const cdOk=sg&&sg.skillCd<=0;
+    $('skillBtn').disabled=tier<1||B.over||!cdOk;
+    $('skillBtn').textContent=!sg?'⚡ Chiêu':(sg.skillCd>0?('⏳ '+sg.name+' hồi chiêu '+Math.ceil(sg.skillCd/60)+'s'):(tier>=1?('⚡ '+HMAP[sg.name].skill+' — '+sg.name+' Lv'+tier):('⚡ '+HMAP[sg.name].skill+' — cần SP 34+ ('+Math.floor(sp)+')')));}
   if(!B.over){
     if(at<=0||df<=0){B.over=true;B.winner=at>df?'atk':'def';B.endReason='wipe';B.endT=ts;setTimeout(finishBattle,900);}
     else if(moraleOf('atk')<=4&&at<B.atkMax*0.45){B.over=true;B.winner='def';B.endReason='morale';B.endT=ts;setTimeout(finishBattle,900);}
@@ -812,7 +911,7 @@ function battleLoop(ts){
   }
   B.raf=requestAnimationFrame(battleLoop);
 }
-$('skillBtn').onclick=()=>{if(!B||B.over)return;useSkill(B.playerSide);};
+$('skillBtn').onclick=()=>{if(!B||B.over)return;useSkill(B.playerSide,B.selGen);};
 $('spdBtn').onclick=()=>{if(!B)return;B.speed=B.speed>=3?1:B.speed+1;$('spdBtn').textContent='⏩ Tốc độ x'+B.speed;};
 $('quitBtn').onclick=()=>{if(!B||B.over)return;B.over=true;B.winner=B.playerSide==='atk'?'def':'atk';B.retreat=true;setTimeout(finishBattle,300);};
 $('sndBtn').onclick=()=>{if(!B)return;B.muted=!B.muted;$('sndBtn').textContent=B.muted?'🔇':'🔊';if(!B.muted)sfxInit();};
