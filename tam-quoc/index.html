@@ -225,7 +225,7 @@ const FORMS={
  hacduc:{name:'🕊️ Hạc Dực Trận',dmg:1.08,hp:1.0,spd:1.28,desc:'Bao vây: tốc độ +28%, công +8%'}};
 const FORM_KEYS=Object.keys(FORMS);
 const RPS={huyenvu:'block',hacduc:'split',phongthi:'wedge',truongxa:'none'};
-const RPS_NAME={block:'Khối 🧱',split:'Tách 🪭',wedge:'Nêm 🔱',none:'—'};
+const RPS_NAME={block:'Khối 🧱',split:'Tách 🪭',wedge:'Nêm 🔱',none:'Trung lập 🐍'};
 const BEATS={block:'split',split:'wedge',wedge:'block'};
 function formEdge(myF,foeF){const a=RPS[myF],b=RPS[foeF];if(!a||!b||a==='none'||b==='none')return 0;if(BEATS[a]===b)return 1;if(BEATS[b]===a)return -1;return 0;}
 const CAPITALS={nguy:'lacduong',thuc:'thanhdo',ngo:'kiennghiep',quan:'truongan'};
@@ -457,11 +457,12 @@ function buildBattlefield(){
   for(let i=0;i<46;i++){x.fillStyle='rgba(90,70,48,.35)';x.beginPath();x.ellipse(rnd()*W,H*0.44+rnd()*H*0.16,2+rnd()*3.4,1.4+rnd()*2,0,0,6.29);x.fill();}
   // camps: tents + palisade at both rears
   const camp=(cx,fac,dir)=>{
-    x.fillStyle='rgba(0,0,0,.16)';x.beginPath();x.ellipse(cx,H*0.86,W*0.085,H*0.10,0,0,6.29);x.fill();
-    const tent=(tx,ty,sc)=>{x.fillStyle=FACTIONS[fac].color;x.beginPath();x.moveTo(tx-26*sc,ty);x.lineTo(tx,ty-30*sc);x.lineTo(tx+26*sc,ty);x.closePath();x.fill();x.strokeStyle='rgba(0,0,0,.4)';x.stroke();x.fillStyle='rgba(0,0,0,.28)';x.beginPath();x.moveTo(tx-8*sc,ty);x.lineTo(tx,ty-15*sc);x.lineTo(tx+8*sc,ty);x.closePath();x.fill();};
-    tent(cx-dir*W*0.028,H*0.90,1);tent(cx+dir*W*0.030,H*0.955,0.78);
-    x.strokeStyle='#5d4630';x.lineWidth=3;
-    for(let i=0;i<5;i++){const px=cx+dir*(W*0.055),py=H*0.16+i*H*0.045;x.beginPath();x.moveTo(px,py);x.lineTo(px+dir*10,py+7);x.stroke();}
+    x.fillStyle='rgba(168,134,84,.28)';x.beginPath();x.ellipse(cx,H*0.235,W*0.082,H*0.135,0,0,6.29);x.fill();
+    x.strokeStyle='rgba(90,64,36,.55)';x.lineWidth=2;x.beginPath();x.ellipse(cx,H*0.235,W*0.082,H*0.135,0,0,6.29);x.stroke();
+    const tent=(tx,ty,sc)=>{x.fillStyle=FACTIONS[fac].color;x.beginPath();x.moveTo(tx-30*sc,ty);x.lineTo(tx,ty-36*sc);x.lineTo(tx+30*sc,ty);x.closePath();x.fill();x.strokeStyle='rgba(0,0,0,.45)';x.lineWidth=1.6;x.stroke();x.fillStyle='rgba(0,0,0,.30)';x.beginPath();x.moveTo(tx-9*sc,ty);x.lineTo(tx,ty-18*sc);x.lineTo(tx+9*sc,ty);x.closePath();x.fill();x.strokeStyle='#3d2c17';x.lineWidth=2;x.beginPath();x.moveTo(tx,ty-36*sc);x.lineTo(tx,ty-46*sc);x.stroke();};
+    tent(cx-dir*W*0.026,H*0.20,1.25);tent(cx+dir*W*0.030,H*0.315,0.95);
+    x.fillStyle='#6b4e30';
+    for(let i=0;i<7;i++){const px=cx+dir*(W*0.068),py=H*0.115+i*H*0.042;x.beginPath();x.moveTo(px-3.4,py+9);x.lineTo(px,py-4);x.lineTo(px+3.4,py+9);x.closePath();x.fill();}
   };
   camp(W*0.045,B.atkFac,1);camp(W*0.955,B.defFac,-1);
   // bushes / trees along top & bottom edges + rocks
@@ -485,11 +486,11 @@ function drawFlags(ctx,t){
 }
 /* ================= SKILLS (Spectral Force style: SP tiers, formation-depth targeting, cut-in) ================= */
 function spTier(side){const sp=B.sp[side];return sp>=100?3:sp>=67?2:sp>=34?1:0;}
-function showCutin(side){
+function showCutin(side,tier){
   const gens=side==='atk'?B.atkGens:B.defGens;const lead=gens[0];if(!lead)return;
   const h=HMAP[lead];
   $('ciImg').src=h.img;$('ciName').textContent=lead+' · '+FACTIONS[side==='atk'?B.atkFac:B.defFac].name;
-  $('ciSkill').textContent='⚡ '+h.skill+' Lv'+spTier(side);
+  $('ciSkill').textContent='⚡ '+h.skill+' Lv'+(tier||spTier(side));
   const c=$('cutin');c.style.display='flex';
   clearTimeout(B.ciT);B.ciT=setTimeout(()=>{c.style.display='none';},1150);
 }
@@ -500,7 +501,7 @@ function useSkill(side){
   const role=HMAP[lead].role;const foe=side==='atk'?'def':'atk';
   const cv=$('cv');const enemies=B.units.filter(u=>u.side===foe&&!u.dead);
   const mine=B.units.filter(u=>u.side===side&&!u.dead);
-  showCutin(side);B.shake=Math.max(B.shake,6);
+  showCutin(side,tier);B.shake=Math.max(B.shake,6);
   if(role==='Mưu sĩ'){
     // Hỏa Công: deep strike — hits the enemy centre/back near their own general
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
@@ -715,6 +716,7 @@ function finishBattle(){
     if(B.retreat&&from){from.troops+=Math.floor(at*0.7);if(B.playerSide==='atk')from.garrison=from.garrison.concat(B.atkGens.filter(n=>!from.garrison.includes(n)));}
     log(FACTIONS[B.defFac].name+' giữ được '+RMAP[B.toId].name+' trước quân '+FACTIONS[B.atkFac].name+'.');
   }
+  if(B.playerSide){title=B.retreat?'🏳️ ĐÃ RÚT QUÂN':(B.winner===B.playerSide?'🎉 THẮNG TRẬN!':'💀 THUA TRẬN');}
   if(B.endReason==='general')body+='<br>⚔️ Tướng lĩnh tử trận giữa trận — quân tâm tan rã, trận chiến kết thúc ngay!';
   if(B.endReason==='morale')body+='<br>😱 Sĩ khí một bên sụp đổ — tàn quân tháo chạy khỏi chiến trường dù vẫn còn người!';
   $('battleScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
