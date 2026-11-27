@@ -493,6 +493,7 @@ function upgradeGen(name){
   if(S.gold[S.player]<cost){toast('Không đủ vàng — cần '+cost+' vàng');return false;}
   S.gold[S.player]-=cost;S.genTroop[name]=step+1;
   const t=GEN_LADDER[name][step+1];
+  renderTop();
   toast('🪖 '+name+' nâng binh chủng lên bậc '+(step+2)+'/5: '+t.name+' (hạng '+t.rank+')');
   log('🪖 '+name+' nâng binh chủng thành '+t.name+'.');
   save();return true;
@@ -595,7 +596,7 @@ function openCityMenu(id){
     }else h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
   }else{
     const origins=r.nb.filter(n=>S.regions[n].owner===S.player&&canAttackFrom(n));
-    h+='<button class="cmBtn atk" id="cmWarE" '+(origins.length?'':'disabled')+'>⚔️ WAR</button>';
+    h+='<button class="cmBtn atk" id="cmWarE" '+((!origins.length||truceActive(S.player,st.owner))?'disabled':'')+'>'+(truceActive(S.player,st.owner)?'🤝 Đình chiến':'⚔️ WAR')+'</button>';
     h+=origins.length?'<div class="cmInfo">Bấm WAR để tấn công thành này'+(origins.length>1?' — rồi chọn thành xuất phát trên bản đồ':' từ '+RMAP[origins[0]].name)+'. Game sẽ hỏi lại Yes/No trước khi xuất chinh.</div>':'<div class="cmInfo">Chưa có thành nào của ta kề bên đủ sức đánh thành này.</div>';
   }
   h+='<button class="cmBtn" id="cmClose">✖ Đóng</button>';
