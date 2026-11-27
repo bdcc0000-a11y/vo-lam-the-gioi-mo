@@ -30,11 +30,20 @@ button{font-family:inherit;cursor:pointer}
 #mapWrap{position:relative;max-width:980px;margin:10px auto;border:2px solid #4a3a24;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 30% 20%,#3d4a2a 0%,#2c3a22 45%,#22301f 100%)}
 #mapWrap svg.links{position:absolute;inset:0;width:100%;height:100%}
 #mapInner{position:relative;width:100%;padding-top:78%}
-.node{position:absolute;transform:translate(-50%,-50%);width:86px;text-align:center;background:none;border:0;z-index:2}
-.node .dot{width:34px;height:34px;margin:0 auto;border-radius:50%;border:3px solid #0e0c08;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.node{position:absolute;transform:translate(-50%,-50%);width:78px;text-align:center;background:none;border:0;z-index:2}
+.node .dot{width:30px;height:30px;margin:0 auto;border-radius:50%;border:3px solid #0e0c08;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.6)}
 .node .nm{font-size:12.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;margin-top:1px}
 .node .tr{font-size:11px;color:#ffe9a8;text-shadow:0 1px 3px #000}
 .node.sel .dot{outline:3px solid var(--gold);outline-offset:1px}
+#cityMenu{position:absolute;z-index:6;width:min(216px,66vw);background:linear-gradient(180deg,#2c2113,#1a1208);border:2px solid var(--gold);border-radius:12px;padding:10px;box-shadow:0 12px 32px rgba(0,0,0,.6)}
+#cityMenu .cmHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#cityMenu .cmHead b{color:var(--gold);font-size:16px}
+#cityMenu .cmHead span{font-size:12px;color:#d8cbae;white-space:nowrap}
+#cityMenu .cmInfo{font-size:12.5px;color:#cbbd97;margin:5px 0;line-height:1.45}
+#cityMenu .cmSub{font-size:12.5px;color:#ffe9a8;margin:7px 0 3px;font-weight:700}
+#cityMenu .cmBtn{display:block;width:100%;text-align:left;margin:4px 0;background:#3a2d1a;color:#f0e6d2;border:1px solid #6a5636;border-radius:8px;padding:8px 10px;font-size:13.5px;font-weight:600;cursor:pointer}
+#cityMenu .cmBtn.atk{background:#7e2d24;border-color:#c0453e;color:#ffe9e2}
+#cityMenu .cmBtn:disabled{opacity:.45;cursor:default}
 .node.enemyR{cursor:pointer}
 .node.enemyR .dot{animation:pulse 1s infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 7px rgba(255,80,60,.35)}}
@@ -89,7 +98,8 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 .ftabs button.on{background:var(--gold);color:#241a08}
 .mclose{float:right;background:#7e2d24;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:700}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99;background:#241b10;border:1.5px solid var(--gold);color:#ffe9a8;padding:10px 18px;border-radius:10px;font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.6);max-width:92vw;text-align:center}
-@media(max-width:560px){.node{width:64px}.node .dot{width:27px;height:27px;font-size:13px}.node .nm{font-size:10.5px}.node .tr{font-size:9.5px}.portrait{width:56px;height:56px}.bside .troops{font-size:23px}}
+@media(max-width:640px){.node{width:58px}.node .dot{width:24px;height:24px;font-size:12px;border-width:2px}.node .nm{font-size:10px}.node .tr{font-size:9px}#mapWrap{margin:6px 4px}#panel{padding:10px;margin:0 4px 20px}.portrait{width:56px;height:56px}.bside .troops{font-size:23px}}
+@media(max-width:400px){.node{width:52px}.node .dot{width:22px;height:22px;font-size:11px}.node .nm{font-size:9px}.node .tr{font-size:8.5px}}
 
 .prepVs{display:flex;flex-direction:column;gap:8px;margin:10px 0}
 .prow{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(240,220,160,.18);border-radius:10px;padding:6px 8px}
@@ -128,7 +138,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 <!-- START -->
 <div id="startScreen">
   <h1>⚔️ HUYẾT MA TAM QUỐC ⚔️</h1>
-  <div class="sub">Dàn trận tranh thiên hạ — 160 danh tướng, 4 thế lực, 16 vùng đất.<br>Vào trận, hai đạo quân ủi nhau như Spectral Force: tướng mạnh, quân đông, sĩ khí cao là đẩy được đối phương tới vỡ trận.</div>
+  <div class="sub">Dàn trận tranh thiên hạ — 160 danh tướng, 4 thế lực, 32 vùng đất.<br>Vào trận, hai đạo quân ủi nhau như Spectral Force: tướng mạnh, quân đông, sĩ khí cao là đẩy được đối phương tới vỡ trận.</div>
   <div class="factions" id="factionCards"></div>
   <button id="continueBtn" class="hidden">▶ Tiếp tục ván đang chơi (lượt <span id="contTurn"></span>)</button>
 </div>
@@ -143,7 +153,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
     <button class="tbtn" id="newBtn">↺ Ván mới</button>
     <button class="tbtn gold" id="endTurnBtn">Kết thúc lượt ➜</button>
   </div>
-  <div id="mapWrap"><svg class="links" id="linkSvg" preserveAspectRatio="none" viewBox="0 0 100 78"></svg><div id="mapInner"></div></div>
+  <div id="mapWrap"><svg class="links" id="linkSvg" preserveAspectRatio="none" viewBox="0 0 100 78"></svg><div id="mapInner"></div><div id="cityMenu" class="hidden"></div></div>
   <div id="panel"></div>
   <div id="log"></div>
 </div>
@@ -168,6 +178,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 <div id="prepModal" class="modal hidden"><div class="mbox" style="max-width:640px">
   <h3 id="prepTitle">⚔️ Chuẩn bị xuất trận</h3>
   <div class="info" id="prepInfo"></div>
+  <div id="prepPick"></div>
   <div class="prepVs" id="prepVs"></div>
   <div class="info">Hệ khắc: <b>Giáo khắc Kỵ · Kỵ khắc Kiếm · Kiếm khắc Giáp · Giáp khắc Giáo</b> (khắc +18% sát thương, bị khắc −12%). Chọn đội hình của ba:</div>
   <div class="forms" id="prepForms"></div>
@@ -203,22 +214,38 @@ const FACTIONS={
   quan:{name:'Quần Hùng',color:'#8a7a5c',icon:'🐺'}};
 const HMAP={}; HEROES.forEach(h=>HMAP[h.name]=h);
 const REGIONS=[
- {id:'tayluong',name:'Tây Lương',x:10,y:16,owner:'quan',nb:['truongan','hanzhong']},
- {id:'truongan',name:'Trường An',x:29,y:20,owner:'quan',nb:['tayluong','lacduong','hanzhong','uyenthanh']},
- {id:'lacduong',name:'Lạc Dương',x:47,y:17,owner:'nguy',nb:['truongan','nghiep','huxuong','uyenthanh']},
- {id:'nghiep',name:'Nghiệp Thành',x:63,y:10,owner:'nguy',nb:['lacduong','bacbinh','tuchau']},
- {id:'bacbinh',name:'Bắc Bình',x:83,y:12,owner:'quan',nb:['nghiep','tuchau']},
- {id:'huxuong',name:'Hứa Xương',x:53,y:35,owner:'nguy',nb:['lacduong','uyenthanh','tuchau','thoxuan']},
- {id:'uyenthanh',name:'Uyển Thành',x:40,y:41,owner:'nguy',nb:['huxuong','truongan','lacduong','kinhchau','hanzhong']},
- {id:'tuchau',name:'Từ Châu',x:71,y:31,owner:'quan',nb:['nghiep','bacbinh','huxuong','thoxuan']},
- {id:'thoxuan',name:'Thọ Xuân',x:67,y:47,owner:'ngo',nb:['tuchau','huxuong','kiennghiep','kinhchau']},
- {id:'hanzhong',name:'Hán Trung',x:27,y:45,owner:'thuc',nb:['tayluong','truongan','uyenthanh','thanhdo','kinhchau']},
- {id:'thanhdo',name:'Thành Đô',x:14,y:65,owner:'thuc',nb:['hanzhong','vannam','kinhchau']},
- {id:'vannam',name:'Vân Nam',x:27,y:85,owner:'thuc',nb:['thanhdo','kinhchau','giaochau']},
- {id:'kinhchau',name:'Kinh Châu',x:44,y:61,owner:'thuc',nb:['hanzhong','uyenthanh','thoxuan','thanhdo','vannam','truongsa']},
- {id:'truongsa',name:'Trường Sa',x:59,y:70,owner:'ngo',nb:['kinhchau','kiennghiep','giaochau']},
- {id:'kiennghiep',name:'Kiến Nghiệp',x:78,y:58,owner:'ngo',nb:['thoxuan','truongsa','giaochau']},
- {id:'giaochau',name:'Giao Châu',x:63,y:87,owner:'ngo',nb:['truongsa','kiennghiep','vannam']}];
+ {id:'tayluong',name:'Tây Lương',x:7,y:15,owner:'quan',nb:['truongan','hanzhong']},
+ {id:'truongan',name:'Trường An',x:23,y:19,owner:'quan',nb:['tayluong','lacduong','hanzhong','uyenthanh','tanyang']},
+ {id:'tanyang',name:'Tấn Dương',x:36,y:8,owner:'quan',nb:['truongan','lacduong','nghiep','binhnguyen']},
+ {id:'lacduong',name:'Lạc Dương',x:45,y:17,owner:'nguy',nb:['truongan','tanyang','nghiep','bocduong','quandu','uyenthanh']},
+ {id:'nghiep',name:'Nghiệp Thành',x:60,y:9,owner:'nguy',nb:['tanyang','lacduong','binhnguyen','bocduong']},
+ {id:'bacbinh',name:'Bắc Bình',x:85,y:10,owner:'quan',nb:['binhnguyen','bachai']},
+ {id:'binhnguyen',name:'Bình Nguyên',x:73,y:17,owner:'quan',nb:['tanyang','nghiep','bacbinh','bocduong','nambi']},
+ {id:'bachai',name:'Bắc Hải',x:91,y:22,owner:'quan',nb:['bacbinh','nambi','tuchau']},
+ {id:'bocduong',name:'Bộc Dương',x:63,y:21,owner:'nguy',nb:['lacduong','nghiep','binhnguyen','quandu','nambi','tuchau']},
+ {id:'nambi',name:'Nam Bì',x:74,y:28,owner:'quan',nb:['binhnguyen','bachai','bocduong','tuchau']},
+ {id:'quandu',name:'Quan Độ',x:53,y:27,owner:'nguy',nb:['lacduong','bocduong','huxuong','uyenthanh']},
+ {id:'hanzhong',name:'Hán Trung',x:25,y:35,owner:'thuc',nb:['tayluong','truongan','uyenthanh','tudong','giangchau']},
+ {id:'uyenthanh',name:'Uyển Thành',x:41,y:31,owner:'nguy',nb:['truongan','lacduong','quandu','huxuong','tanya','hanzhong']},
+ {id:'huxuong',name:'Hứa Xương',x:57,y:35,owner:'nguy',nb:['quandu','uyenthanh','tuchau','nhunam','tanya']},
+ {id:'tuchau',name:'Từ Châu',x:75,y:36,owner:'nguy',nb:['bocduong','nambi','bachai','huxuong','thoxuan']},
+ {id:'tanya',name:'Tân Dã',x:37,y:43,owner:'thuc',nb:['uyenthanh','huxuong','kinhchau','giangchau','nhunam']},
+ {id:'nhunam',name:'Nhữ Nam',x:59,y:45,owner:'nguy',nb:['huxuong','tanya','thoxuan','giangha','kinhchau']},
+ {id:'thoxuan',name:'Thọ Xuân',x:71,y:47,owner:'ngo',nb:['tuchau','nhunam','lugiang','giangha']},
+ {id:'tudong',name:'Tử Đồng',x:15,y:45,owner:'thuc',nb:['hanzhong','thanhdo','giangchau']},
+ {id:'thanhdo',name:'Thành Đô',x:11,y:60,owner:'thuc',nb:['tudong','giangchau','vannam']},
+ {id:'giangchau',name:'Giang Châu',x:25,y:55,owner:'thuc',nb:['hanzhong','tudong','thanhdo','vannam','kinhchau','tanya']},
+ {id:'kinhchau',name:'Kinh Châu',x:43,y:55,owner:'thuc',nb:['tanya','giangchau','nhunam','giangha','giangling']},
+ {id:'giangling',name:'Giang Lăng',x:49,y:64,owner:'thuc',nb:['kinhchau','giangha','truongsa','giaochau']},
+ {id:'giangha',name:'Giang Hạ',x:61,y:57,owner:'quan',nb:['nhunam','thoxuan','lugiang','kinhchau','giangling','truongsa']},
+ {id:'lugiang',name:'Lư Giang',x:73,y:59,owner:'ngo',nb:['thoxuan','giangha','saitan','kiennghiep']},
+ {id:'saitan',name:'Sài Tang',x:84,y:51,owner:'ngo',nb:['lugiang','kiennghiep','ngoquan']},
+ {id:'kiennghiep',name:'Kiến Nghiệp',x:85,y:65,owner:'ngo',nb:['lugiang','saitan','ngoquan','hoike','truongsa']},
+ {id:'ngoquan',name:'Ngô Quận',x:93,y:58,owner:'ngo',nb:['saitan','kiennghiep','hoike']},
+ {id:'vannam',name:'Vân Nam',x:23,y:71,owner:'thuc',nb:['thanhdo','giangchau','giaochau']},
+ {id:'giaochau',name:'Giao Châu',x:39,y:72,owner:'ngo',nb:['vannam','giangling','truongsa']},
+ {id:'truongsa',name:'Trường Sa',x:57,y:71,owner:'ngo',nb:['giangling','giangha','kiennghiep','giaochau','hoike']},
+ {id:'hoike',name:'Hội Kê',x:91,y:71,owner:'ngo',nb:['kiennghiep','ngoquan','truongsa']}];
 const RMAP={}; REGIONS.forEach(r=>RMAP[r.id]=r);
 const TMAP={}; TROOPS.forEach(t=>TMAP[t.img]=t);
 const COUNTER={giao:'ky',ky:'kiem',kiem:'giap',giap:'giao'};
@@ -271,6 +298,7 @@ function buildMap(){
     b.style.left=r.x+'%';b.style.top=(r.y/78*100)+'%';
     b.onclick=()=>selectRegion(r.id);mi.appendChild(b);
   });
+  $('mapInner').onclick=e=>{if(e.target===$('mapInner'))closeCityMenu();};
   refreshNodes();
 }
 function refreshNodes(){
@@ -292,10 +320,44 @@ function garrisonHTML(st){
   if(!st.garrison.length)return '<span style="color:#9a8a6a">Không có tướng trấn giữ</span>';
   return st.garrison.map(n=>{const h=HMAP[n];const t=troopOf(n);return '<span class="gchip"><img src="'+h.img+'" alt=""><span><b>'+n+'</b><br><small style="color:#c9b98f">Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+(t?'<br>Quân: '+t.name+' ('+t.clsLabel+')':'')+'</small></span></span>';}).join('');
 }
-function selectRegion(id){S.sel=id;refreshNodes();renderPanel();}
+function closeCityMenu(){const m=$('cityMenu');if(m)m.classList.add('hidden');}
+function openCityMenu(id){
+  const m=$('cityMenu');if(!m)return;
+  const r=RMAP[id],st=S.regions[id],f=FACTIONS[st.owner],mine=st.owner===S.player;
+  let h='<div class="cmHead"><b>'+r.name+'</b><span>'+f.icon+' '+f.name+(CAPITALS[st.owner]===id?' · kinh đô':'')+'</span></div>';
+  h+='<div class="cmInfo">🪖 '+st.troops+' quân · 👥 '+st.garrison.length+' tướng trấn giữ</div>';
+  if(mine){
+    const acted=S.acted[id]||{};
+    h+='<button class="cmBtn" id="cmRecruit" '+((acted.recruit||S.gold[S.player]<150)?'disabled':'')+'>🪖 Tuyển quân +250 (150 vàng)</button>';
+    const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
+    if(foes.length){
+      h+='<div class="cmSub">⚔️ Tấn công thành kề bên:</div>'+foes.map(n=>'<button class="cmBtn atk" data-cm-atk="'+n+'" '+(acted.attack?'disabled':'')+'>Đánh '+RMAP[n].name+' ('+S.regions[n].troops+' quân)</button>').join('');
+      h+='<div class="cmInfo">Bấm Đánh sẽ vào màn chuẩn bị — ở đó chọn tướng xuất chinh.</div>';
+    }else h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
+  }else{
+    const mineNb=r.nb.filter(n=>S.regions[n].owner===S.player);
+    if(mineNb.length){
+      h+='<div class="cmSub">⚔️ Tấn công thành này từ:</div>'+mineNb.map(n=>{const a=S.acted[n]||{};return '<button class="cmBtn atk" data-cm-from="'+n+'" '+((a.attack||S.regions[n].troops<200)?'disabled':'')+'>Từ '+RMAP[n].name+' ('+S.regions[n].troops+' quân)</button>';}).join('');
+      h+='<div class="cmInfo">Bấm vào sẽ vào màn chuẩn bị — ở đó chọn tướng xuất chinh.</div>';
+    }else h+='<div class="cmInfo">Chưa có thành nào của ta kề bên — hãy chiếm một thành lân cận trước.</div>';
+  }
+  h+='<button class="cmBtn" id="cmClose">✖ Đóng</button>';
+  m.innerHTML=h;m.classList.remove('hidden');
+  const wrap=$('mapWrap'),W=wrap.clientWidth,H=wrap.clientHeight;
+  const nx=r.x/100*W,ny=(r.y/78)*H,mw=m.offsetWidth,mh=m.offsetHeight;
+  let L=nx+16,T=ny-24;
+  if(L+mw>W-4)L=nx-mw-16;
+  L=Math.max(4,Math.min(L,W-mw-4));T=Math.max(4,Math.min(T,H-mh-4));
+  m.style.left=L+'px';m.style.top=T+'px';
+  const rc=$('cmRecruit');if(rc)rc.onclick=()=>{S.gold[S.player]-=150;st.troops+=250;(S.acted[id]=S.acted[id]||{}).recruit=true;log('Tuyển thêm 250 quân ở '+r.name+'.');save();refreshNodes();renderPanel();openCityMenu(id);};
+  m.querySelectorAll('[data-cm-atk]').forEach(b=>b.onclick=()=>startAttack(id,b.dataset.cmAtk));
+  m.querySelectorAll('[data-cm-from]').forEach(b=>b.onclick=()=>startAttack(b.dataset.cmFrom,id));
+  $('cmClose').onclick=closeCityMenu;
+}
+function selectRegion(id){S.sel=id;refreshNodes();renderPanel();openCityMenu(id);}
 function renderPanel(){
   const p=$('panel');
-  if(!S.sel){p.innerHTML='<h3>🗺️ Chọn một vùng đất</h3><div class="info">Bấm vào thành của mình để tuyển quân / chọn tướng xuất chinh. Bấm vào thành địch kề bên (nhấp nháy đỏ) để tấn công. Mỗi lượt mỗi thành được đánh 1 trận và tuyển quân 1 lần.</div>';return;}
+  if(!S.sel){p.innerHTML='<h3>🗺️ Chọn một vùng đất</h3><div class="info">Bấm vào bất kỳ thành nào — menu sẽ bật ngay cạnh thành: tuyển quân, tấn công, rồi vào màn chuẩn bị để chọn tướng xuất chinh. Mỗi lượt mỗi thành được đánh 1 trận và tuyển quân 1 lần.</div>';return;}
   const r=RMAP[S.sel],st=S.regions[r.id],f=FACTIONS[st.owner],mine=st.owner===S.player;
   let html='<h3>'+r.name+' — '+f.icon+' '+f.name+(CAPITALS[st.owner]===r.id?' (kinh đô)':'')+'</h3>';
   html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b> · Thu nhập/lượt: <b>'+(90+Math.floor(st.troops/10))+'</b> vàng<br>Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>';
@@ -327,6 +389,7 @@ function sidePower(gens,troops,foeGens){const avg=gens.length?gens.reduce((a,n)=
   if(gens.length&&foeGens&&foeGens.length){let s2=0,c2=0;gens.forEach(n=>{const t=troopOf(n);if(!t)return;foeGens.forEach(m=>{const f=troopOf(m);if(f){s2+=counterMult(t.cls,f.cls);c2++;}});});if(c2)cm=s2/c2;}
   return troops*(0.7+avg/130)*tm*cm;}
 function startAttack(fromId,toId){
+  closeCityMenu();
   const from=S.regions[fromId],to=S.regions[toId];
   const gens=(S.pick&&S.pick.length?S.pick:from.garrison.slice(0,3)).filter(n=>from.garrison.includes(n));
   if(!gens.length){toast('Thành này không có tướng — không xuất chinh được');return;}
@@ -337,6 +400,31 @@ function startAttack(fromId,toId){
   showPrep({atkFac:S.player,defFac:to.owner,atkGens:gens,defGens:to.garrison.slice(0,3),atkTroops,defTroops:to.troops,fromId,toId,playerSide:'atk'});
 }
 let PREP=null;
+function prepRowsHTML(cfg){
+  const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
+  const card=(n,fac,lead)=>{const h=HMAP[n],t=troopOf(n);return '<div class="pcard"><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'">'+n+(lead?' 👑':'')+'</div><div class="pt">'+(lead?'<b style="color:#ffd94a">Chủ tướng — chết là thua trận!</b><br>':'')+'Quân: '+(t?t.name+' ('+t.clsLabel+', cấp '+t.tier+')':'—')+' · Võ '+h.vo+'</div></div></div>';};
+  let rows='';
+  for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
+    const m=myGens[i],f=foeGens[i];
+    let badge='<span class="khac draw">—</span>';
+    if(m&&f){const cm=counterMult(troopOf(m).cls,troopOf(f).cls);badge=cm>1?'<span class="khac win">▲ Khắc chế</span>':(cm<1?'<span class="khac lose">▼ Bị khắc</span>':'<span class="khac draw">● Hòa hệ</span>');}
+    rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac,i===0):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac,i===0):'<div class="pcard"></div>')+'</div>';
+  }
+  return rows||'<div class="info">Không có tướng đối đầu.</div>';
+}
+function renderPrepPick(){
+  const box=$('prepPick');if(!box||!PREP)return;
+  const cfg=PREP.cfg,pool=PREP.pickPool||[];
+  const cur=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens;
+  box.innerHTML='<div class="info" style="margin:2px 0 4px">🎖️ Chọn tướng '+(cfg.playerSide==='atk'?'xuất chinh':'thủ thành')+' (1–3 tướng — bấm để chọn/bỏ, tướng đầu tiên là chủ tướng 👑):</div><div class="garr">'
+    +pool.map(n=>{const h=HMAP[n];const on=cur.includes(n);return '<span class="gchip '+(on?'':'off')+'" data-ppick="'+n+'" style="cursor:pointer"><img src="'+h.img+'"><span><b>'+n+'</b><br><small style="color:#c9b98f">Võ '+h.vo+' · '+h.skill+'</small></span></span>';}).join('')+'</div>';
+  box.querySelectorAll('[data-ppick]').forEach(c=>c.onclick=()=>{
+    const n=c.dataset.ppick;const arr=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens;const i=arr.indexOf(n);
+    if(i>=0){if(arr.length<=1){toast('Phải có ít nhất 1 tướng ra trận');return;}arr.splice(i,1);}
+    else{if(arr.length>=3){toast('Tối đa 3 tướng ra trận');return;}arr.push(n);}
+    $('prepVs').innerHTML=prepRowsHTML(cfg);renderPrepPick();
+  });
+}
 function showPrep(cfg){
   cfg.atkForm=FORM_KEYS[Math.floor(Math.random()*FORM_KEYS.length)];
   cfg.defForm=FORM_KEYS[Math.floor(Math.random()*FORM_KEYS.length)];
@@ -348,16 +436,9 @@ function showPrep(cfg){
     return ' · Khắc đội hình (Khối>Tách>Nêm>Khối): ta <b>'+RPS_NAME[RPS[myF]]+'</b> vs địch <b>'+RPS_NAME[RPS[foF]]+'</b> → '+(e>0?'<b style="color:#8fe38f">ta KHẮC địch (+12% công)</b>':e<0?'<b style="color:#ff9a8a">ta BỊ KHẮC (địch +12% công)</b>':'<b>hòa</b>');};
   $('prepInfo').innerHTML='Quân ta xuất trận: <b>'+(cfg.playerSide==='atk'?cfg.atkTroops:cfg.defTroops)+'</b> · Quân địch: <b>'+(cfg.playerSide==='atk'?cfg.defTroops:cfg.atkTroops)+'</b> · Đội hình địch: <b>'+FORMS[foeForm].name+'</b><span id="prepRps">'+rpsLine()+'</span>';
   PREP.rpsLine=rpsLine;
-  const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
-  const card=(n,fac,lead)=>{const h=HMAP[n],t=troopOf(n);return '<div class="pcard"><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'">'+n+(lead?' 👑':'')+'</div><div class="pt">'+(lead?'<b style="color:#ffd94a">Chủ tướng — chết là thua trận!</b><br>':'')+'Quân: '+(t?t.name+' ('+t.clsLabel+', cấp '+t.tier+')':'—')+' · Võ '+h.vo+'</div></div></div>';};
-  let rows='';
-  for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
-    const m=myGens[i],f=foeGens[i];
-    let badge='<span class="khac draw">—</span>';
-    if(m&&f){const cm=counterMult(troopOf(m).cls,troopOf(f).cls);badge=cm>1?'<span class="khac win">▲ Khắc chế</span>':(cm<1?'<span class="khac lose">▼ Bị khắc</span>':'<span class="khac draw">● Hòa hệ</span>');}
-    rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac,i===0):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac,i===0):'<div class="pcard"></div>')+'</div>';
-  }
-  $('prepVs').innerHTML=rows||'<div class="info">Không có tướng đối đầu.</div>';
+  PREP.pickPool=cfg.playerSide==='atk'?(S.regions[cfg.fromId]?S.regions[cfg.fromId].garrison.slice():cfg.atkGens.slice()):(S.regions[cfg.toId]?S.regions[cfg.toId].garrison.slice():cfg.defGens.slice());
+  $('prepVs').innerHTML=prepRowsHTML(cfg);
+  renderPrepPick();
   const pf=$('prepForms');
   pf.innerHTML=FORM_KEYS.map(k=>'<button class="fbtn'+(PREP.form===k?' on':'')+'" data-form="'+k+'"><b>'+FORMS[k].name+'</b><small>'+FORMS[k].desc+'</small></button>').join('');
   pf.querySelectorAll('[data-form]').forEach(b=>b.onclick=()=>{PREP.form=b.dataset.form;if(PREP.cfg.playerSide==='atk')PREP.cfg.atkForm=PREP.form;else PREP.cfg.defForm=PREP.form;pf.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('on',x.dataset.form===PREP.form));const pr=$('prepRps');if(pr&&PREP.rpsLine)pr.innerHTML=PREP.rpsLine();});
@@ -997,7 +1078,7 @@ $('endTurnBtn').onclick=()=>{
   // player income
   const mine=REGIONS.filter(r=>S.regions[r.id].owner===S.player);
   S.gold[S.player]+=mine.reduce((a,r)=>a+90+Math.floor(S.regions[r.id].troops/10),0);
-  S.turn++;S.acted={};S.sel=null;S.pick=null;S.pickFor=null;
+  S.turn++;S.acted={};S.sel=null;S.pick=null;S.pickFor=null;closeCityMenu();
   log('— Sang lượt '+S.turn+' —');
   for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();return;}}
   save();refreshNodes();renderPanel();renderLog();checkEnd();
@@ -1019,7 +1100,7 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
     return '<div class="fcard"><div class="lord"><img src="'+lord.img+'"></div><h2 style="color:'+FACTIONS[f].color+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</h2><p>40 danh tướng · Kinh đô: '+RMAP[CAPITALS[f]].name+'<br>Chủ công tiêu biểu: '+lord.name+'</p><button data-fac="'+f+'">Khởi binh ⚔️</button></div>';}).join('');
   cards.querySelectorAll('[data-fac]').forEach(b=>b.onclick=()=>newGame(b.dataset.fac));
   const old=load();
-  if(old&&old.player){$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
+  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
 })();
 </script>
 </body>
