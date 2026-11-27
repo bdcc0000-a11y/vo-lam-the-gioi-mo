@@ -190,6 +190,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
     <button class="tbtn" id="heroesBtn">📜 Danh tướng lục</button>
     <button class="tbtn" id="troopsBtn">🪖 Danh binh lục</button>
     <button class="tbtn" id="techBtn">🌳 Cây binh kỹ</button>
+    <button class="tbtn" id="prisonerBtn">🔒 Tù binh (<b id="tbPris">0</b>)</button>
     <button class="tbtn" id="newBtn">↺ Ván mới</button>
     <button class="tbtn gold" id="endTurnBtn">Kết thúc lượt ➜</button>
   </div>
@@ -242,6 +243,11 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <h3>🌳 Cây binh kỹ — mỗi tướng một cây riêng</h3>
   <div class="info" style="color:#d8cbae;line-height:1.55">Mỗi tướng có <b>cây binh kỹ riêng</b>: 5 bậc lính từ yếu tới mạnh theo hệ của tướng (xếp theo vai trò và chỉ số). Nâng cấp từng tướng bằng vàng để họ lĩnh quân tinh nhuệ hơn. Vàng hiện có: <b id="techGold" style="color:#ffd94a"></b></div>
   <div id="techGrid" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>
+</div></div>
+<div id="prisonerModal" class="modal hidden"><div class="mbox">
+  <button class="mclose" data-close="prisonerModal">✕ Đóng</button>
+  <h3>🔒 Tù binh chiến tranh</h3>
+  <div id="prisonerList"></div>
 </div></div>
 <div id="troopModal" class="modal hidden"><div class="mbox">
   <button class="mclose" data-close="troopModal">✕ Đóng</button>
@@ -428,6 +434,7 @@ function aiUseTalent(f){
 function processTurnFlags(){
   const dec=(obj)=>{if(!obj)return;Object.keys(obj).forEach(k=>{obj[k]--;if(obj[k]<=0)delete obj[k];});};
   dec(S.talentCd);dec(S.truce);dec(S.blocked);dec(S.noRecruit);
+  processPrisoners();
   if(S.talentCd)Object.keys(S.talentCd).forEach(n=>{const home=REGIONS.find(r=>S.regions[r.id].garrison.includes(n));if(home){const lv=bldLv(S.regions[home.id],'hoc');if(lv>0){S.talentCd[n]-=lv;if(S.talentCd[n]<=0)delete S.talentCd[n];}}});
   if(S.defBonus)Object.keys(S.defBonus).forEach(k=>{S.defBonus[k].turns--;if(S.defBonus[k].turns<=0)delete S.defBonus[k];});
   if(S.focus)Object.keys(S.focus).forEach(k=>{S.focus[k].turns--;if(S.focus[k].turns<=0)delete S.focus[k];});
@@ -564,7 +571,7 @@ function save(){try{localStorage.setItem('huyetma_tq_v1',JSON.stringify(S));}cat
 function load(){try{const s=localStorage.getItem('huyetma_tq_v1');return s?JSON.parse(s):null;}catch(e){return null;}}
 function facHeroes(f){return HEROES.filter(h=>h.faction===f).sort((a,b)=>(b.vo+b.tri+b.chi)-(a.vo+a.tri+a.chi));}
 function newGame(fac){
-  S={player:fac,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,incomeBuff:null};
+  S={player:fac,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,incomeBuff:null,prisoners:{}};
   Object.keys(FACTIONS).forEach(f=>{S.gold[f]=900;S.food[f]=600;});
   REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
   // distribute heroes: capital 4, others 3, rest stay in faction pool (shown in gallery)
@@ -614,6 +621,63 @@ function processEconomy(f){
   if(S.food[f]<0){S.food[f]=0;let lost=0;for(const r of regs){const st=S.regions[r.id];const d=Math.floor(st.troops*0.04);st.troops-=d;lost+=d;}
     if(lost>0){log('⚠️ '+FACTIONS[f].name+' thiếu lương thực — '+lost+' quân đào ngũ vì đói!');if(f===S.player)toast('⚠️ Thiếu lương! Quân đào ngũ vì đói — hãy tăng Nông nghiệp / xây Đồn Điền.');}}
   return {g,harv,eat};
+}
+function placeGeneralHome(name,fac){
+  const cs=REGIONS.filter(r=>S.regions[r.id].owner===fac);
+  if(!cs.length)return false;
+  cs.sort((a,b)=>((CAPITALS[fac]===b.id)-(CAPITALS[fac]===a.id))||S.regions[b.id].troops-S.regions[a.id].troops);
+  const st=S.regions[cs[0].id];if(!st.garrison.includes(name))st.garrison.push(name);return true;
+}
+function makePrisoner(name,holder,fromFac,cityId){if(!S.prisoners)S.prisoners={};for(const r of REGIONS){const st=S.regions[r.id];if(st.garrison)st.garrison=st.garrison.filter(n=>n!==name);}S.prisoners[name]={holder:holder,from:fromFac,city:cityId,turns:0,tried:false};}
+function prisonerRate(name,pr){const h=HMAP[name];const base={N:60,R:45,S:30,SR:15}[h.tier]||40;return Math.min(90,base+Math.min(25,(pr.turns||0)*5));}
+function decideCaptive(name,act){
+  if(!S.prisoners)return;const pr=S.prisoners[name];if(!pr)return;
+  if(act==='release'){delete S.prisoners[name];if(placeGeneralHome(name,pr.from))log('🤝 Đã thả '+name+' — trở về phe '+FACTIONS[pr.from].name+'.');else log('🤝 Đã thả '+name+' — phe cũ đã diệt vong, '+name+' quy ẩn giang hồ.');}
+  else if(act==='execute'){delete S.prisoners[name];log('⚔️ Đã chém đầu tù binh '+name+' ('+FACTIONS[pr.from].name+') thị chúng!');}
+  else{log('🔒 Giam '+name+' ở '+RMAP[pr.city].name+' chờ thu phục.');}
+  save();renderTop();refreshNodes();renderPanel();
+  let row=null;try{row=document.querySelector('[data-caprow="'+name+'"]');}catch(e){}
+  if(row)row.innerHTML='<span style="color:#9fd08a">✔️ <b>'+name+'</b> — '+(act==='release'?'đã thả về':act==='execute'?'đã chém đầu':'đã giam giữ chờ thu phục')+'</span>';
+}
+function tryRecruitPrisoner(name){
+  const pr=S.prisoners&&S.prisoners[name];if(!pr||pr.holder!==S.player)return;
+  if(pr.tried){toast(name+' đã được chiêu hàng ở lượt này rồi — chờ lượt sau.');return;}
+  pr.tried=true;const rate=prisonerRate(name,pr);
+  if(Math.random()*100<rate){delete S.prisoners[name];placeGeneralHome(name,S.player);log('🎉 '+name+' cảm phục và quy hàng phe '+FACTIONS[S.player].name+'!');toast('🎉 '+name+' đã quy hàng!');}
+  else{log('🎲 Chiêu hàng '+name+' thất bại (tỷ lệ '+rate+'%) — tướng còn chưa phục.');toast(name+' chưa chịu hàng (tỷ lệ '+rate+'%). Giam thêm vài lượt, tỷ lệ sẽ tăng.');}
+  save();renderTop();renderPanel();openPrisoners();
+}
+function handleCityPrisoners(cityId,newOwner){
+  if(!S.prisoners)return;
+  Object.keys(S.prisoners).forEach(n=>{const pr=S.prisoners[n];if(pr.city!==cityId)return;
+    if(pr.from===newOwner){delete S.prisoners[n];if(!S.regions[cityId].garrison.includes(n))S.regions[cityId].garrison.push(n);log('🕊️ '+n+' được giải cứu ở '+RMAP[cityId].name+', trở về hàng ngũ '+FACTIONS[newOwner].name+'!');if(newOwner===S.player)toast('🕊️ '+n+' đã được giải cứu!');}
+    else if(pr.holder!==newOwner){pr.holder=newOwner;log('⛓️ Tù binh '+n+' ở '+RMAP[cityId].name+' rơi vào tay '+FACTIONS[newOwner].name+'.');}});
+}
+function processPrisoners(){
+  if(!S.prisoners)return;
+  Object.keys(S.prisoners).forEach(n=>{const pr=S.prisoners[n];if(!pr)return;
+    pr.turns=(pr.turns||0)+1;pr.tried=false;
+    if(!REGIONS.some(r=>S.regions[r.id].owner===pr.holder)){delete S.prisoners[n];if(placeGeneralHome(n,pr.from))log('🕊️ '+FACTIONS[pr.holder].name+' sụp đổ — '+n+' được tự do, trở về '+FACTIONS[pr.from].name+'.');return;}
+    if(Math.random()<0.08){delete S.prisoners[n];if(placeGeneralHome(n,pr.from)){log('🏃 '+n+' đã vượt ngục trốn về '+FACTIONS[pr.from].name+'!');if(pr.holder===S.player)toast('🏃 Tù binh '+n+' vượt ngục trốn thoát!');}return;}
+    if(pr.holder!==S.player&&Math.random()*100<prisonerRate(n,pr)){const hf=pr.holder;delete S.prisoners[n];placeGeneralHome(n,hf);log('😱 '+n+' đã bị '+FACTIONS[hf].name+' chiêu hàng và theo địch!');if(pr.from===S.player)toast('😱 '+n+' đã đầu hàng '+FACTIONS[hf].name+'!');}
+  });
+}
+function openPrisoners(){
+  if(!S.prisoners)S.prisoners={};
+  const mine=Object.keys(S.prisoners).filter(n=>S.prisoners[n].holder===S.player);
+  const ours=Object.keys(S.prisoners).filter(n=>S.prisoners[n].from===S.player&&S.prisoners[n].holder!==S.player);
+  let h='<h4>⛓️ Tù binh ba đang giam ('+mine.length+')</h4>';
+  if(!mine.length)h+='<div class="info">Chưa giam ai. Thắng trận và bắt sống tướng địch để có tù binh.</div>';
+  for(const n of mine){const pr=S.prisoners[n];const hh=HMAP[n];const rate=prisonerRate(n,pr);
+    h+='<div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:6px"><span><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+FACTIONS[pr.from].name+' · giam ở '+RMAP[pr.city].name+' · đã giam '+pr.turns+' lượt · chiêu hàng: <b>'+rate+'%</b></small></span>'
+    +'<button onclick="tryRecruitPrisoner(\''+n+'\')" '+(pr.tried?'disabled':'')+'>🎯 Chiêu hàng</button>'
+    +'<button onclick="decideCaptive(\''+n+'\',\'release\');openPrisoners()">🤝 Thả</button>'
+    +'<button onclick="decideCaptive(\''+n+'\',\'execute\');openPrisoners()">⚔️ Chém</button></div>';}
+  h+='<h4 style="margin-top:12px">😢 Tướng của ba bị địch giam ('+ours.length+')</h4>';
+  if(!ours.length)h+='<div class="info">Không có tướng nào của ba đang bị giam.</div>';
+  for(const n of ours){const pr=S.prisoners[n];const hh=HMAP[n];
+    h+='<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:6px"><span><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>Bị '+FACTIONS[pr.holder].name+' giam ở '+RMAP[pr.city].name+' · đã '+pr.turns+' lượt — đánh chiếm '+RMAP[pr.city].name+' để giải cứu!</small></span></div>';}
+  $('prisonerList').innerHTML=h;$('prisonerModal').classList.remove('hidden');
 }
 function devCity(id,key){
   const st=S.regions[id];if(!st||st.owner!==S.player)return;
@@ -666,7 +730,7 @@ function refreshNodes(){
 function renderTop(){
   const mine=REGIONS.filter(r=>S.regions[r.id].owner===S.player);
   $('tbFaction').innerHTML='Phe: <b style="color:'+FACTIONS[S.player].color+'">'+FACTIONS[S.player].icon+' '+FACTIONS[S.player].name+'</b>';
-  $('tbTurn').textContent=S.turn;$('tbGold').textContent=S.gold[S.player];const tf=$('tbFood');if(tf)tf.textContent=S.food?S.food[S.player]:0;
+  $('tbTurn').textContent=S.turn;$('tbGold').textContent=S.gold[S.player];const tf=$('tbFood');if(tf)tf.textContent=S.food?S.food[S.player]:0;const tp=$('tbPris');if(tp)tp.textContent=S.prisoners?Object.keys(S.prisoners).filter(n=>S.prisoners[n].holder===S.player).length:0;
   $('tbCities').textContent=mine.length;$('tbTroops').textContent=mine.reduce((a,r)=>a+S.regions[r.id].troops,0);
 }
 function garrisonHTML(st){
@@ -1690,7 +1754,7 @@ function finishBattle(){
   const gone=new Set([...captured,...deadForever]);
   if(atkWin){
     const surv=Math.max(60,at);
-    to.owner=B.atkFac;to.troops=surv;to.garrison=B.atkGens.slice();
+    to.owner=B.atkFac;to.troops=surv;to.garrison=B.atkGens.slice();handleCityPrisoners(B.toId,B.atkFac);
     if(from)from.garrison=from.garrison.filter(n=>!B.atkGens.includes(n));
     retreatGenerals(B.defGens.filter(n=>!gone.has(n)),B.defFac,B.toId);
     title='🎉 THẮNG TRẬN!';body='Quân '+FACTIONS[B.atkFac].name+' chiếm được <b>'+RMAP[B.toId].name+'</b>!<br>Quân còn lại: '+surv+' · Tướng địch tử trận/tháo chạy: '+(B.defGens.join(', ')||'—');
@@ -1711,10 +1775,18 @@ function finishBattle(){
   if(B.break&&(B.break.atk||B.break.def))body+='<br>🚩 Quân đột phá xuyên tuyến địch: bên công '+B.break.atk+' · bên thủ '+B.break.def;
   for(const r of REGIONS){const st=S.regions[r.id];if(st.garrison)st.garrison=st.garrison.filter(n=>!gone.has(n));}
   if(B.retreat&&B.retreatSide==='atk'&&from){for(const n of B.atkGens)if(!gone.has(n)&&!from.garrison.includes(n))from.garrison.push(n);}
-  if(captured.length){const wf=winnerSide==='atk'?B.atkFac:B.defFac;let dest=(S.regions[B.toId].owner===wf)?S.regions[B.toId]:null;
-    if(!dest){const cs=REGIONS.filter(r=>S.regions[r.id].owner===wf).sort((a,b)=>S.regions[b.id].troops-S.regions[a.id].troops);if(cs.length)dest=S.regions[cs[0].id];}
-    if(dest)for(const n of captured)if(!dest.garrison.includes(n))dest.garrison.push(n);
-    body+='<br>⛓️ <b>Bắt sống được: '+captured.join(', ')+'</b> — đã quy hàng phe '+FACTIONS[wf].name+'!';
+  if(captured.length){const wf=winnerSide==='atk'?B.atkFac:B.defFac;const lf=loserSide==='atk'?B.atkFac:B.defFac;
+    let cityId=(S.regions[B.toId].owner===wf)?B.toId:null;
+    if(!cityId){const cs=REGIONS.filter(r=>S.regions[r.id].owner===wf).sort((a,b)=>S.regions[b.id].troops-S.regions[a.id].troops);if(cs.length)cityId=cs[0].id;}
+    for(const n of captured)makePrisoner(n,wf,lf,cityId||B.toId);
+    if(wf===S.player){
+      body+='<br><br>⛓️ <b>Bắt sống được '+captured.length+' tướng địch!</b> Quyết định số phận từng người (không chọn = giam giữ chờ thu phục):';
+      for(const n of captured){const h=HMAP[n];body+='<div data-caprow="'+n+'" style="display:flex;align-items:center;gap:6px;margin:6px 0;flex-wrap:wrap"><img src="'+h.img+'" style="width:34px;height:34px;border-radius:6px"><span><span class="tier t'+h.tier+'">'+h.tier+'</span> <b>'+n+'</b> <small>('+FACTIONS[lf].name+')</small></span><button onclick="decideCaptive(\''+n+'\',\'release\')">🤝 Thả về</button><button onclick="decideCaptive(\''+n+'\',\'execute\')">⚔️ Chém</button><button onclick="decideCaptive(\''+n+'\',\'hold\')">🔒 Giam chờ thu phục</button></div>';}
+    }else{
+      const held=[],rel=[],exe=[];
+      for(const n of captured){const roll=Math.random();if(roll<0.10){delete S.prisoners[n];exe.push(n);}else if(roll<0.20){delete S.prisoners[n];placeGeneralHome(n,lf);rel.push(n);}else held.push(n);}
+      body+='<br>⛓️ '+FACTIONS[wf].name+' bắt sống: '+captured.join(', ')+(held.length?'<br>🔒 Bị giam giữ: '+held.join(', '):'')+(rel.length?'<br>🤝 Được thả về: '+rel.join(', '):'')+(exe.length?'<br>⚔️ Bị chém đầu: '+exe.join(', '):'');
+    }
     log('⛓️ Bắt sống tướng địch: '+captured.join(', '));}
   if(deadForever.length){body+='<br>☠️ Tử trận vĩnh viễn: '+deadForever.join(', ');log('☠️ Tử trận vĩnh viễn: '+deadForever.join(', '));}
   $('battleScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
@@ -1741,7 +1813,7 @@ function instantBattle(atkFac,fromId,toId){
   const gens=from.garrison.filter(n=>!(S.blocked&&S.blocked[n])).slice(0,3);const atkTroops=Math.floor(from.troops*0.8);
   const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac)*((S.defBonus&&S.defBonus[toId])?S.defBonus[toId].mult:1)*wallMult(toId);
   from.troops-=atkTroops;
-  if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));const oldG=to.garrison.slice(),oldOwner=to.owner;to.owner=atkFac;to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));retreatGenerals(oldG.filter(n=>!gens.includes(n)),oldOwner,toId);log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
+  if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));const oldG=to.garrison.slice(),oldOwner=to.owner;to.owner=atkFac;handleCityPrisoners(toId,atkFac);to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));retreatGenerals(oldG.filter(n=>!gens.includes(n)),oldOwner,toId);log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
 }
 function aiFaction(f){
@@ -1872,6 +1944,7 @@ function renderTech(){
   $('techGrid').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{if(upgradeGen(b.dataset.up)){renderTech();renderPanel();}});
 }
 $('techBtn').onclick=()=>{renderTech();$('techModal').classList.remove('hidden');};
+$('prisonerBtn').onclick=()=>openPrisoners();
 $('warYes').onclick=()=>{$('warModal').classList.add('hidden');if(pendingWar){const pw=pendingWar;pendingWar=null;cancelWar();startAttack(pw.fromId,pw.toId);}};
 $('warNo').onclick=()=>{$('warModal').classList.add('hidden');pendingWar=null;};
 $('warCancel').onclick=()=>cancelWar();
@@ -1883,7 +1956,7 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
     return '<div class="fcard"><div class="lord"><img src="'+lord.img+'"></div><h2 style="color:'+FACTIONS[f].color+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</h2><p>40 danh tướng · Kinh đô: '+RMAP[CAPITALS[f]].name+'<br>Chủ công tiêu biểu: '+lord.name+'</p><button data-fac="'+f+'">Khởi binh ⚔️</button></div>';}).join('');
   cards.querySelectorAll('[data-fac]').forEach(b=>b.onclick=()=>newGame(b.dataset.fac));
   const old=load();
-  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
+  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};if(!old.prisoners)old.prisoners={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
 })();
 </script>
 </body>
