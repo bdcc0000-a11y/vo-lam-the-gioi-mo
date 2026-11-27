@@ -567,7 +567,7 @@ function spawnGenerals(){
       const hp=Math.round(pool*share*(i===0?1.3:1));
       const h=HMAP[n],tr=troopOf(n);
       const isBow=tr&&tr.name.includes('Cung');
-      const range=h.role==='Mưu sĩ'?128:(isBow?118:(tr&&tr.cls==='giao'?50:38));
+      const range=h.role==='Mưu sĩ'?168:(isBow?150:(tr&&tr.cls==='giao'?52:38));
       B.genUnits.push({side,name:n,img:h.img,vo:h.vo,role:h.role,lead:i===0,dead:false,fleeing:false,
         range,projType:h.role==='Mưu sĩ'?'magic':(isBow?'arrow':null),skillCd:0,face:side==='atk'?1:-1,
         x:side==='atk'?W*0.075:W*0.925,y:H*(0.34+0.20*i),hp,maxHp:hp,cd:20+i*9,flash:0,ph:Math.random()*6.28});
@@ -598,14 +598,14 @@ function drawGeneralUnit(ctx,g,t){
   const bob=g.moving?Math.abs(Math.sin(t/95+g.ph))*3.4:Math.sin(t/600+g.ph)*1.1;
   // attack swing: body rotates and lunges like an arm striking (atkAnim 12 -> 0)
   let swing=0,lunge=0;
-  if(g.atkAnim>0){const p=1-g.atkAnim/16;swing=Math.sin(p*Math.PI);lunge=swing*(g.projType?3:13);}
+  if(g.atkAnim>0){const p=1-g.atkAnim/16;swing=Math.sin(p*Math.PI);lunge=swing*(g.projType?3:16);}
   const rock=g.moving?Math.sin(t/90+g.ph)*0.035:Math.sin(t/700+g.ph)*0.012;
   const dirS=g.side==='atk'?1:-1;
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,.30)';ctx.beginPath();ctx.ellipse(g.x,g.y+6,w*0.36,6.5,0,0,6.29);ctx.fill();
   if(img&&img.complete&&img.naturalWidth){
     ctx.translate(g.x+dirS*lunge,g.y-bob);
-    ctx.rotate(rock+dirS*swing*0.30);
+    ctx.rotate(rock+dirS*swing*0.34);
     if(g.side==='def')ctx.scale(-1,1);
     if(g.casting>0)ctx.scale(1.06,1.06);
     ctx.drawImage(img,-w/2,-h,w,h);
@@ -703,7 +703,7 @@ function battleLoop(ts){
   if(!B.selGen||B.selGen.dead||B.selGen.side!==B.playerSide)B.selGen=playerGens()[0]||null;
   if(Math.floor(B.t)%25===0)renderGenChips();
   // SP accrues while armies fight (SF2 Skill Points)
-  for(const sd of ['atk','def'])B.sp[sd]=Math.min(100,B.sp[sd]+dt*0.05*stanceMult(sd).sp);
+  for(const sd of ['atk','def'])B.sp[sd]=Math.min(100,B.sp[sd]+dt*0.075*stanceMult(sd).sp);
   // AI: skills + stance decisions
   B.aiT+=dt;
   for(const sd of ['atk','def']){
@@ -741,7 +741,7 @@ function battleLoop(ts){
         if(g.projType&&fd>44){ // ranged attack: arrow / magic bolt flies to the target
           B.projs.push({x:g.x+dirG*30,y:g.y-56,foe,side:g.side,from:g,type:g.projType,t:0,trail:[]});
         }else if(foe.name){ // struck an enemy general
-          const dmg=foe.maxHp*0.030*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
+          const dmg=foe.maxHp*0.026*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
           foe.hp-=dmg;foe.flash=8;
           B.texts.push({x:foe.x,y:foe.y-104,life:58,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
           if(foe.hp<=0)killGeneral(foe);
@@ -774,7 +774,7 @@ function battleLoop(ts){
         return false;
       }
       p.x+=dx/d*sp;p.y+=dy/d*sp;p.t+=dt;
-      if(p.trail){p.trail.push({x:p.x,y:p.y});if(p.trail.length>7)p.trail.shift();}
+      if(p.trail){p.trail.push({x:p.x,y:p.y});if(p.trail.length>10)p.trail.shift();}
       return true;
     });
   }
@@ -801,7 +801,7 @@ function battleLoop(ts){
       else if((u.cd-=dt)<=0){
         u.cd=30+Math.random()*14;u.atkAnim=6;
         const myPow=u.side==='atk'?atkPow:defPow;
-        egu.hp-=u.per*0.22*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
+        egu.hp-=u.per*0.16*u.dmgF*(0.6+myPow/90)*stanceMult(u.side).dealt*B.rpsMult[u.side];
         egu.flash=6;
         if(egu.hp<=0)killGeneral(egu);
       }
@@ -880,10 +880,11 @@ function battleLoop(ts){
     });
   }
   if(B.projs)for(const p of B.projs){ctx.save();
-    if(p.trail)p.trail.forEach((tp,i)=>{ctx.globalAlpha=i/p.trail.length*0.4;ctx.fillStyle=p.type==='magic'?'#c9a0ff':'#ffe9a8';ctx.beginPath();ctx.arc(tp.x,tp.y,2+i*0.5,0,6.29);ctx.fill();});
+    if(p.trail)p.trail.forEach((tp,i)=>{ctx.globalAlpha=0.25+i/p.trail.length*0.55;ctx.fillStyle=p.type==='magic'?'#8b3dff':'#ffe9a8';ctx.beginPath();ctx.arc(tp.x,tp.y,2.2+i*0.55,0,6.29);ctx.fill();});
     ctx.globalAlpha=1;
-    if(p.type==='magic'){ctx.globalCompositeOperation='lighter';ctx.fillStyle='#d9b3ff';ctx.beginPath();ctx.arc(p.x,p.y,8,0,6.29);ctx.fill();
-      ctx.fillStyle='rgba(220,190,255,.45)';ctx.beginPath();ctx.arc(p.x,p.y,15,0,6.29);ctx.fill();ctx.globalCompositeOperation='source-over';}
+    if(p.type==='magic'){ctx.fillStyle='rgba(123,47,255,.5)';ctx.beginPath();ctx.arc(p.x,p.y,15,0,6.29);ctx.fill();
+      ctx.fillStyle='#a64dff';ctx.beginPath();ctx.arc(p.x,p.y,8.5,0,6.29);ctx.fill();
+      ctx.fillStyle='#f2e6ff';ctx.beginPath();ctx.arc(p.x,p.y,3.6,0,6.29);ctx.fill();}
     else{const a=Math.atan2((p.foe?p.foe.y-8:0)-p.y,(p.foe?p.foe.x:0)-p.x);ctx.translate(p.x,p.y);ctx.rotate(a);
       ctx.strokeStyle='#ffe9a8';ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(-10,0);ctx.lineTo(7,0);ctx.stroke();
       ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(4,-3.6);ctx.lineTo(4,3.6);ctx.closePath();ctx.fill();}
