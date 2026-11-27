@@ -144,6 +144,18 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 .gchip img{width:32px;height:32px;object-fit:contain}
 .gchip.on{border-color:#ffd94a;background:rgba(255,217,74,.15)}
 .gchip.cd{opacity:.45;filter:grayscale(.7)}
+#rotateHint{display:none}
+@media (orientation:landscape) and (max-height:540px){
+  #bTop{margin-right:206px;padding:4px 8px 0;font-size:12px}
+  #cvWrap{margin-right:206px}
+  #bBottom{position:absolute;top:0;right:0;bottom:0;width:198px;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;align-items:stretch;background:#14100a;border-left:2px solid #57431f;padding:8px;z-index:55}
+  #bBottom button{width:100%;flex:none}
+  #bBottom #tug{width:100%;flex:none}
+  #bBottom #genChips{flex-wrap:wrap}
+}
+@media (orientation:portrait) and (max-width:640px){
+  #rotateHint{display:block;position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(20,14,4,.9);color:#ffd94a;border:1px solid #e8c766;border-radius:10px;padding:7px 12px;font-size:13px;pointer-events:none;text-align:center;white-space:nowrap}
+}
 </style>
 </head>
 <body>
@@ -180,6 +192,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div id="bTop">
     <div class="bside" id="bLeft"></div><div id="vs">VS</div><div class="bside right" id="bRight"></div>
   </div>
+  <div id="rotateHint">📱 Xoay ngang điện thoại để xem trận rõ hơn</div>
   <div id="cvWrap"><canvas id="cv"></canvas><div id="cutin"><div class="ci"><img id="ciImg"><img id="ciFx" style="width:92px;height:92px;object-fit:cover;border-radius:10px"><div><div class="cn" id="ciName"></div><div class="cs" id="ciSkill"></div></div></div></div></div>
   <div id="bBottom">
     <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><button id="ordBtn1">🔥 Tổng công</button><button id="ordBtn2">🧱 Cố thủ</button><button id="ordBtn3">🎯 Săn chủ tướng</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
@@ -762,6 +775,7 @@ function openBattle(cfg){
   B.rpsMult={atk:formEdge(cfg.atkForm,cfg.defForm)>0?1.12:1,def:formEdge(cfg.defForm,cfg.atkForm)>0?1.12:1};
   B.atkMax=cfg.atkTroops;B.defMax=cfg.defTroops;
   $('gameScreen').classList.add('hidden');$('battleScreen').classList.remove('hidden');
+  try{if(window.innerWidth<window.innerHeight&&document.documentElement.requestFullscreen&&screen.orientation&&screen.orientation.lock){document.documentElement.requestFullscreen().then(()=>screen.orientation.lock('landscape')).catch(()=>{});}}catch(e){}
   const L=$('bLeft'),R=$('bRight');
   const mk=(gens,fac,troops)=>{const lead=gens[0]?HMAP[gens[0]]:null;return (lead?'<div class="portrait"><img src="'+lead.img+'"></div>':'')+'<div class="binfo"><div class="gname" style="color:'+FACTIONS[fac].color+'">'+(gens.join(', ')||'Quân trấn giữ')+'</div><div class="troops" data-tr> '+troops+'</div><div class="hpbar"><i data-hp style="width:100%"></i></div><div class="barlbl">HP tướng</div><div class="genhp"><i data-gen style="width:100%"></i></div><div class="barlbl">Sĩ khí</div><div class="morale"><i data-mor style="width:100%"></i></div></div>';};
   L.innerHTML=mk(cfg.atkGens,cfg.atkFac,cfg.atkTroops);
@@ -776,7 +790,7 @@ function openBattle(cfg){
   B.raf=requestAnimationFrame(battleLoop);
 }
 function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRect();cv.width=Math.max(320,r.width);cv.height=Math.max(240,r.height);}
-window.addEventListener('resize',()=>{if(B)resizeCanvas();});
+window.addEventListener('resize',()=>{if(B){resizeCanvas();try{buildBattlefield();}catch(e){}}});
 function spawnUnits(){
   const cv=$('cv'),W=cv.width,H=cv.height;B.units=[];
   B.timgs={};
@@ -802,10 +816,11 @@ function spawnUnits(){
       if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
       const cls=tr?tr.cls:'kiem';
       B.units.push({side,x:fx0,y:Math.min(H-24,y0),hx:fx0,hy:Math.min(H-24,y0),hp:maxHp,maxHp,per,fac,cls,img:tr?tr.img:null,
-        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28,rowF:rd,wing:y0<H/2?-1:1,spear:fid2==='phongthi'&&rd<0.36});
+        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28,rowF:rd,wing:y0<H/2?-1:1,spear:fid2==='phongthi'&&rd<0.36,startD:side==='atk'?(cols-1-c)*2.5:c*2.5});
     }
   };
   mk('atk',B.atkTroops,B.atkFac);mk('def',B.defTroops,B.defFac);
+  B.homeC={atk:{x:0,y:0},def:{x:0,y:0}};{const cnt={atk:0,def:0};for(const u of B.units){B.homeC[u.side].x+=u.hx;B.homeC[u.side].y+=u.hy;cnt[u.side]++;}for(const sd of ['atk','def']){B.homeC[sd].x/=Math.max(1,cnt[sd]);B.homeC[sd].y/=Math.max(1,cnt[sd]);}}
 }
 function aliveTroops(side){return Math.max(0,Math.round(B.units.filter(u=>u.side===side&&!u.dead).reduce((a,u)=>a+u.per*Math.max(0,u.hp/u.maxHp),0)));}
 function drawSoldier(ctx,u,t){
@@ -1316,9 +1331,9 @@ function battleLoop(ts){
     }}
   const morA=moraleOf('atk'),morD=moraleOf('def');
   for(const sd of ['atk','def']){const mm=sd==='atk'?morA:morD;if(mm<24&&mm>4&&!B.routNote[sd]){B.routNote[sd]=1;B.banner={txt:sd===B.playerSide?'⚠️ Quân ta đang nao núng!':'🏳️ Quân địch đang nao núng!',t:150};}}
-  const centX={atk:0,def:0},centN={atk:0,def:0};
-  for(const u of alive){centX[u.side]+=u.x;centN[u.side]++;}
-  centX.atk/=Math.max(1,centN.atk);centX.def/=Math.max(1,centN.def);
+  const centX={atk:0,def:0},centY={atk:0,def:0},centN={atk:0,def:0};
+  for(const u of alive){centX[u.side]+=u.x;centY[u.side]+=u.y;centN[u.side]++;}
+  centX.atk/=Math.max(1,centN.atk);centX.def/=Math.max(1,centN.def);centY.atk/=Math.max(1,centN.atk);centY.def/=Math.max(1,centN.def);
   for(const u of alive){
     if(!u.fleeing){const m=u.side==='atk'?morA:morD;if(m<24&&Math.random()<0.010*dt)u.fleeing=true;}
     if(u.fleeing){
@@ -1351,11 +1366,14 @@ function battleLoop(ts){
     }else if(best){
       const range=u.cls==='giao'?21:15;
       if(Math.abs(best.x-u.x)>range||Math.abs(best.y-u.y)>7){
-        // advance — running straight at the enemy, pushing through the field
-        const dx=best.x-u.x,dy=best.y-u.y,d=Math.hypot(dx,dy)||1;
+        // advance — far from contact the army marches IN FORMATION (keeps its shape); near contact it charges the nearest foe
+        let tx=best.x,ty=best.y;const bdNow=Math.hypot(best.x-u.x,best.y-u.y);
+        if(bdNow>55&&B.homeC){const hc=B.homeC[u.side];const mcx=u.side==='atk'?centX.atk:centX.def,mcy=u.side==='atk'?centY.atk:centY.def;const fcx=u.side==='atk'?centX.def:centX.atk,fcy=u.side==='atk'?centY.def:centY.atk;
+          tx=mcx+(u.hx-hc.x)*0.85+(fcx-mcx)*0.30;ty=mcy+(u.hy-hc.y)*0.85+(fcy-mcy)*0.30;}
+        const dx=tx-u.x,dy=ty-u.y,d=Math.hypot(dx,dy)||1;
         let runF=(u.spear?1.3:1)*(u.inFrost>0?0.55:1);if(myFid==='huyenvu'&&d<85)runF*=0.3;
         const run=(u.cls==='ky'?1.55:1.05)*u.spdF*FORMS[myFid].spd*dt*(B.hasteT&&B.hasteT[u.side]>0?1.3:1)*runF;
-        const step=Math.min(run,Math.max(0,d-range*0.7));
+        const step=(B.t<(u.startD||0))?0:Math.min(run,Math.max(0,d-range*0.7));
         u.x+=dx/d*step;u.y+=dy/d*step*0.8;u.moving=step>0.2;
         if(myFid==='hacduc'&&u.wing){const passed=u.side==='atk'?u.x>centX.def-6:u.x<centX.atk+6;if(!passed)u.y+=u.wing*0.5*dt;}
         if(u.moving&&Math.random()<(u.cls==='ky'&&!u.chargeUsed?0.17:0.07)&&B.effects.length<70)B.effects.push({x:u.x-dir*6,y:u.y+5,life:12,type:'dust'});
@@ -1522,6 +1540,7 @@ function finishBattle(){
   if(B.endReason==='general')body+='<br>⚔️ Tướng lĩnh tử trận giữa trận — quân tâm tan rã, trận chiến kết thúc ngay!';
   if(B.endReason==='morale')body+='<br>😱 Sĩ khí một bên sụp đổ — tàn quân tháo chạy khỏi chiến trường dù vẫn còn người!';
   $('battleScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
+  try{if(document.fullscreenElement)document.exitFullscreen();if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock();}catch(e){}
   $('resTitle').textContent=title;$('resBody').innerHTML=body;$('resultModal').classList.remove('hidden');
   B=null;S.pick=null;S.pickFor=null;save();refreshNodes();renderPanel();checkEnd();
 }
