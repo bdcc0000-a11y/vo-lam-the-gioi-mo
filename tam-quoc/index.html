@@ -10,6 +10,7 @@
 body{background:#12100c;color:#f0e6d2;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
 button{font-family:inherit;cursor:pointer}
 .hidden{display:none!important}
+#monthSplash{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;pointer-events:none}
 /* ---------- START ---------- */
 #startScreen{max-width:960px;margin:0 auto;padding:24px 14px 40px;text-align:center}
 #startScreen h1{font-size:clamp(26px,6vw,44px);color:var(--gold);letter-spacing:2px;text-shadow:0 2px 0 #000,0 0 24px rgba(232,199,102,.35);margin:10px 0 4px}
@@ -48,7 +49,7 @@ button{font-family:inherit;cursor:pointer}
 .tS{background:#7c3aed}.tR{background:#2563eb}.tN{background:#6b7280}
 .hcard{position:relative}
 .hcard .tier{position:absolute;top:6px;left:6px;z-index:2}
-#cityMenu{position:absolute;z-index:6;width:min(216px,66vw);background:linear-gradient(180deg,#2c2113,#1a1208);border:2px solid var(--gold);border-radius:12px;padding:10px;box-shadow:0 12px 32px rgba(0,0,0,.6)}
+#cityMenu{position:absolute;z-index:6;width:min(304px,88vw);max-height:68vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#2c2113,#1a1208);border:2px solid var(--gold);border-radius:12px;padding:10px;box-shadow:0 12px 32px rgba(0,0,0,.6)}
 #cityMenu .cmHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 #cityMenu .cmHead b{color:var(--gold);font-size:16px}
 #cityMenu .cmHead span{font-size:12px;color:#d8cbae;white-space:nowrap}
@@ -197,7 +198,6 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div id="calBar" style="padding:5px 10px;font-size:12.5px;background:#1d1508;border-bottom:1px solid #4a3a14;color:#d8c491"></div>
   <div id="warBar" class="hidden"><span id="warMsg"></span><button id="warCancel">✖ Hủy</button></div>
   <div id="mapWrap"><svg class="links" id="linkSvg" preserveAspectRatio="none" viewBox="0 0 100 78"></svg><div id="mapInner"></div><div id="cityMenu" class="hidden"></div></div>
-  <div id="panel"></div>
   <div id="log"></div>
 </div>
 
@@ -249,6 +249,11 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <button class="mclose" data-close="prisonerModal">✕ Đóng</button>
   <h3>🔒 Tù binh chiến tranh</h3>
   <div id="prisonerList"></div>
+</div></div>
+<div id="monthSplash" class="hidden"><div style="text-align:center;background:rgba(22,15,4,.92);border:2px solid #e8c85a;border-radius:18px;padding:24px 38px;box-shadow:0 18px 50px rgba(0,0,0,.65);max-width:88vw">
+  <div id="msWhen" style="font-size:15px;letter-spacing:2px;color:#d8c491"></div>
+  <div id="msType" style="font-size:36px;font-weight:800;color:#ffe9a0;margin:6px 0"></div>
+  <div id="msDesc" style="font-size:14px;color:#e8dcbb"></div>
 </div></div>
 <div id="troopModal" class="modal hidden"><div class="mbox">
   <button class="mclose" data-close="troopModal">✕ Đóng</button>
@@ -606,6 +611,16 @@ function curMonth(){return (S.turn-1)%12+1;}
 function ensureYearPlan(){if(!S.yearPlan||S.planYear!==curYear()){S.yearPlan=genYearPlan(S.yearPlan);S.planYear=curYear();}}
 function monthType(){ensureYearPlan();return S.yearPlan[curMonth()-1];}
 function talentMonthOk(dom){const t=monthType();return t==='talent'||t===dom;}
+function showMonthSplash(){
+  const mt=MONTH_TYPES[monthType()];if(!mt)return;
+  $('msWhen').textContent='📅 THÁNG '+curMonth()+' · NĂM '+curYear();
+  $('msType').textContent=mt.icon+' THÁNG '+mt.name.toUpperCase();
+  $('msDesc').textContent=mt.desc.charAt(0).toUpperCase()+mt.desc.slice(1);
+  const sp=$('monthSplash');if(!sp)return;
+  sp.classList.remove('hidden');sp.style.transition='none';sp.style.opacity='1';
+  clearTimeout(window._msT);
+  window._msT=setTimeout(()=>{sp.style.transition='opacity .45s';sp.style.opacity='0';setTimeout(()=>{sp.classList.add('hidden');sp.style.opacity='1';},470);},2000);
+}
 function gateToast(){const mt=MONTH_TYPES[monthType()];toast('📅 Tháng '+curMonth()+' · Năm '+curYear()+' là tháng '+mt.icon+' '+mt.name+' — tháng này chỉ được: '+mt.desc+'.');}
 /* ================= NOI CHINH: city development, buildings, food ================= */
 const BUILDINGS={
@@ -727,7 +742,7 @@ function buildCity(id,k){
 /* ================= MAP / UI ================= */
 function showGame(){
   $('startScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
-  buildMap();renderTop();renderPanel();renderLog();
+  buildMap();renderTop();renderPanel();renderLog();showMonthSplash();
 }
 function buildMap(){
   const svg=$('linkSvg');let lines='';
@@ -772,19 +787,37 @@ function closeCityMenu(){const m=$('cityMenu');if(m)m.classList.add('hidden');}
 function openCityMenu(id){
   const m=$('cityMenu');if(!m)return;
   const r=RMAP[id],st=S.regions[id],f=FACTIONS[st.owner],mine=st.owner===S.player;
+  const acted=S.acted[id]||{};
+  if(mine&&S.pickFor!==id){S.pickFor=id;S.pick=st.garrison.slice(0,3);}
   let h='<div class="cmHead"><b>'+r.name+'</b><span>'+f.icon+' '+f.name+(CAPITALS[st.owner]===id?' · kinh đô':'')+'</span></div>';
-  h+='<div class="cmInfo">🪖 '+st.troops+' quân · 👥 '+st.garrison.length+' tướng trấn giữ</div>';
+  h+='<div class="cmInfo">🪖 '+st.troops+'/'+cityCap(st)+' quân · 💰 '+cityGold(st)+' · 🍚 '+cityFood(st)+'/tháng</div>';
   if(mine){
-    const acted=S.acted[id]||{};
-    h+='<button class="cmBtn" id="cmRecruit" '+((monthType()!=='noi'||acted.recruit||S.gold[S.player]<150||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>';
-    const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
-    if(foes.length){
-      h+='<button class="cmBtn atk" id="cmWar" '+(acted.attack?'disabled':'')+'>⚔️ WAR</button>';
-      h+='<div class="cmInfo">Bấm WAR rồi bấm vào thành địch muốn đánh trên bản đồ — game sẽ hỏi lại Yes/No, rồi mới vào màn chọn tướng.</div>';
-    }else h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
+    const tabBtn=(tid,icon,label)=>'<button data-mtab="'+tid+'" style="flex:1;padding:6px 2px;border-radius:8px;border:1px solid '+(PANEL_TAB===tid?'#e8c85a':'#5a4a2a')+';background:'+(PANEL_TAB===tid?'#4a3a14':'#241a0c')+';color:'+(PANEL_TAB===tid?'#ffe9a0':'#cbbd93')+';font-weight:'+(PANEL_TAB===tid?'700':'400')+';cursor:pointer;font-size:13px">'+icon+' '+label+'</button>';
+    h+='<div style="display:flex;gap:5px;margin:7px 0">'+tabBtn('gen','🎖️','Tướng')+tabBtn('mil','⚔️','Quân sự')+tabBtn('noi','🏯','Nội chính')+'</div>';
+    if(PANEL_TAB==='gen'){
+      h+='<div class="garr">'+garrisonHTML(st)+'</div><div class="cmInfo">Bấm vào thẻ tướng để xem chi tiết / nâng binh kỹ / điều tướng.</div>';
+    }else if(PANEL_TAB==='noi'){
+      const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:5px;margin:4px 0"><span style="width:74px;font-size:12.5px;white-space:nowrap">'+icon+' '+label+'</span><b style="width:24px;text-align:right">'+v+'</b><span style="flex:1;height:7px;background:#2a2013;border-radius:4px;overflow:hidden;min-width:36px"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((monthType()!=='noi'||acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+' style="white-space:nowrap">+8 · '+cost+'💰</button></div>';};
+      h+='<div class="cmInfo">Mỗi tháng: phát triển 1 lần + xây/nâng 1 công trình.</div>'
+        +devB('agri','🌾','Nông')+devB('comm','💰','Thương')+devB('pop','👥','Dân')
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">'
+        +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=monthType()!=='noi'||lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
+          return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:5px 7px;font-size:12.5px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
+        +'</div>';
+    }else{
+      h+='<button class="cmBtn" id="cmRecruit" '+((monthType()!=='noi'||acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>';
+      const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
+      if(foes.length){
+        h+='<button class="cmBtn atk" id="cmWar" '+((acted.attack||monthType()!=='war')?'disabled':'')+'>⚔️ WAR</button>';
+        h+='<div class="cmInfo">Bấm WAR rồi bấm vào thành địch muốn đánh trên bản đồ — game sẽ hỏi lại Yes/No, rồi mới vào màn chọn tướng.</div>';
+      }else h+='<div class="cmInfo">Không có thành địch kề bên.</div>';
+      h+='<div class="cmInfo" style="margin-top:4px">Xuất chinh — chọn tối đa 3 tướng mang theo:</div><div class="garr">'
+        +st.garrison.map(n=>{const hh=HMAP[n];const on=(S.pick||[]).includes(n);return '<span class="gchip '+(on?'':'off')+'" data-pick="'+n+'" style="cursor:pointer"><img src="'+hh.img+'" alt=""><span><b><span class="tier t'+hh.tier+'">'+hh.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>';
+    }
   }else{
+    h+='<div class="garr">'+garrisonHTML(st)+'</div>';
     const origins=r.nb.filter(n=>S.regions[n].owner===S.player&&canAttackFrom(n));
-    h+='<button class="cmBtn atk" id="cmWarE" '+((!origins.length||truceActive(S.player,st.owner))?'disabled':'')+'>'+(truceActive(S.player,st.owner)?'🤝 Đình chiến':'⚔️ WAR')+'</button>';
+    h+='<button class="cmBtn atk" id="cmWarE" '+((!origins.length||truceActive(S.player,st.owner)||monthType()!=='war')?'disabled':'')+'>'+(truceActive(S.player,st.owner)?'🤝 Đình chiến':'⚔️ WAR')+'</button>';
     h+=origins.length?'<div class="cmInfo">Bấm WAR để tấn công thành này'+(origins.length>1?' — rồi chọn thành xuất phát trên bản đồ':' từ '+RMAP[origins[0]].name)+'. Game sẽ hỏi lại Yes/No trước khi xuất chinh.</div>':'<div class="cmInfo">Chưa có thành nào của ta kề bên đủ sức đánh thành này.</div>';
   }
   h+='<button class="cmBtn" id="cmClose">✖ Đóng</button>';
@@ -795,6 +828,11 @@ function openCityMenu(id){
   if(L+mw>W-4)L=nx-mw-16;
   L=Math.max(4,Math.min(L,W-mw-4));T=Math.max(4,Math.min(T,H-mh-4));
   m.style.left=L+'px';m.style.top=T+'px';
+  m.querySelectorAll('[data-mtab]').forEach(b=>b.onclick=()=>{PANEL_TAB=b.dataset.mtab;openCityMenu(id);});
+  m.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
+  m.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.pick=S.pick||[];const n=c.dataset.pick;const i=S.pick.indexOf(n);if(i>=0)S.pick.splice(i,1);else{if(S.pick.length>=3){toast('Tối đa 3 tướng xuất chinh');return;}S.pick.push(n);}openCityMenu(id);});
+  m.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(id,b.dataset.dev));
+  m.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(id,b.dataset.bld));
   const rc=$('cmRecruit');if(rc)rc.onclick=()=>{if(monthType()!=='noi'){gateToast();return;}const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[id]=S.acted[id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();openCityMenu(id);};
   const cw=$('cmWar');if(cw)cw.onclick=()=>startWar(id);
   const cwe=$('cmWarE');if(cwe)cwe.onclick=()=>{const origins=r.nb.filter(n=>S.regions[n].owner===S.player&&canAttackFrom(n));if(origins.length===1){closeCityMenu();askWar(origins[0],id);}else pickWarOrigin(id);};
@@ -840,51 +878,9 @@ function nodeClicked(id){
 function selectRegion(id){S.sel=id;refreshNodes();renderPanel();openCityMenu(id);}
 let PANEL_TAB='mil';
 function renderPanel(){
-  const p=$('panel');
-  if(!S.sel){p.innerHTML='<h3>🗺️ Chọn một vùng đất</h3><div class="info">Bấm vào bất kỳ thành nào — menu sẽ bật ngay cạnh thành: tuyển quân, tấn công, rồi vào màn chuẩn bị để chọn tướng xuất chinh. Mỗi tháng mỗi thành được đánh 1 trận và tuyển quân 1 lần.</div>';return;}
-  const r=RMAP[S.sel],st=S.regions[r.id],f=FACTIONS[st.owner],mine=st.owner===S.player;
-  let html='<h3>'+r.name+' — '+f.icon+' '+f.name+(CAPITALS[st.owner]===r.id?' (kinh đô)':'')+'</h3>';
-  html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b>/'+cityCap(st)+' · Thu nhập/tháng: <b>'+cityGold(st)+'</b> vàng · Lương: <b>'+cityFood(st)+'</b>/tháng</div>';
-  if(!mine){
-    html+='<div class="info" style="margin-top:6px">Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>'
-      +'<div class="info">Thành của địch — muốn đánh, hãy chọn một thành của mình kề bên rồi bấm nút tấn công.</div>';
-    p.innerHTML=html;
-    p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
-    return;
-  }
-  const acted=S.acted[r.id]||{};
-  const tabBtn=(id,icon,label)=>'<button data-ptab="'+id+'" style="flex:1;padding:7px 4px;border-radius:8px;border:1px solid '+(PANEL_TAB===id?'#e8c85a':'#5a4a2a')+';background:'+(PANEL_TAB===id?'#4a3a14':'#241a0c')+';color:'+(PANEL_TAB===id?'#ffe9a0':'#cbbd93')+';font-weight:'+(PANEL_TAB===id?'700':'400')+';cursor:pointer">'+icon+' '+label+'</button>';
-  html+='<div style="display:flex;gap:6px;margin:8px 0">'+tabBtn('gen','🎖️','Tướng')+tabBtn('mil','⚔️','Quân sự')+tabBtn('noi','🏯','Nội chính')+'</div>';
-  if(PANEL_TAB==='gen'){
-    html+='<div class="garr">'+garrisonHTML(st)+'</div><div class="info">Bấm vào thẻ tướng để xem chi tiết, nâng binh kỹ hoặc điều tướng sang thành khác.</div>';
-  }else if(PANEL_TAB==='mil'){
-    html+='<div class="acts">'
-      +'<button id="actRecruit" '+(monthType()!=='noi'||acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[r.id])?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>'
-      +'<button class="atk" id="actWar" '+((acted.attack||monthType()!=='war')?'disabled':'')+'>⚔️ WAR — chọn thành muốn đánh</button>'
-      +'</div><div class="info" style="margin-top:6px">Xuất chinh: chọn tối đa 3 tướng ở thành này mang theo (bấm để chọn/bỏ):</div><div class="garr" id="pickRow">'
-      +st.garrison.map(n=>{const h=HMAP[n];const on=(S.pick||[]).includes(n);return '<span class="gchip '+(on?'':'off')+'" data-pick="'+n+'" style="cursor:pointer"><img src="'+h.img+'" alt=""><span><b><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>';
-  }else{
-    const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:6px;margin:4px 0"><span style="width:88px;font-size:13px;white-space:nowrap">'+icon+' '+label+'</span><b style="width:26px;text-align:right">'+v+'</b><span style="flex:1;height:8px;background:#2a2013;border-radius:4px;overflow:hidden;min-width:50px"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((monthType()!=='noi'||acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+' style="white-space:nowrap">+8 · '+cost+'💰</button></div>';};
-    html+='<div class="info">Mỗi tháng: phát triển 1 lần + xây/nâng 1 công trình.</div>'
-      +devB('agri','🌾','Nông nghiệp')+devB('comm','💰','Thương nghiệp')+devB('pop','👥','Dân số')
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">'
-      +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=monthType()!=='noi'||lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
-        return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:6px 8px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
-      +'</div>';
-  }
-  p.innerHTML=html;
-  p.querySelectorAll('[data-ptab]').forEach(b=>b.onclick=()=>{PANEL_TAB=b.dataset.ptab;renderPanel();});
-  if(PANEL_TAB==='mil'){
-    const rb=$('actRecruit');if(rb)rb.onclick=()=>{if(monthType()!=='noi'){gateToast();return;}const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[r.id]=S.acted[r.id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();};
-    const wb=$('actWar');if(wb)wb.onclick=()=>startWar(r.id);
-    p.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.pick=S.pick||[];const n=c.dataset.pick;const i=S.pick.indexOf(n);if(i>=0)S.pick.splice(i,1);else{if(S.pick.length>=3){toast('Tối đa 3 tướng xuất chinh');return;}S.pick.push(n);}renderPanel();});
-    if(S.pickFor!==r.id){S.pickFor=r.id;S.pick=st.garrison.slice(0,3);renderPanel();}
-  }else if(PANEL_TAB==='noi'){
-    p.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(r.id,b.dataset.dev));
-    p.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(r.id,b.dataset.bld));
-  }else{
-    p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
-  }
+  if(!S||!S.sel)return;
+  const m=$('cityMenu');
+  if(m&&!m.classList.contains('hidden'))openCityMenu(S.sel);
 }</script>
 <script>
 'use strict';
@@ -1891,7 +1887,7 @@ $('endTurnBtn').onclick=()=>{
   S.turn++;S.acted={};S.sel=null;S.pick=null;S.pickFor=null;closeCityMenu();cancelWar();processTurnFlags();
   if(curYear()!==yb){ensureYearPlan();log('📅 Sang năm '+curYear()+'! Lịch 12 tháng năm nay: '+S.yearPlan.map((t,i)=>(i+1)+MONTH_TYPES[t].icon).join(' '));}
   log('— Tháng '+curMonth()+' · Năm '+curYear()+': '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+' —');
-  renderTop();
+  renderTop();showMonthSplash();
   for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();return;}}
   save();refreshNodes();renderPanel();renderLog();checkEnd();
   toast('Đã sang Tháng '+curMonth()+' · Năm '+curYear()+' — tháng '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+'. Xem nhật ký bên dưới.');
