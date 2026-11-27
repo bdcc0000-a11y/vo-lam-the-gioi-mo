@@ -313,6 +313,31 @@ body.uiHidden #playerHud,body.uiHidden #questHud,body.uiHidden #minimap,body.uiH
    menu con chiêu/vật phẩm và thanh máu các đơn vị trong #ovBField */
 #ovBLog,#ovBTop{transition:opacity .18s ease,visibility .18s ease}
 body.uiHidden #ovBLog,body.uiHidden #ovBTop{opacity:0;visibility:hidden;pointer-events:none}
+/* ===== VÁ PHONE (đợt rà soát lỗi 2026-11-27): HỘP THOẠI TRÀN MÀN HÌNH + NÚT 👁️ ĐÈ PANEL + HUD TRÀN CHỮ =====
+   Gốc lỗi chính: các cap chiều cao của #dialog/.panelBox chỉ khai báo bằng dvh và neo theo dvh,
+   trong khi khung game neo theo --appH (visualViewport THẬT). Trên phone, khi thanh địa chỉ/công cụ
+   của trình duyệt hiện ra, dvh và vùng nhìn thấy lệch nhau -> hộp thoại cao hơn vùng nhìn thấy,
+   neo bottom đẩy phần đầu (chân dung + tên NPC) tràn khỏi mép trên màn hình, chỉ còn slice giữa
+   (nút quà + nút chủ đề) và khoảng trống — đúng ảnh người dùng chụp. Trình duyệt cũ không hiểu dvh
+   thì cap bị bỏ hẳn, hộp thoại cao bằng toàn bộ nội dung (5 lớp enhance chồng nhau) càng tràn nặng.
+   Vá: (a) luôn có fallback vh trước; (b) cap cứng theo --appH (px thật do JS đo từ visualViewport)
+   trừ đúng khoảng neo bottom + lề an toàn -> đỉnh hộp thoại LUÔN nằm trong vùng nhìn thấy. */
+#gameScreen{height:var(--appH,100vh)}
+body.inGame{height:var(--appH,100vh)}
+#selectScreen{min-height:100vh;min-height:100dvh}
+.panelBox{max-height:88vh;max-height:min(88dvh,calc(var(--appH,100dvh) - 24px))}
+#eventBox,#bagBox,#dialog{max-height:88vh;max-height:min(88dvh,calc(var(--appH,100dvh) - 24px));overflow-y:auto}
+@media(max-width:820px) and (orientation:portrait){#dialog{max-height:64vh;max-height:min(64dvh,calc(var(--appH,100dvh) - 200px))}}
+@media(orientation:landscape) and (max-height:540px){#dialog{max-height:calc(var(--appH,100dvh) - 60px)}}
+/* Nút 👁️ (z-index 1200, fixed giữa-phải) đè lên mép phải hộp thoại/panel đang mở, che chữ và
+   chặn chạm vào nút phía phải của panel -> tự ẩn hẳn khi có panel/hộp thoại mở (JS bật class
+   vlPanelOpen trên body qua MutationObserver sẵn có), panel đóng thì nút hiện lại như cũ. */
+#uiHideBtn{transition:opacity .18s ease,visibility .18s ease}
+body.vlPanelOpen #uiHideBtn{opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
+/* Dòng Thể lực/ngày trong HUD: khóa 1 dòng + ellipsis — trước đây nó quấn 3 dòng, phình hộp HUD
+   và bị tiêu đề vùng (zoneToast) đè lên trên phone. */
+#playerHud #ovSteps{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media(max-width:820px){#playerHud #ovSteps{font-size:11px}}
 </style>
 </head>
 <body>
@@ -3852,16 +3877,17 @@ function startBirth(){ const sugs=[NAME_SUGS[(Math.random()*NAME_SUGS.length)|0]
    <button class="btn" id="birthOk">👶 Đặt tên & đón con</button></div>`;
   $("dialog").classList.remove("hidden");
   document.querySelectorAll("[data-sug]").forEach(b=>b.onclick=()=>{ $("birthName").value=b.dataset.sug; });
-  $("birthOk").onclick=()=>{ const nm=($("birthName").value||"").trim()||sugs[0]; const ch=makeChild(nm); closeDialog();
+  $("birthOk").onclick=()=>{ const nm=(($("birthName").value||"").trim().replace(/[<>&"]/g,"")||sugs[0]); const ch=makeChild(nm); closeDialog();
     showResultBox("👶 Chào mừng "+nm+"!",`Con của ${CHARS[G.charIdx].name} & ${G.spouse} — Thiên phú: <b>${ch.talent.name}</b> · Tính cách: ${ch.pers}.<br>Con dùng sprite hiệp khách nhỏ tuổi với vòng màu theo thiên phú (vàng = thiên tài) và nhãn ghi tên + tuổi. Con lớn lên theo ngày game: thơ ấu ở nhà, thiếu niên học võ/học nghề, 18 tuổi thành người trưởng thành độc lập. Mở panel Gia Đình bằng phím <b>G</b>.`);
     sfxLevel(); updateHud(); saveGame(); }; }
+function escT(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); } // tên người chơi tự nhập (tên con / tên phái) khi đưa vào innerHTML phải thoát ký tự đặc biệt
 function openChildDialog(ch){ dlgNPC={name:"__con"}; const stg=childStageName(ch);
   const evBtn=childEventReady(ch)?`<button class="btn" id="cEvent">❗ Sự kiện của con</button>`:"";
   let acts="";
   if(ch.age<6) acts=`<button class="btn" id="cPlay">🧸 Chơi đùa (+tình thân, tốn 1 giờ)</button><button class="btn" id="cStory">📖 Kể chuyện giang hồ (+tình thân)</button>`;
   else if(ch.age<18) acts=`<button class="btn" id="cTeach">📖 Dạy võ (truyền thừa)</button><button class="btn" id="cJob">🛠️ Chọn nghề cho con</button><button class="btn" id="cPlay">🤗 Trò chuyện (+tình thân)</button>`;
   else acts=`<button class="btn" id="cFollow">${G.childFollow===ch.id?"🏠 Cho con về trông nhà":"⚔️ Mời con đi theo hỗ trợ"}</button><button class="btn" id="cTeach">📖 Truyền dạy thêm võ học</button><button class="btn" id="cPlay">🤗 Trò chuyện (+tình thân)</button>`;
-  $("dialog").innerHTML=`<div class="dn">👨‍👩‍👧 ${ch.name} — con của ${CHARS[G.charIdx].name} & ${G.spouse||"—"}</div>
+  $("dialog").innerHTML=`<div class="dn">👨‍👩‍👧 ${escT(ch.name)} — con của ${CHARS[G.charIdx].name} & ${G.spouse||"—"}</div>
    <div class="dt" style="color:var(--dim);font-size:12.5px">Tuổi: <b style="color:var(--gold2)">${ch.age}</b> (${stg}) · Thiên phú: <b style="color:var(--gold2)">${ch.talent.name}</b> · Tính cách: ${ch.pers} · ❤️ Tình thân: ${ch.bond}/100</div>
    <div class="dt" style="color:var(--dim);font-size:12.5px">Chỉ số: ❤️ ${ch.hp} · ⚔️ ${ch.atk} · 🛡️ ${ch.def}${ch.skill?` · Võ học: <b style="color:var(--gold2)">${SKILLS[ch.skill]?SKILLS[ch.skill].name:ch.skill}</b>`:""}${ch.job?` · Nghề: <b style="color:var(--gold2)">${JOBS[ch.job]?JOBS[ch.job].name:ch.job}</b>`:""} · Đang: ${ch.act||"Ở nhà"}</div>
    <div class="dBtns">${acts}${evBtn}<button class="btn ghost" id="cClose">Đóng (E)</button></div>`;
@@ -3916,7 +3942,7 @@ function showChildEvent(ch){ dlgNPC={name:"__con"}; let title="", body="", opts=
 function toggleFamilyPanel(){ const b=$("familyBox"); if(!b.classList.contains("hidden")){ b.classList.add("hidden"); return; } closePanels(); closePanels2(); $("bagBox").classList.add("hidden"); renderFamilyPanel(); b.classList.remove("hidden"); }
 function renderFamilyPanel(){ const b=$("familyBox"); const houseVal=G.house!==null&&G.house!==undefined?HOUSE_SPOTS[G.house].price:0;
   const assets=(G.gold||0)+(G.chestGold||0)+houseVal;
-  const kidRows=(G.children||[]).length?(G.children).map(ch=>`<div class="skillRow"><div class="si"><div class="sn">👧 ${ch.name} — ${ch.age} tuổi · ${childStageName(ch)}</div>
+  const kidRows=(G.children||[]).length?(G.children).map(ch=>`<div class="skillRow"><div class="si"><div class="sn">👧 ${escT(ch.name)} — ${ch.age} tuổi · ${childStageName(ch)}</div>
     <div class="sd">Thiên phú: ${ch.talent.name} · Tính cách: ${ch.pers} · ❤️ Tình thân ${ch.bond}/100 · ⚔️${ch.atk} 🛡️${ch.def} ❤️${ch.hp}${ch.skill?`<br>Võ học: ${SKILLS[ch.skill]?SKILLS[ch.skill].name:ch.skill}`:""}${ch.job?` · Nghề: ${JOBS[ch.job]?JOBS[ch.job].name:ch.job}`:""}${childEventReady(ch)?" · ❗ Có sự kiện":""}</div></div>
     ${ch.age>=18?`<button class="btn" data-follow="${ch.id}">${G.childFollow===ch.id?"Đang đi theo ✓":"Cho đi theo"}</button>`:""}</div>`).join(""):`<p class="dim">Chưa có con. Kết hôn + có nhà, rồi nghỉ qua đêm tại nhà — tin vui sẽ đến.</p>`;
   b.innerHTML=`<h3>👨‍👩‍👧 Gia Đình & Gia Tộc</h3>
@@ -3947,7 +3973,7 @@ function toggleLegendPanel(){ const b=$("legendBox"); if(!b.classList.contains("
 function renderLegendPanel(){ const c=CHARS[G.charIdx]; const houseVal=G.house!==null&&G.house!==undefined?HOUSE_SPOTS[G.house].price:0;
   $("legendBox").innerHTML=`<h3>🏆 Truyền Kỳ Của Bạn — ${c.name}</h3>
   <p style="font-size:15px;line-height:1.7">Từ một hiệp khách ${c.faction}, <b>${c.name}</b> đã đi qua <b>${G.day} ngày</b> giang hồ, đạt <b>cấp ${G.lv}</b>${G.sect?`, trở thành <b>${RANKS[G.sectRank]}</b> của <b>${G.sect}</b>`:""}.
-  ${G.spouse?`Kết tóc cùng <b>${G.spouse}</b>${(G.children||[]).length?`, sinh dưỡng ${G.children.length} người con (${G.children.map(ch=>ch.name+" "+ch.age+" tuổi").join(", ")})`:""}.`:""}
+  ${G.spouse?`Kết tóc cùng <b>${G.spouse}</b>${(G.children||[]).length?`, sinh dưỡng ${G.children.length} người con (${G.children.map(ch=>escT(ch.name)+" "+ch.age+" tuổi").join(", ")})`:""}.`:""}
   ${clanTitle()?`Gia tộc đạt danh hiệu <b>${clanTitle()}</b> với danh tiếng ${clanFame()}.`:""}</p>
   <h4>Thống kê hành trình</h4>
   <div class="statGrid">
@@ -4841,12 +4867,12 @@ function renderOwnPanel(){ const b=$("ownBox"); if(!G) return;
     +'<div class="row"><button class="btn ghost" data-close="ownBox">Đóng</button></div>';
     $("ownCreate").onclick=()=>{ if(!canRank&&!canFame){ toast("Chưa đủ điều kiện lập phái (cấp bậc tối đa của 1 phái hoặc Chính danh ≥ 80)."); return; }
       if(G.gold<2000){ toast("Không đủ 2000 vàng lập phái!"); return; }
-      const nm=($("ownName").value||"").trim()||"Vô Danh Phái"; G.gold-=2000;
+      const nm=(($("ownName").value||"").trim().replace(/[<>&"]/g,"")||"Vô Danh Phái"); G.gold-=2000;
       G.ownSect={name:nm,zone:ZONES.indexOf(zoneAt(G.p.x,G.p.y)),disciples:[],foundDay:G.day};
       toast("🏯 Khai sơn lập phái: "+nm+" tại "+ZONES[G.ownSect.zone].name+"!"); sfxLevel&&sfxLevel(); renderOwnPanel(); updateHud(); saveGame(); };
     return; }
   const os=G.ownSect; const power=os.disciples.reduce((a,d)=>a+d.power,0);
-  b.innerHTML='<h3>🏯 '+os.name+' — Phái riêng của ngươi</h3><p>Trụ sở (điểm tập kết): <b>'+ZONES[os.zone].name+'</b> · Lập ngày '+os.foundDay+' · Sức mạnh phái: <b style="color:var(--gold2)">'+power+'</b></p>'
+  b.innerHTML='<h3>🏯 '+escT(os.name)+' — Phái riêng của ngươi</h3><p>Trụ sở (điểm tập kết): <b>'+ZONES[os.zone].name+'</b> · Lập ngày '+os.foundDay+' · Sức mạnh phái: <b style="color:var(--gold2)">'+power+'</b></p>'
    +'<h4>Đệ tử ('+os.disciples.length+'/5)</h4>'+(os.disciples.length?os.disciples.map(d=>'<div class="skillRow"><div class="si"><div class="sn">'+d.name+'</div><div class="sd">Sức mạnh: '+d.power+' · Tự luyện võ mỗi ngày (+1~3 sức mạnh, mang về vàng/tài nguyên)</div></div></div>').join(""):'<p class="dim">Chưa có đệ tử — hãy nói chuyện với NPC có thiện cảm ≥ 60 và bấm nút mời gia nhập.</p>')
    +'<p class="dim">Thu nhập phái mỗi ngày: '+(os.disciples.length*6)+' vàng + thỉnh thoảng Linh Thảo do đệ tử hái về.</p>'
    +'<div class="row"><button class="btn ghost" data-close="ownBox">Đóng</button></div>'; }
@@ -4921,15 +4947,26 @@ $("achBtn").onclick=()=>window.__toggleAch();
     el.insertBefore(b,el.firstChild); }
   document.addEventListener("click",e=>{ const b=e.target&&e.target.closest?e.target.closest("[data-xdialog]"):null;
     if(b && typeof closeDialog==="function") closeDialog(); });
+  /* Bấm nút CHỦ ĐỀ trong thoại (Chuyện trò / Tin giang hồ / Hỏi về phái / Hỏi thăm người / các chủ đề
+     tầng 5): câu trả lời ghi vào #ovTopicOut nằm DƯỚI nếp gấp của hộp thoại — trước đây bấm xong
+     "không thấy gì xảy ra" vì phần trả lời ngoài tầm nhìn. Tự cuộn hộp thoại tới khung trả lời. */
+  document.addEventListener("click",e=>{ const b=e.target&&e.target.closest?e.target.closest("[data-ovtopic],[data-ov5topic]"):null;
+    if(!b) return; setTimeout(()=>{ const dlg=$("dialog"), out=$("ovTopicOut");
+      if(!dlg||!out||dlg.classList.contains("hidden")) return;
+      try{ out.scrollIntoView({block:"nearest",behavior:"smooth"}); }catch(err){ try{ out.scrollIntoView(); }catch(e2){} } },90); });
   /* --- Back trình duyệt đóng panel đang mở trước, thay vì thoát game: mở panel thì pushState, đóng hết thì gỡ state êm --- */
   let histArmed=false, suppressPop=false, syncT=null;
   function syncHist(){ if(syncT) return; syncT=setTimeout(()=>{ syncT=null;
+    document.body.classList.toggle("vlPanelOpen",anyOpen()); // có panel/hộp thoại mở -> ẩn nút 👁️ khỏi mép panel (CSS body.vlPanelOpen)
     if(anyOpen() && !histArmed){ try{ history.pushState({vlPanel:1},""); histArmed=true; }catch(e){} }
     else if(!anyOpen() && histArmed){ histArmed=false; suppressPop=true; try{ history.back(); }catch(e){ suppressPop=false; } }
   },0); }
   window.addEventListener("popstate",()=>{ if(suppressPop){ suppressPop=false; return; }
     if(anyOpen()){ closeTop(); if(anyOpen()){ try{ history.pushState({vlPanel:1},""); histArmed=true; }catch(e){} } else histArmed=false; } });
-  const obs=new MutationObserver(ms=>{ for(const m of ms){ const t=m.target; if(t.classList && isOpen(t)) injectX(t); } syncHist(); });
+  const obs=new MutationObserver(ms=>{ for(const m of ms){ const t=m.target; if(t.classList && isOpen(t)){ injectX(t);
+    /* Hộp thoại/hộp sự kiện mỗi lần mở hoặc render lại (innerHTML mới) phải bắt đầu từ ĐẦU:
+       giữ nguyên scrollTop cũ khiến đầu thoại (tên NPC) nằm ngoài màn hình, chỉ thấy slice giữa. */
+    if(t.id==="dialog"||t.id==="eventBox") t.scrollTop=0; } } syncHist(); });
   els.forEach(el=>obs.observe(el,{attributes:true,attributeFilter:["class"],childList:true}));
   /* --- Vuốt xuống từ đầu panel (đang ở đỉnh cuộn) để đóng --- */
   els.forEach(el=>{ let sy=null;
