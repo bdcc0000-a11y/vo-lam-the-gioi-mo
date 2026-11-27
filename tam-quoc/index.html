@@ -726,8 +726,8 @@ function battleLoop(ts){
     for(const u of alive){if(u.side===g.side||u.fleeing)continue;const d=Math.hypot(u.x-g.x,u.y-g.y);if(d<td){td=d;tgt=u;}}
     let gtgt=null,gtd=1e9;
     for(const og of B.genUnits){if(og.side===g.side||og.dead||og.fleeing)continue;const d=Math.hypot(og.x-g.x,og.y-g.y);if(d<gtd){gtd=d;gtgt=og;}}
-    // generals hunt the enemy general for a duel once the lines have thinned (or always if close)
-    const foe = (gtgt&&gtd<340)?gtgt:tgt;
+    // only the two commanders hunt each other across the field; other generals duel only at close range
+    const foe = (gtgt&&gtd<(g.lead?340:130))?gtgt:tgt;
     if(foe){
       const fd=Math.hypot(foe.x-g.x,foe.y-g.y)||1;
       const reach=foe.name?Math.max(g.range,46):g.range;
@@ -741,7 +741,7 @@ function battleLoop(ts){
         if(g.projType&&fd>44){ // ranged attack: arrow / magic bolt flies to the target
           B.projs.push({x:g.x+dirG*30,y:g.y-56,foe,side:g.side,from:g,type:g.projType,t:0,trail:[]});
         }else if(foe.name){ // struck an enemy general
-          const dmg=foe.maxHp*0.026*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
+          const dmg=foe.maxHp*(foe.lead?0.021:0.026)*(0.65+g.vo/70)*stanceMult(g.side).dealt*B.rpsMult[g.side];
           foe.hp-=dmg;foe.flash=8;
           B.texts.push({x:foe.x,y:foe.y-104,life:58,txt:'-'+Math.round(dmg*10),color:'#ffd94a'});
           if(foe.hp<=0)killGeneral(foe);
