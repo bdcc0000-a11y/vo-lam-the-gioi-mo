@@ -268,7 +268,7 @@ function startAttack(fromId,toId){
   const gens=(S.pick&&S.pick.length?S.pick:from.garrison.slice(0,3)).filter(n=>from.garrison.includes(n));
   if(!gens.length){toast('Thành này không có tướng — không xuất chinh được');return;}
   if(from.troops<200){toast('Quân quá ít (cần tối thiểu 200)');return;}
-  const atkTroops=Math.floor(from.troops*0.8);
+  const atkTroops=Math.floor(from.troops*0.85);
   from.troops-=atkTroops;
   (S.acted[fromId]=S.acted[fromId]||{}).attack=true;
   openBattle({atkFac:S.player,defFac:to.owner,atkGens:gens,defGens:to.garrison.slice(0,3),atkTroops,defTroops:to.troops,fromId,toId,playerSide:'atk'});
@@ -486,7 +486,7 @@ $('ftabs').innerHTML='<button data-f="all" class="on">Tất cả</button>'+Objec
 document.querySelectorAll('#ftabs button').forEach(b=>b.onclick=()=>renderGallery(b.dataset.f));
 $('heroesBtn').onclick=()=>{renderGallery('all');$('heroModal').classList.remove('hidden');};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.add('hidden'));
-$('newBtn').onclick=()=>{if(confirm('Bỏ ván hiện tại, chơi ván mới?')){localStorage.removeItem('huyetma_tq_v1');location.reload();}};
+$('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.removeItem('huyetma_tq_v1');location.reload();}else{b.dataset.arm='1';b.textContent='⚠️ Bấm lần nữa để bỏ ván này';setTimeout(()=>{delete b.dataset.arm;b.textContent='↺ Ván mới';},3000);}};
 (function init(){
   const cards=$('factionCards');
   cards.innerHTML=Object.keys(FACTIONS).map(f=>{const hs=facHeroes(f);const lord=hs.find(h=>['Tào Tháo','Lưu Bị','Tôn Quyền','Đổng Trác'].includes(h.name))||hs[0];
