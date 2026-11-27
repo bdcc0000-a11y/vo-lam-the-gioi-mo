@@ -1264,6 +1264,7 @@ function finishBattle(){
     const surv=Math.max(60,at);
     to.owner=B.atkFac;to.troops=surv;to.garrison=B.atkGens.slice();
     if(from)from.garrison=from.garrison.filter(n=>!B.atkGens.includes(n));
+    retreatGenerals(B.defGens.slice(),B.defFac,B.toId);
     title='🎉 THẮNG TRẬN!';body='Quân '+FACTIONS[B.atkFac].name+' chiếm được <b>'+RMAP[B.toId].name+'</b>!<br>Quân còn lại: '+surv+' · Tướng địch tử trận/tháo chạy: '+(B.defGens.join(', ')||'—');
     log(FACTIONS[B.atkFac].name+' chiếm '+RMAP[B.toId].name+' từ tay '+FACTIONS[B.defFac].name+'.');
   }else{
@@ -1284,6 +1285,15 @@ function finishBattle(){
   $('resTitle').textContent=title;$('resBody').innerHTML=body;$('resultModal').classList.remove('hidden');
   B=null;S.pick=null;S.pickFor=null;save();refreshNodes();renderPanel();checkEnd();
 }
+function retreatGenerals(names,fac,fromId){
+  if(!names||!names.length)return;
+  const cands=REGIONS.filter(r=>S.regions[r.id].owner===fac);
+  if(!cands.length)return; // faction wiped out — generals are lost with it
+  const adj=cands.filter(r=>RMAP[fromId]&&RMAP[fromId].nb.includes(r.id));
+  const dest=(adj.length?adj:cands).sort((a,b)=>S.regions[b.id].troops-S.regions[a.id].troops)[0];
+  names.forEach(n=>{if(!S.regions[dest.id].garrison.includes(n))S.regions[dest.id].garrison.push(n);});
+  log('Tướng '+FACTIONS[fac].name+' ('+names.join(', ')+') tháo chạy về '+dest.name+' sau khi mất thành.');
+}
 function checkEnd(){
   const owners=new Set(REGIONS.map(r=>S.regions[r.id].owner));
   if(owners.size===1){const w=[...owners][0];setTimeout(()=>{alert(w===S.player?'👑 THIÊN HẠ THỐNG NHẤT! Ba đã giúp '+FACTIONS[w].name+' thống nhất thiên hạ ở lượt '+S.turn+'!':'😞 Thiên hạ đã về tay '+FACTIONS[w].name+'. Ván này thua rồi, ba thử phe khác nhé!');},300);}
@@ -1294,7 +1304,7 @@ function instantBattle(atkFac,fromId,toId){
   const gens=from.garrison.slice(0,3);const atkTroops=Math.floor(from.troops*0.8);
   const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac);
   from.troops-=atkTroops;
-  if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));to.owner=atkFac;to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
+  if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));const oldG=to.garrison.slice(),oldOwner=to.owner;to.owner=atkFac;to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));retreatGenerals(oldG.filter(n=>!gens.includes(n)),oldOwner,toId);log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
 }
 function aiFaction(f){
