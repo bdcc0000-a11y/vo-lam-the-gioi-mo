@@ -1384,7 +1384,7 @@ function battleLoop(ts){
   if(B.phase==='fight'&&!B.over){
     B.turnT+=dt;
     const aliveSoldiers=B.units.filter(u=>!u.dead);
-    if((aliveSoldiers.length&&aliveSoldiers.every(u=>u.arrived))||B.turnT>2000)endTurn();
+    if((aliveSoldiers.length&&aliveSoldiers.every(u=>u.arrived||u.fleeing))||B.turnT>1600)endTurn();
   }else if(B.phase==='prep'&&!B.over){
     B.prepT-=rawDt;
     const btn=$('turnGo');if(btn)btn.textContent='⚔️ Xung phong hiệp '+(B.turn+1)+' ('+Math.max(0,Math.ceil(B.prepT/60))+'s)';
@@ -1408,7 +1408,9 @@ function battleLoop(ts){
     if(u.fleeing){
       const dir2=u.side==='atk'?-1:1;
       u.x+=dir2*1.7*u.spdF*dt;u.moving=true;
-      u.x=Math.max(12,Math.min(W-12,u.x));u.y=Math.max(H*0.14,Math.min(H-14,u.y));
+      u.y=Math.max(H*0.14,Math.min(H-14,u.y));
+      if((u.side==='atk'&&u.x<=13)||(u.side==='def'&&u.x>=W-13))u.dead=1; // fled off the field — out of the battle
+      u.x=Math.max(12,Math.min(W-12,u.x));
       continue;
     }
     const myFid=u.side==='atk'?B.atkForm||'truongxa':B.defForm||'truongxa';
