@@ -1060,7 +1060,7 @@ function drawSoldier(ctx,u,t){
     const hgt=u.cls==='ky'?54:34,wdt=hgt*(u.cls==='ky'?1.25:0.92);
     const rbob=u.dead?0:(u.moving?Math.abs(Math.sin(t/70+u.ph))*3.2:Math.sin(t/150+u.ph)*1.3);
     ctx.save();ctx.translate(u.x,u.y+ (u.moving?-rbob:bob));ctx.scale(dir,1);
-    if(u.moving&&!u.dead)ctx.rotate(0.07);
+    if(u.moving&&!u.dead)ctx.rotate(Math.max(-0.17,Math.min(0.17,(u.vx||0)*0.05)));
     if(u.atkAnim>0&&!u.dead){const swp=Math.sin((1-u.atkAnim/6)*Math.PI);ctx.translate(swp*5,0);ctx.rotate(swp*0.24);}
     if(u.dead){ctx.rotate(1.25);ctx.globalAlpha=Math.max(0,1-u.dead/40);}
     ctx.drawImage(tim,-wdt/2,-hgt+8,wdt,hgt);
@@ -1151,6 +1151,9 @@ for(const k in SKILL_DB){const hs=[...k].reduce((a,c)=>a+c.charCodeAt(0)*7,0);SK
 for(const n in SR_SKILL){const k=SR_SKILL[n];if(SKILL_FX_STYLE[k])SKILL_FX_STYLE[k].pat=['rain','sweep','ring','blast'][[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%4];}
 function pushSkillAnim(o){
   const sty=SKILL_FX_STYLE[o.skName]||{hue:0,pat:'blast'};o.hue=sty.hue;
+  if(B.effects.length<110){B.effects.push({x:o.x,y:o.y,life:24,type:'ring',color:'#ffe9a0'});
+    if((o.tier||0)>=2)B.effects.push({x:o.x,y:o.y,life:31,type:'ring',color:'#fff3b0'});
+    for(let i=0;i<10;i++)B.effects.push({x:o.x+(Math.random()*130-65),y:o.y+(Math.random()*95-48),life:9+Math.random()*8,type:Math.random()<0.6?'spark':'boom'});}
   if(sty.pat==='rain'){for(let i=0;i<5;i++)B.anims.push({...o,t:-i*7,x:o.x+(Math.random()*130-65),y:o.y+(Math.random()*90-45),small:0.55});}
   else if(sty.pat==='sweep'){B.anims.push({...o,vx:(o.side==='atk'?2.4:-2.4)});}
   else if(sty.pat==='ring'){B.anims.push(o);B.effects.push({x:o.x,y:o.y,life:26,type:'ring',color:'#ffd94a'});B.effects.push({x:o.x,y:o.y,life:18,type:'ring',color:'#fff3b0'});}
@@ -1177,6 +1180,7 @@ function useSkill(side,gen){
     const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
     pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+22+i*6,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:24,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }else if(sk.kind==='buff'){
     const maxT=side==='atk'?B.atkMax:B.defMax;
@@ -1192,6 +1196,7 @@ function useSkill(side,gen){
     const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
     pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+16+i*5,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }
   if(zoneC&&sk.kind!=='buff'){
@@ -1279,7 +1284,7 @@ function startTurn(){
   const cv=$('cv'),W=cv.width,H=cv.height;
   B.zones=[];B.projs=[];B.anims=[];
   for(const u of B.units)if(!u.dead){
-    u.arrived=false;u.rally=true;u.passDir=u.side==='atk'?1:-1;u.chargeUsed=0;u.surge=0;u.cd=10+Math.random()*15;
+    u.arrived=false;u.rally=true;u.passDir=u.side==='atk'?1:-1;u.chargeUsed=0;u.surge=0;u.vx=0;u.vy=0;u.cd=10+Math.random()*15;
     u.x=u.side==='atk'?u.hx-W*0.30-Math.random()*50:u.hx+W*0.30+Math.random()*50;
     u.y=Math.min(H-24,Math.max(H*0.14,u.hy+(Math.random()*96-48)));
   }
@@ -1338,6 +1343,7 @@ function drawGeneralUnit(ctx,g,t){
   ctx.fillStyle='rgba(0,0,0,.30)';ctx.beginPath();ctx.ellipse(g.x,g.y+6,w*0.36,6.5,0,0,6.29);ctx.fill();
   if(!g.dead&&g.hp/g.maxHp<0.3){ctx.strokeStyle='rgba(255,60,40,'+(0.45+0.35*Math.sin(t/120))+')';ctx.lineWidth=2.4;ctx.beginPath();ctx.ellipse(g.x,g.y+6,w*0.52+Math.sin(t/120)*3,10,0,0,6.29);ctx.stroke();}
   if(img&&img.complete&&img.naturalWidth){
+    if(swing>0.2||g.casting>0){for(let gi=2;gi>=1;gi--){ctx.save();ctx.globalAlpha=0.15-0.04*gi;ctx.translate(g.x-dirS*lunge*gi*0.55,g.y-bob);if(g.side==='def')ctx.scale(-1,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore();}}
     ctx.translate(g.x+dirS*lunge,g.y-bob);
     ctx.rotate(rock+dirS*swing*0.34);
     if(g.side==='def')ctx.scale(-1,1);
@@ -1375,8 +1381,12 @@ function drawGeneralUnit(ctx,g,t){
   ctx.restore();
 }
 /* ================= WAR DRUMS (synth) ================= */
-let AC=null,MG=null,lastClashSfx=0;
-function sfxInit(){try{if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=0.9;const comp=AC.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=8;comp.attack.value=0.003;comp.release.value=0.18;MG.connect(comp);comp.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSamples();}catch(e){}}
+let AC=null,MG=null,RVS=null,lastClashSfx=0;
+function sfxInit(){try{if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MG=AC.createGain();MG.gain.value=0.9;const comp=AC.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=8;comp.attack.value=0.003;comp.release.value=0.18;MG.connect(comp);comp.connect(AC.destination);
+    const rv=AC.createConvolver();const irLen=Math.floor(AC.sampleRate*1.7);const ir=AC.createBuffer(2,irLen,AC.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<irLen;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/irLen,2.6);}
+    rv.buffer=ir;const rvg=AC.createGain();rvg.gain.value=0.55;rv.connect(rvg);rvg.connect(MG);
+    RVS=AC.createGain();RVS.gain.value=0.34;RVS.connect(rv);}if(AC.state==='suspended')AC.resume();loadSamples();}catch(e){}}
 /* ---- REAL SAMPLED SOUNDS (CC0/CC-BY, xem ghi chú ở màn hình đầu) ---- */
 const SMP={};let SMP_TRIED=false;
 function loadSamples(){if(SMP_TRIED||typeof fetch!=='function'||!AC)return;SMP_TRIED=true;
@@ -1385,9 +1395,9 @@ function loadSamples(){if(SMP_TRIED||typeof fetch!=='function'||!AC)return;SMP_T
     tryFmt('.ogg');
   });
 }
-function playSmp(nm,vol,rate,pan){if(!sfxOn()||!SMP[nm])return false;try{const src=AC.createBufferSource();src.buffer=SMP[nm];src.playbackRate.value=rate||1;const g=AC.createGain();g.gain.value=vol;src.connect(g);let out=g;
+function playSmp(nm,vol,rate,pan){if(!sfxOn()||!SMP[nm])return false;try{const src=AC.createBufferSource();src.buffer=SMP[nm];src.playbackRate.value=rate||1;if((rate||1)===1&&src.buffer.duration<1.5)src.playbackRate.value=0.94+Math.random()*0.12;const g=AC.createGain();g.gain.value=vol;src.connect(g);let out=g;
   if(pan&&AC.createStereoPanner){const pn=AC.createStereoPanner();pn.pan.value=Math.max(-0.85,Math.min(0.85,pan));g.connect(pn);out=pn;}
-  out.connect(MG);const off=(nm!=='drum-loop'&&src.buffer.duration>0.3)?Math.random()*0.03:0;src.start(0,off);window.SFXHITS=(window.SFXHITS||0)+1;return true;}catch(e){return false;}}
+  out.connect(MG);if(RVS)out.connect(RVS);const off=(nm!=='drum-loop'&&src.buffer.duration>0.3)?Math.random()*0.03:0;src.start(0,off);window.SFXHITS=(window.SFXHITS||0)+1;return true;}catch(e){return false;}}
 function sfxOn(){return !!(AC&&MG&&!(B&&B.muted));}
 function tone(o){if(!sfxOn())return;try{const t0=AC.currentTime+(o.when||0),os=AC.createOscillator(),g=AC.createGain();os.type=o.type||'sine';os.frequency.setValueAtTime(o.f0,t0);if(o.f1)os.frequency.exponentialRampToValueAtTime(Math.max(20,o.f1),t0+o.dur);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(o.vol||0.2,t0+(o.a||0.012));g.gain.exponentialRampToValueAtTime(0.0001,t0+o.dur);os.connect(g);g.connect(MG);os.start(t0);os.stop(t0+o.dur+0.05);window.SFXHITS=(window.SFXHITS||0)+1;}catch(e){}}
 function noiseS(o){if(!sfxOn())return;try{const t0=AC.currentTime+(o.when||0),len=Math.max(1,(AC.sampleRate*o.dur)|0),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=AC.createBufferSource();src.buffer=buf;const f=AC.createBiquadFilter();f.type=o.ft||'lowpass';f.frequency.setValueAtTime(o.f0||800,t0);if(o.f1)f.frequency.exponentialRampToValueAtTime(o.f1,t0+o.dur);const g=AC.createGain();g.gain.setValueAtTime(o.vol||0.25,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+o.dur);src.connect(f);f.connect(g);g.connect(MG);src.start(t0);window.SFXHITS=(window.SFXHITS||0)+1;}catch(e){}}
@@ -1410,7 +1420,7 @@ function sfxHit(cls,pan){const nw=performance.now();if(!window._hw||nw-window._h
   else if(cls==='giao'){if(!(playSmp(Math.random()<0.5?'parry':'gswipe',0.17,rr(),P)|playSmp('swing',0.08,rr(),P))){sfxWhoosh();sfxThud();}}
   else if(cls==='ky'){if(!(playSmp(Math.random()<0.5?'clash':'gclash',0.15,rr(),P)|playSmp('hammer',0.11,1.1,P))){sfxMetal(false);sfxThud();}}
   else if(!playSmp('axe',0.18,rr(),P))sfxThud();
-  if(Math.random()<0.35)playSmp('thud2',0.06,0.9+Math.random()*0.2,P);
+  if(Math.random()<0.5)playSmp('thud2',0.08,0.9+Math.random()*0.2,P);
 }
 function sfxHornPhrase(){
   // (đã bỏ tiếng tù và theo yêu cầu — thay bằng nhịp trống trầm)
@@ -1431,7 +1441,7 @@ function startDrums(){
   startDrumLoop();
 }
 function sndState(){try{return localStorage.getItem('tq_snd')||'nomusic';}catch(e){return 'nomusic';}}
-function startDrumLoop(){try{if(sndState()!=='all')return;if(AC&&(SMP['bgm-battle']||SMP['drum-loop'])&&typeof B!=='undefined'&&B&&!B.over&&!B.drumSrc){const src=AC.createBufferSource();src.buffer=SMP['bgm-battle']||SMP['drum-loop'];src.loop=true;const g=AC.createGain();g.gain.value=(B.muted?0:0.3);src.connect(g);g.connect(MG);src.start();B.drumSrc={src,g};}}catch(e){}}
+function startDrumLoop(){try{if(AC&&(SMP['bgm-battle']||SMP['drum-loop'])&&typeof B!=='undefined'&&B&&!B.over&&!B.drumSrc){const useBgm=sndState()==='all'&&!!SMP['bgm-battle'];if(!useBgm&&!SMP['drum-loop'])return;const src=AC.createBufferSource();src.buffer=useBgm?SMP['bgm-battle']:SMP['drum-loop'];src.loop=true;const g=AC.createGain();g.gain.value=(B.muted?0:(useBgm?0.3:0.13));src.connect(g);g.connect(MG);src.start();B.drumSrc={src,g};}}catch(e){}}
 function stopDrums(){if(!B)return;clearInterval(B.drumInt);if(B.drumSrc){try{B.drumSrc.src.stop();B.drumSrc.g.disconnect();}catch(e){}B.drumSrc=null;}if(B.drone){try{B.drone.o1.stop();B.drone.o2.stop();B.drone.g.disconnect();}catch(e){}B.drone=null;}}
 /* ================= STANCES (SF2 commands: Break Through / Defense) ================= */
 function stanceMult(side){
@@ -1684,9 +1694,12 @@ function battleLoop(ts){
       else if(B.homeC)gy=(u.side==='atk'?centY.atk:centY.def)+(u.hy-B.homeC[u.side].y)*0.8;
       if(myFid==='hacduc'&&u.wing){const passed=u.side==='atk'?u.x>centX.def-6:u.x<centX.atk+6;if(!passed)gy+=u.wing*26;}
       const mdx=gx-u.x,mdy=gy-u.y,md=Math.hypot(mdx,mdy)||1;
-      const mstep=(B.t<(u.startD||0))?0:run;
-      u.x+=mdx/md*mstep;u.y+=mdy/md*mstep*0.8;u.moving=mstep>0.2;
-      if(u.moving&&Math.random()<(u.cls==='ky'&&!u.chargeUsed?0.17:0.07)&&B.effects.length<70)B.effects.push({x:u.x-u.passDir*6,y:u.y+5,life:12,type:'dust'});
+      if(u.vx===undefined){u.vx=0;u.vy=0;}
+      const go=(B.t<(u.startD||0))?0:1;
+      const acc=Math.min(1,0.13*dt);
+      u.vx+=((mdx/md)*run*go-u.vx)*acc;u.vy+=((mdy/md)*run*0.8*go-u.vy)*acc;
+      u.x+=u.vx;u.y+=u.vy;u.moving=Math.abs(u.vx)>0.22||Math.abs(u.vy)>0.22;
+      if(u.moving&&Math.random()<0.05+Math.min(0.14,Math.abs(u.vx||0)*0.04)&&B.effects.length<70)B.effects.push({x:u.x-u.passDir*6,y:u.y+5,life:12,type:'dust'});
       if((u.passDir>0&&u.x>=W-16)||(u.passDir<0&&u.x<=16)){
         u.arrived=true;B.break[u.side]++;B.moraleBonus[u.side]=Math.min(24,B.moraleBonus[u.side]+0.4);
         if(B.break[u.side]%15===0)B.texts.push({x:u.x,y:u.y-30,life:60,txt:'🚩 Đột phá ×'+B.break[u.side],color:'#7ec8ff'});
@@ -1715,7 +1728,7 @@ function battleLoop(ts){
     }
     else if(e.type==='spark'){ctx.globalAlpha=Math.min(1,e.life/8);ctx.strokeStyle='#fff3b0';ctx.lineWidth=2;const r=(10-e.life)*1.6+2;
       ctx.beginPath();ctx.moveTo(e.x-r,e.y);ctx.lineTo(e.x+r,e.y);ctx.moveTo(e.x,e.y-r);ctx.lineTo(e.x,e.y+r);ctx.stroke();}
-    else{ctx.globalAlpha=Math.min(1,e.life/18);ctx.strokeStyle=e.color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,(30-e.life)*2.6,0,6.29);ctx.stroke();}
+    else{ctx.globalAlpha=Math.min(1,e.life/18);ctx.strokeStyle=e.color;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,Math.max(0.1,(30-e.life)*2.6),0,6.29);ctx.stroke();}
     ctx.restore();}
   // animated skill sequences on the field (slow, readable, no banners)
   if(B.anims&&B.anims.length){
@@ -1810,7 +1823,7 @@ $('sndBtn').onclick=()=>{if(!B)return;const order=['nomusic','all','mute'];const
   toast(nx==='mute'?'🔇 Tắt hết tiếng':(nx==='all'?'🔊🎵 Bật cả nhạc nền':'🔊 Chỉ tiếng đánh trận, tắt nhạc nền'));};
 function finishBattle(){
   cancelAnimationFrame(B.raf);stopDrums();
-  if(B.winner===B.playerSide){playSmp('thud2',0.42,0.7);setTimeout(()=>playSmp('thud2',0.42,0.82),190);setTimeout(()=>{playSmp('thud2',0.46,0.98);playSmp('boom',0.2,0.9);},390);}else{playSmp('boom',0.32,0.7);playSmp('thud2',0.4,0.55);}
+  if(B.winner===B.playerSide){playSmp('thud2',0.42,0.7);setTimeout(()=>playSmp('thud2',0.42,0.82),190);setTimeout(()=>{playSmp('thud2',0.46,0.98);playSmp('boom',0.22,0.9);playSmp('clang',0.18,1.05);},390);setTimeout(()=>playSmp('buffs',0.22,1),560);}else{playSmp('boom',0.32,0.7);playSmp('thud2',0.4,0.55);setTimeout(()=>{playSmp('thud2',0.34,0.5);playSmp('fall',0.16,0.8);},240);}
   const at=aliveTroops('atk'),df=aliveTroops('def');
   const atkWin=B.winner==='atk';
   const to=S.regions[B.toId],from=S.regions[B.fromId];
@@ -1969,16 +1982,14 @@ function showHeroDetail(name){
     +'<div class="info" style="margin-top:10px;line-height:1.65">⚡ <b>Chủ động — '+h.skill+'</b>: '+skillDesc(h.skill)+'<br>'
     +'🛡️ <b>Bị động — '+h.passive.name+'</b>: '+h.passive.desc+'<br>'
     +'✦ <b>Talent ('+TALENT_DOM[h.talentDom]+') — '+(td?td.icon+' ':'')+h.talent+'</b>: '+(td?td.desc:'')+' · hồi chiêu '+(td?td.cd:0)+' tháng · tỷ lệ thành công '+(td?Math.round((td.rate||0.8)*100):0)+'%<br>'
-    +((homes.length&&S&&S.regions[homes[0].id].owner===S.player)?'<div style="margin-top:4px">'+((((S.talentCd||{})[name])||0)>0?'<span style="color:#c9b98f">⏳ Talent đang hồi — còn '+S.talentCd[name]+' tháng</span>':((S.talentCount&&S.talentCount[S.player]||0)>=3?'<span style="color:#c9b98f">✦ Đã dùng hết 3 lần talent tháng này</span>':'<button id="hdTalent" class="tbtn" style="background:linear-gradient(180deg,#7c5cd6,#4c2f9e);color:#fff">✦ Dùng talent (còn '+(3-((S.talentCount&&S.talentCount[S.player])||0))+'/3 tháng này)</button>'))+'<div id="talentTargets" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div></div>':'')
+
     +((homes.length&&S.regions[homes[0].id].owner===S.player)?'<div style="margin-top:6px"><button id="hdMove" class="tbtn">➡️ Điều tướng sang thành khác</button><div id="moveTargets" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div></div>':'')
     +'🪖 <b>Cây binh kỹ riêng</b> ('+CLS_NAME[h.cls]+' binh) — đang ở bậc '+(((S&&S.genTroop&&S.genTroop[name])||0)+1)+'/5:<br>'
     +GEN_LADDER[name].map((t,i)=>{const st=(S&&S.genTroop&&S.genTroop[name])||0;return '<span style="display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:6px;margin:2px 0;'+(i===st?'background:#3a2f14;outline:1.5px solid #ffd94a':'opacity:.55')+'"><img src="'+t.img+'" style="width:24px;height:24px;object-fit:contain"><small>'+t.name+'</small><span class="tier t'+t.rank+'">'+t.rank+'</span></span>'+(i<4?' › ':'');}).join('')
-    +((homes.length&&S.regions[homes[0].id].owner===S.player)?(()=>{const st=(S.genTroop[name]||0);if(st>=4)return '<br><b style="color:#ffd94a">Binh chủng đã đạt bậc tối đa!</b>';const cost=Math.round(UP_COST[st+1]*(S.techDiscount?(1-S.techDiscount):1));return '<br><button id="hdUp" class="tbtn gold" style="margin-top:6px" '+(S.gold[S.player]<cost?'disabled':'')+'>⬆️ Nâng cấp binh chủng — '+cost+' vàng</button>';})():'')
     +'<br>🏯 <b>Đang trấn giữ</b>: '+(homes.length?homes.map(r=>r.name).join(', '):'chưa đóng ở thành nào')+'</div>';
   $('heroDetail').classList.remove('hidden');
   const hu=$('hdUp');if(hu)hu.onclick=()=>{if(upgradeGen(name)){showHeroDetail(name);renderPanel();}};
-  const ht2=$('hdTalent');if(ht2)ht2.onclick=()=>talentTargetUI(name);
-  const hm=$('hdMove');if(hm)hm.onclick=()=>{if(monthType()!=='noi'){gateToast();return;}const box=$('moveTargets');if(!box)return;const fromId=homes[0].id;
+  const hm=$('hdMove');if(hm)hm.onclick=()=>{const box=$('moveTargets');if(!box)return;const fromId=homes[0].id;
     box.innerHTML=REGIONS.filter(r=>S.regions[r.id].owner===S.player&&r.id!==fromId).map(r=>'<button class="tbtn" data-mv="'+r.id+'">🏯 '+r.name+' ('+S.regions[r.id].garrison.length+' tướng · '+S.regions[r.id].troops+' quân)</button>').join('')||'<span class="info">Không có thành nào khác.</span>';
     box.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const toId=b.dataset.mv;const from=S.regions[fromId],to=S.regions[toId];
       if(to.garrison.length>=6){toast('Thành đích đã đủ 6 tướng.');return;}
