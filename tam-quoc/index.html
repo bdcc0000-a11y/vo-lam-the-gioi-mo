@@ -185,7 +185,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 <div id="gameScreen" class="hidden">
   <div id="topbar">
     <span id="tbFaction"></span><span>🗓️ Lượt <b id="tbTurn">1</b></span>
-    <span>💰 Vàng <b id="tbGold">0</b></span><span>🏯 Thành <b id="tbCities">0</b></span><span>🪖 Tổng quân <b id="tbTroops">0</b></span>
+    <span>💰 Vàng <b id="tbGold">0</b></span><span>🍚 Lương <b id="tbFood">0</b></span><span>🏯 Thành <b id="tbCities">0</b></span><span>🪖 Tổng quân <b id="tbTroops">0</b></span>
     <span style="flex:1"></span>
     <button class="tbtn" id="heroesBtn">📜 Danh tướng lục</button>
     <button class="tbtn" id="troopsBtn">🪖 Danh binh lục</button>
@@ -428,6 +428,7 @@ function aiUseTalent(f){
 function processTurnFlags(){
   const dec=(obj)=>{if(!obj)return;Object.keys(obj).forEach(k=>{obj[k]--;if(obj[k]<=0)delete obj[k];});};
   dec(S.talentCd);dec(S.truce);dec(S.blocked);dec(S.noRecruit);
+  if(S.talentCd)Object.keys(S.talentCd).forEach(n=>{const home=REGIONS.find(r=>S.regions[r.id].garrison.includes(n));if(home){const lv=bldLv(S.regions[home.id],'hoc');if(lv>0){S.talentCd[n]-=lv;if(S.talentCd[n]<=0)delete S.talentCd[n];}}});
   if(S.defBonus)Object.keys(S.defBonus).forEach(k=>{S.defBonus[k].turns--;if(S.defBonus[k].turns<=0)delete S.defBonus[k];});
   if(S.focus)Object.keys(S.focus).forEach(k=>{S.focus[k].turns--;if(S.focus[k].turns<=0)delete S.focus[k];});
   if(S.incomeBuff){S.incomeBuff.turns--;if(S.incomeBuff.turns<=0)S.incomeBuff=null;}
@@ -563,9 +564,9 @@ function save(){try{localStorage.setItem('huyetma_tq_v1',JSON.stringify(S));}cat
 function load(){try{const s=localStorage.getItem('huyetma_tq_v1');return s?JSON.parse(s):null;}catch(e){return null;}}
 function facHeroes(f){return HEROES.filter(h=>h.faction===f).sort((a,b)=>(b.vo+b.tri+b.chi)-(a.vo+a.tri+a.chi));}
 function newGame(fac){
-  S={player:fac,turn:1,gold:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,incomeBuff:null};
-  Object.keys(FACTIONS).forEach(f=>S.gold[f]=900);
-  REGIONS.forEach(r=>{S.regions[r.id]={owner:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[]};});
+  S={player:fac,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,incomeBuff:null};
+  Object.keys(FACTIONS).forEach(f=>{S.gold[f]=900;S.food[f]=600;});
+  REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
   // distribute heroes: capital 4, others 3, rest stay in faction pool (shown in gallery)
   Object.keys(FACTIONS).forEach(f=>{
     const hs=facHeroes(f).slice();const regs=REGIONS.filter(r=>r.owner===f);
@@ -574,6 +575,63 @@ function newGame(fac){
   });
   S.log=['Thiên hạ đại loạn — '+FACTIONS[fac].name+' khởi binh tranh hùng!'];
   save();showGame();
+}
+/* ================= NOI CHINH: city development, buildings, food ================= */
+const BUILDINGS={
+  don:{icon:'🌾',name:'Đồn Điền',desc:'Thu hoạch lương của thành +25%/cấp'},
+  cho:{icon:'💰',name:'Thương Quán',desc:'Vàng thu của thành +25%/cấp'},
+  binh:{icon:'🏋️',name:'Binh Doanh',desc:'Tuyển quân +30%/cấp'},
+  tuong:{icon:'🧱',name:'Tường Thành',desc:'Lực thủ thành +12%/cấp khi bị đánh'},
+  hoc:{icon:'📚',name:'Học Cung',desc:'Tướng đóng ở đây hồi talent nhanh hơn, vàng +5%/cấp'},
+};
+const BLD_COST=[0,200,350,550];
+function bldLv(st,id){return (st.bld&&st.bld[id])||0;}
+function cityGold(st){return Math.round((40+(st.comm||50)*2+(st.pop||50)*0.5)*(1+0.25*bldLv(st,'cho')+0.05*bldLv(st,'hoc')));}
+function cityFood(st){return Math.round(((st.agri||50)*1.6+(st.pop||50)*0.4)*(1+0.25*bldLv(st,'don')));}
+function cityCap(st){return Math.round(600+(st.pop||50)*22);}
+function recruitAmt(st){return Math.round((150+(st.pop||50)*3)*(1+0.3*bldLv(st,'binh')));}
+function wallMult(id){const st=S.regions[id];return st?1+0.12*bldLv(st,'tuong'):1;}
+function initCityStats(r){
+  let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;
+  const cap=CAPITALS[r.owner]===r.id;
+  const base=cap?58:32,spread=cap?24:30;
+  return {agri:base+(x%spread),comm:base+((x>>3)%spread),pop:base+((x>>5)%spread),bld:{}};
+}
+function ensureCityData(){
+  if(!S.food)S.food={};Object.keys(FACTIONS).forEach(f=>{if(S.food[f]===undefined)S.food[f]=600;});
+  REGIONS.forEach(r=>{const st=S.regions[r.id];if(st.agri===undefined){const d=initCityStats(r);st.agri=d.agri;st.comm=d.comm;st.pop=d.pop;}if(!st.bld)st.bld={};});
+}
+function processEconomy(f){
+  const regs=REGIONS.filter(r=>S.regions[r.id].owner===f);
+  if(!regs.length)return{g:0,harv:0,eat:0};
+  let g=regs.reduce((a,r)=>a+cityGold(S.regions[r.id]),0);
+  if(f===S.player&&S.incomeBuff)g=Math.round(g*S.incomeBuff.mult);
+  S.gold[f]+=g;
+  const harv=regs.reduce((a,r)=>a+cityFood(S.regions[r.id]),0);
+  const troops=regs.reduce((a,r)=>a+S.regions[r.id].troops,0);
+  const eat=Math.round(troops*0.06);
+  S.food[f]=(S.food[f]||0)+harv-eat;
+  if(S.food[f]<0){S.food[f]=0;let lost=0;for(const r of regs){const st=S.regions[r.id];const d=Math.floor(st.troops*0.04);st.troops-=d;lost+=d;}
+    if(lost>0){log('⚠️ '+FACTIONS[f].name+' thiếu lương thực — '+lost+' quân đào ngũ vì đói!');if(f===S.player)toast('⚠️ Thiếu lương! Quân đào ngũ vì đói — hãy tăng Nông nghiệp / xây Đồn Điền.');}}
+  return {g,harv,eat};
+}
+function devCity(id,key){
+  const st=S.regions[id];if(!st||st.owner!==S.player)return;
+  if((S.acted[id]&&S.acted[id].dev)||st[key]>=100)return;
+  const cost=60+st[key]*2;
+  if(S.gold[S.player]<cost){toast('Không đủ vàng (cần '+cost+').');return;}
+  S.gold[S.player]-=cost;st[key]=Math.min(100,st[key]+8);(S.acted[id]=S.acted[id]||{}).dev=true;
+  save();renderTop();renderPanel();refreshNodes();
+}
+function buildCity(id,k){
+  const st=S.regions[id];if(!st||st.owner!==S.player)return;
+  st.bld=st.bld||{};const lv=st.bld[k]||0;
+  if(lv>=3||(S.acted[id]&&S.acted[id].built))return;
+  if(!st.bld[k]&&Object.keys(st.bld).length>=3){toast('Mỗi thành tối đa 3 loại công trình.');return;}
+  const cost=BLD_COST[lv+1];
+  if(S.gold[S.player]<cost){toast('Không đủ vàng (cần '+cost+').');return;}
+  S.gold[S.player]-=cost;st.bld[k]=lv+1;(S.acted[id]=S.acted[id]||{}).built=true;
+  save();renderTop();renderPanel();refreshNodes();toast('🏯 Đã xây '+BUILDINGS[k].name+' cấp '+(lv+1)+' ở '+RMAP[id].name+'.');
 }
 /* ================= MAP / UI ================= */
 function showGame(){
@@ -608,7 +666,7 @@ function refreshNodes(){
 function renderTop(){
   const mine=REGIONS.filter(r=>S.regions[r.id].owner===S.player);
   $('tbFaction').innerHTML='Phe: <b style="color:'+FACTIONS[S.player].color+'">'+FACTIONS[S.player].icon+' '+FACTIONS[S.player].name+'</b>';
-  $('tbTurn').textContent=S.turn;$('tbGold').textContent=S.gold[S.player];
+  $('tbTurn').textContent=S.turn;$('tbGold').textContent=S.gold[S.player];const tf=$('tbFood');if(tf)tf.textContent=S.food?S.food[S.player]:0;
   $('tbCities').textContent=mine.length;$('tbTroops').textContent=mine.reduce((a,r)=>a+S.regions[r.id].troops,0);
 }
 function garrisonHTML(st){
@@ -623,7 +681,7 @@ function openCityMenu(id){
   h+='<div class="cmInfo">🪖 '+st.troops+' quân · 👥 '+st.garrison.length+' tướng trấn giữ</div>';
   if(mine){
     const acted=S.acted[id]||{};
-    h+='<button class="cmBtn" id="cmRecruit" '+((acted.recruit||S.gold[S.player]<150||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +250 (150 vàng)</button>';
+    h+='<button class="cmBtn" id="cmRecruit" '+((acted.recruit||S.gold[S.player]<150||(S.noRecruit&&S.noRecruit[id]))?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>';
     const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
     if(foes.length){
       h+='<button class="cmBtn atk" id="cmWar" '+(acted.attack?'disabled':'')+'>⚔️ WAR</button>';
@@ -642,7 +700,7 @@ function openCityMenu(id){
   if(L+mw>W-4)L=nx-mw-16;
   L=Math.max(4,Math.min(L,W-mw-4));T=Math.max(4,Math.min(T,H-mh-4));
   m.style.left=L+'px';m.style.top=T+'px';
-  const rc=$('cmRecruit');if(rc)rc.onclick=()=>{S.gold[S.player]-=150;st.troops+=250;(S.acted[id]=S.acted[id]||{}).recruit=true;log('Tuyển thêm 250 quân ở '+r.name+'.');save();refreshNodes();renderPanel();openCityMenu(id);};
+  const rc=$('cmRecruit');if(rc)rc.onclick=()=>{const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[id]=S.acted[id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();openCityMenu(id);};
   const cw=$('cmWar');if(cw)cw.onclick=()=>startWar(id);
   const cwe=$('cmWarE');if(cwe)cwe.onclick=()=>{const origins=r.nb.filter(n=>S.regions[n].owner===S.player&&canAttackFrom(n));if(origins.length===1){closeCityMenu();askWar(origins[0],id);}else pickWarOrigin(id);};
   $('cmClose').onclick=closeCityMenu;
@@ -689,16 +747,25 @@ function renderPanel(){
   if(!S.sel){p.innerHTML='<h3>🗺️ Chọn một vùng đất</h3><div class="info">Bấm vào bất kỳ thành nào — menu sẽ bật ngay cạnh thành: tuyển quân, tấn công, rồi vào màn chuẩn bị để chọn tướng xuất chinh. Mỗi lượt mỗi thành được đánh 1 trận và tuyển quân 1 lần.</div>';return;}
   const r=RMAP[S.sel],st=S.regions[r.id],f=FACTIONS[st.owner],mine=st.owner===S.player;
   let html='<h3>'+r.name+' — '+f.icon+' '+f.name+(CAPITALS[st.owner]===r.id?' (kinh đô)':'')+'</h3>';
-  html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b> · Thu nhập/lượt: <b>'+(90+Math.floor(st.troops/10))+'</b> vàng<br>Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>';
+  html+='<div class="info">Quân trấn giữ: <b>'+st.troops+'</b>/'+cityCap(st)+' · Thu nhập/lượt: <b>'+cityGold(st)+'</b> vàng · Lương: <b>'+cityFood(st)+'</b>/lượt<br>Tướng trấn giữ:</div><div class="garr">'+garrisonHTML(st)+'</div>';
   if(mine){
     const acted=S.acted[r.id]||{};
     html+='<div class="acts">'
-      +'<button id="actRecruit" '+(acted.recruit||S.gold[S.player]<150||(S.noRecruit&&S.noRecruit[r.id])?'disabled':'')+'>🪖 Tuyển quân +250 (150 vàng)</button>'
+      +'<button id="actRecruit" '+(acted.recruit||S.gold[S.player]<150||st.troops>=cityCap(st)||(S.noRecruit&&S.noRecruit[r.id])?'disabled':'')+'>🪖 Tuyển quân +'+recruitAmt(st)+' (150 vàng)</button>'
       +'<button class="atk" id="actWar" '+(acted.attack?'disabled':'')+'>⚔️ WAR — chọn thành muốn đánh</button>'
       +'</div><div class="info" style="margin-top:6px">Xuất chinh: chọn tối đa 3 tướng ở thành này mang theo (bấm để chọn/bỏ):</div><div class="garr" id="pickRow">'
       +st.garrison.map(n=>{const h=HMAP[n];const on=(S.pick||[]).includes(n);return '<span class="gchip '+(on?'':'off')+'" data-pick="'+n+'" style="cursor:pointer"><img src="'+h.img+'" alt=""><span><b><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>';
+    const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><span style="width:128px">'+icon+' '+label+' <b>'+v+'</b></span><span style="flex:1;height:8px;background:#2a2013;border-radius:4px;overflow:hidden"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+'>+8 ('+cost+'💰)</button></div>';};
+    html+='<h4 style="margin:12px 0 4px">🏯 Nội chính — mỗi lượt: phát triển 1 lần + xây/nâng 1 công trình</h4>'
+      +devB('agri','🌾','Nông nghiệp')+devB('comm','💰','Thương nghiệp')+devB('pop','👥','Dân số')
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+      +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
+        return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;flex:1 1 30%">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng cấp':'Xây')+': '+cost+' vàng</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
+      +'</div>';
     p.innerHTML=html;
-    const rb=$('actRecruit');if(rb)rb.onclick=()=>{S.gold[S.player]-=150;st.troops+=250;(S.acted[r.id]=S.acted[r.id]||{}).recruit=true;log('Tuyển thêm 250 quân ở '+r.name+'.');save();refreshNodes();renderPanel();};
+    p.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(r.id,b.dataset.dev));
+    p.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(r.id,b.dataset.bld));
+    const rb=$('actRecruit');if(rb)rb.onclick=()=>{const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[r.id]=S.acted[r.id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();};
     const wb=$('actWar');if(wb)wb.onclick=()=>startWar(r.id);
     p.querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
     p.querySelectorAll('[data-pick]').forEach(c=>c.onclick=()=>{S.pick=S.pick||[];const n=c.dataset.pick;const i=S.pick.indexOf(n);if(i>=0)S.pick.splice(i,1);else{if(S.pick.length>=3){toast('Tối đa 3 tướng xuất chinh');return;}S.pick.push(n);}renderPanel();});
@@ -1284,7 +1351,7 @@ function battleLoop(ts){
   drawFlags(ctx,B.t*16);
   if(B.zones)for(const z of B.zones){ctx.save();ctx.globalAlpha=0.20+0.05*Math.sin(B.t*0.3+z.x);ctx.fillStyle=z.kind==='fire'?'#ff6a1e':'#6fc4ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.29);ctx.fill();ctx.globalAlpha=0.5;ctx.strokeStyle=z.kind==='fire'?'#ffb03a':'#bfe6ff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
   const atkPow=B.atkGens.length?B.atkGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.atkGens.length:45;
-  const defPow=B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45;
+  const defPow=(B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45)*wallMult(B.toId);
   const alive=B.units.filter(u=>!u.dead);
   const genPos={atk:{x:W*0.055,y:H*0.60},def:{x:W*0.945,y:H*0.60}};
   if(B.pending&&B.pending.length)B.pending=B.pending.filter(p=>{if(B.t>=p.at){try{p.fn();}catch(e){}return false;}return true;});
@@ -1658,7 +1725,7 @@ function checkEnd(){
 function instantBattle(atkFac,fromId,toId){
   const from=S.regions[fromId],to=S.regions[toId];
   const gens=from.garrison.filter(n=>!(S.blocked&&S.blocked[n])).slice(0,3);const atkTroops=Math.floor(from.troops*0.8);
-  const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac)*((S.defBonus&&S.defBonus[toId])?S.defBonus[toId].mult:1);
+  const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac)*((S.defBonus&&S.defBonus[toId])?S.defBonus[toId].mult:1)*wallMult(toId);
   from.troops-=atkTroops;
   if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));const oldG=to.garrison.slice(),oldOwner=to.owner;to.owner=atkFac;to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));retreatGenerals(oldG.filter(n=>!gens.includes(n)),oldOwner,toId);log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
@@ -1668,9 +1735,13 @@ function aiFaction(f){
   // income + recruit weakest region
   const regs=REGIONS.filter(r=>S.regions[r.id].owner===f);
   if(!regs.length)return;
-  S.gold[f]+=regs.reduce((a,r)=>a+90+Math.floor(S.regions[r.id].troops/10),0);
+  processEconomy(f);
   const weak=regs.sort((a,b)=>S.regions[a.id].troops-S.regions[b.id].troops)[0];
-  if(S.gold[f]>=150&&!(S.noRecruit&&S.noRecruit[weak.id])){S.gold[f]-=150;S.regions[weak.id].troops+=250;}
+  if(S.gold[f]>=150&&!(S.noRecruit&&S.noRecruit[weak.id])){const wst=S.regions[weak.id];const amt=Math.min(recruitAmt(wst),Math.max(0,cityCap(wst)-wst.troops));if(amt>0){S.gold[f]-=150;wst.troops+=amt;}}
+  // AI develops its cities and builds, like a player would
+  const rr=regs[Math.floor(Math.random()*regs.length)];
+  if(rr&&S.gold[f]>320&&Math.random()<0.5){const st=S.regions[rr.id];const key=['agri','comm','pop'][Math.floor(Math.random()*3)];const cost=60+(st[key]||50)*2;if(st[key]<100&&S.gold[f]>=cost){S.gold[f]-=cost;st[key]=Math.min(100,(st[key]||50)+8);}}
+  if(rr&&S.gold[f]>700&&Math.random()<0.3){const st=S.regions[rr.id];st.bld=st.bld||{};const owned=Object.keys(st.bld);const cand=owned.length<3?Object.keys(BUILDINGS).filter(k=>!st.bld[k]):owned;if(cand.length){const k=cand[Math.floor(Math.random()*cand.length)];const lv=st.bld[k]||0;if(lv<3&&S.gold[f]>=BLD_COST[lv+1]){S.gold[f]-=BLD_COST[lv+1];st.bld[k]=lv+1;}}}
   // attack: strongest border region vs weakest enemy neighbor if advantage
   const borders=regs.filter(r=>S.regions[r.id].troops>500&&S.regions[r.id].garrison.length);
   borders.sort((a,b)=>S.regions[b.id].troops-S.regions[a.id].troops);
@@ -1694,8 +1765,8 @@ function aiFaction(f){
 $('endTurnBtn').onclick=()=>{
   if(B)return;
   // player income
-  const mine=REGIONS.filter(r=>S.regions[r.id].owner===S.player);
-  S.gold[S.player]+=Math.round(mine.reduce((a,r)=>a+90+Math.floor(S.regions[r.id].troops/10),0)*(S.incomeBuff?S.incomeBuff.mult:1));
+  const eco=processEconomy(S.player);
+  log('💰 Thu nhập +'+eco.g+' vàng · 🍚 lương +'+eco.harv+' −'+eco.eat+' (kho còn '+(S.food[S.player]||0)+').');
   S.turn++;S.acted={};S.sel=null;S.pick=null;S.pickFor=null;closeCityMenu();cancelWar();processTurnFlags();
   log('— Sang lượt '+S.turn+' —');
   for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();return;}}
@@ -1798,7 +1869,7 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
     return '<div class="fcard"><div class="lord"><img src="'+lord.img+'"></div><h2 style="color:'+FACTIONS[f].color+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</h2><p>40 danh tướng · Kinh đô: '+RMAP[CAPITALS[f]].name+'<br>Chủ công tiêu biểu: '+lord.name+'</p><button data-fac="'+f+'">Khởi binh ⚔️</button></div>';}).join('');
   cards.querySelectorAll('[data-fac]').forEach(b=>b.onclick=()=>newGame(b.dataset.fac));
   const old=load();
-  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(old.incomeBuff===undefined)old.incomeBuff=null;$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
+  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
 })();
 </script>
 </body>
