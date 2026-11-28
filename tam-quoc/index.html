@@ -221,12 +221,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 
 <!-- HERO MODAL -->
 <div id="prepModal" class="modal hidden"><div class="mbox" style="max-width:640px">
-  <h3 id="prepTitle">⚔️ Chuẩn bị xuất trận</h3>
-  <div class="info" id="prepInfo"></div>
-  <div id="prepPick"></div>
   <div class="prepVs" id="prepVs"></div>
-  <div class="info">Hệ khắc: <b>Giáo khắc Kỵ · Kỵ khắc Kiếm · Kiếm khắc Giáp · Giáp khắc Giáo</b> (khắc +18% sát thương, bị khắc −12%). Chọn đội hình của ba:</div>
-  <div class="forms" id="prepForms"></div>
   <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
     <button id="prepGo" style="font-size:16px;padding:10px 22px">⚔️ Xuất trận</button>
     <button id="prepCancel">✖ Hủy bỏ</button>
@@ -1054,7 +1049,7 @@ let PREP=null;
 function prepRowsHTML(cfg){
   const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
   const card=(n,fac,mine,idx)=>{const h=HMAP[n],t=effTroop(n,fac);const sel=mine&&PREP&&PREP.swapSel===idx;
-    return '<div class="pcard" '+(mine?'data-slot="'+idx+'" style="cursor:pointer'+(sel?';outline:2.5px solid #ffd94a;background:#3a2c10':'')+'"':'')+'><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+(mine?' <small style="color:#c9b98f">⇄</small>':'')+'</div><div class="pt">'+'Quân: '+(t?t.name+' ('+t.clsLabel+', hạng '+t.rank+')':'—')+' · Võ '+h.vo+'<br>✦ Nội tại lính: '+(t&&t.passive?t.passive.name+' — '+t.passive.desc:'—')+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): <span data-talent="'+h.talent+'" style="text-decoration:underline dotted;cursor:pointer">'+h.talent+'</span></div></div></div>';};
+    return '<div class="pcard" '+(mine?'data-slot="'+idx+'" style="cursor:pointer'+(sel?';outline:2.5px solid #ffd94a;background:#3a2c10':'')+'"':'')+'><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'"><span class="tier t'+h.tier+'">'+h.tier+'</span> <span data-hero="'+n+'" style="text-decoration:underline dotted;cursor:pointer">'+n+'</span>'+(mine?' <small style="color:#c9b98f">⇄</small>':'')+'</div><div class="pt">'+'Quân: '+(t?t.name+' ('+t.clsLabel+', hạng '+t.rank+')':'—')+' · Võ '+h.vo+'<br>✦ Nội tại lính: '+(t&&t.passive?t.passive.name+' — '+t.passive.desc:'—')+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): <span data-talent="'+h.talent+'" style="text-decoration:underline dotted;cursor:pointer">'+h.talent+'</span></div></div></div>';};
   let rows='';
   for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
     const m=myGens[i],f=foeGens[i];
@@ -1062,8 +1057,7 @@ function prepRowsHTML(cfg){
     if(m&&f){const cm=counterMult(troopOf(m).cls,troopOf(f).cls);badge=cm>1?'<span class="khac win">▲ Khắc chế</span>':(cm<1?'<span class="khac lose">▼ Bị khắc</span>':'<span class="khac draw">● Hòa hệ</span>');}
     rows+='<div class="prow">'+(m?card(m,cfg.playerSide==='atk'?cfg.atkFac:cfg.defFac,true,i):'<div class="pcard"></div>')+badge+(f?card(f,cfg.playerSide==='atk'?cfg.defFac:cfg.atkFac,false,i):'<div class="pcard"></div>')+'</div>';
   }
-  const hint=myGens.length>=2?'<div class="info" style="margin-bottom:5px">⇄ Bấm vào 2 tướng của ta để <b>đổi cặp đấu</b> cho nhau — vị trí xuất trận cũng đổi theo. Bấm vào tên talent để xem chi tiết talent.</div>':'';
-  return rows?hint+rows:'<div class="info">Không có tướng đối đầu.</div>';
+  return rows||'<div class="info">Không có tướng đối đầu.</div>';
 }
 function renderPrepPick(){
   const box=$('prepPick');if(!box||!PREP)return;
@@ -1089,17 +1083,12 @@ function showPrep(cfg){
   PREP={cfg,form:cfg.playerSide==='atk'?'truongxa':'huyenvu',swapSel:null};
   if(cfg.playerSide==='atk')cfg.atkForm=PREP.form;else cfg.defForm=PREP.form;
   const foeForm=cfg.playerSide==='atk'?cfg.defForm:cfg.atkForm;
-  $('prepTitle').textContent=cfg.playerSide==='atk'?('⚔️ Chuẩn bị đánh '+RMAP[cfg.toId].name):('🛡️ Quân địch đánh '+RMAP[cfg.toId].name+' — chuẩn bị thủ thành!');
   const rpsLine=()=>{const myF=cfg.playerSide==='atk'?cfg.atkForm:cfg.defForm,foF=cfg.playerSide==='atk'?cfg.defForm:cfg.atkForm;const e=formEdge(myF,foF);
     return ' · Khắc đội hình (Khối>Tách>Nêm>Khối): ta <b>'+RPS_NAME[RPS[myF]]+'</b> vs địch <b>'+RPS_NAME[RPS[foF]]+'</b> → '+(e>0?'<b style="color:#8fe38f">ta KHẮC địch (+12% công)</b>':e<0?'<b style="color:#ff9a8a">ta BỊ KHẮC (địch +12% công)</b>':'<b>hòa</b>');};
-  $('prepInfo').innerHTML='Quân ta xuất trận: <b>'+(cfg.playerSide==='atk'?cfg.atkTroops:cfg.defTroops)+'</b> · Quân địch: <b>'+(cfg.playerSide==='atk'?cfg.defTroops:cfg.atkTroops)+'</b> · Đội hình địch: <b>'+FORMS[foeForm].name+'</b><span id="prepRps">'+rpsLine()+'</span>';
   PREP.rpsLine=rpsLine;
   PREP.pickPool=(cfg.playerSide==='atk'?(S.regions[cfg.fromId]?S.regions[cfg.fromId].garrison.slice():cfg.atkGens.slice()):(S.regions[cfg.toId]?S.regions[cfg.toId].garrison.slice():cfg.defGens.slice())).filter(n=>!(S.blocked&&S.blocked[n]));
   $('prepVs').innerHTML=prepRowsHTML(cfg);
   renderPrepPick();wirePrepSwap();
-  const pf=$('prepForms');
-  pf.innerHTML=FORM_KEYS.map(k=>'<button class="fbtn'+(PREP.form===k?' on':'')+'" data-form="'+k+'"><b>'+FORMS[k].name+'</b><small>'+FORMS[k].desc+'</small></button>').join('');
-  pf.querySelectorAll('[data-form]').forEach(b=>b.onclick=()=>{PREP.form=b.dataset.form;if(PREP.cfg.playerSide==='atk')PREP.cfg.atkForm=PREP.form;else PREP.cfg.defForm=PREP.form;pf.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('on',x.dataset.form===PREP.form));const pr=$('prepRps');if(pr&&PREP.rpsLine)pr.innerHTML=PREP.rpsLine();});
   $('prepGo').textContent=cfg.playerSide==='atk'?'⚔️ Xuất trận':'🛡️ Ứng chiến';
   $('prepCancel').style.display=cfg.playerSide==='atk'?'':'none';
   $('prepModal').classList.remove('hidden');
@@ -1418,8 +1407,13 @@ function startDuel(a,d){
   for(const u of B.units){if(u.dead)continue;const dx=u.x-mx,dy=u.y-my,dd=Math.hypot(dx,dy);if(dd<95&&dd>1){u.x=mx+dx/dd*95;u.y=my+dy/dd*95;}}
   playSmp('clang',0.3,0.8);playSmp('thud2',0.35,0.7);
 }
+function crowdHomeStep(rawDt,D){
+  const step=2.6*rawDt,gs=2.2*rawDt;
+  for(const u of B.units){if(u.dead)continue;u.vx=0;u.vy=0;const dx=u.hx-u.x,dy=u.hy-u.y,dd=Math.hypot(dx,dy);if(dd>step){u.x+=dx/dd*step;u.y+=dy/dd*step;}else{u.x=u.hx;u.y=u.hy;}}
+  for(const g of B.genUnits){if(g.dead||g===D.a||g===D.d)continue;const dx=g.hx-g.x,dy=g.hy-g.y,dd=Math.hypot(dx,dy);if(dd>gs){g.x+=dx/dd*gs;g.y+=dy/dd*gs;}else{g.x=g.hx;g.y=g.hy;}}
+}
 function runDuel(rawDt){
-  const D=B.duel;if(!D)return;D.t+=rawDt;
+  const D=B.duel;if(!D)return;D.t+=rawDt;crowdHomeStep(rawDt,D);
   for(const g of [D.a,D.d]){g.atkAnim=Math.max(0,(g.atkAnim||0)-rawDt);g.flash=Math.max(0,(g.flash||0)-rawDt);}
   const hitTimes=[46,100,154,208,262,316];
   if(D.hit<hitTimes.length&&D.t>=hitTimes[D.hit]){
@@ -1451,7 +1445,7 @@ function startDebate(a,d){
   playSmp('pop',0.3,1);
 }
 function runDebate(rawDt){
-  const D=B.debate;if(!D)return;D.t+=rawDt;
+  const D=B.debate;if(!D)return;D.t+=rawDt;crowdHomeStep(rawDt,D);
   for(const g of [D.a,D.d]){g.atkAnim=Math.max(0,(g.atkAnim||0)-rawDt);g.flash=Math.max(0,(g.flash||0)-rawDt);}
   const hitTimes=[46,100,154,208,262,316];
   if(D.hit<hitTimes.length&&D.t>=hitTimes[D.hit]){
@@ -1928,16 +1922,9 @@ function battleLoop(ts){
       ctx.save();ctx.globalCompositeOperation='lighter';
       const fade=p<0.14?p/0.14:(p>0.78?(1-p)/0.22:1);
       if(imgU&&(imgU.tagName==='CANVAS'||(imgU.complete&&imgU.naturalWidth))){
-        const pulse=1+0.03*Math.sin(p*Math.PI*2);
-        const sz=(215+65*an.tier)*(an.small||1)*(0.55+0.55*ease)*pulse;
+        const sz=(215+65*an.tier)*(an.small||1)*(0.55+0.55*ease);
         ctx.translate(an.x,an.y-10*ease);
-        const gs=sz*1.5;
-        if(glowU){ctx.globalAlpha=fade*0.55;ctx.drawImage(glowU,-gs/2,-gs/2,gs,gs);}
-        else{ctx.globalAlpha=fade*0.28;ctx.drawImage(imgU,-gs/2,-gs/2,gs,gs);}
-        ctx.globalAlpha=fade*0.95;ctx.rotate(an.dir*ease*2.1);ctx.drawImage(imgU,-sz/2,-sz/2,sz,sz);
-        if(img2U&&(img2U.tagName==='CANVAS'||(img2U.complete&&img2U.naturalWidth))){ctx.globalAlpha=fade*0.55;ctx.rotate(an.dir*ease*1.4);const s3=sz*0.82;ctx.drawImage(img2U,-s3/2,-s3/2,s3,s3);ctx.rotate(-an.dir*ease*4.7);}
-        else ctx.rotate(-an.dir*ease*3.3);
-        ctx.globalAlpha=fade*0.45;const s2=sz*0.64;ctx.drawImage(imgU,-s2/2,-s2/2,s2,s2);
+        ctx.globalAlpha=fade*0.97;ctx.rotate(an.dir*ease*0.9);ctx.drawImage(imgU,-sz/2,-sz/2,sz,sz);
         ctx.translate(-an.x,-an.y+10*ease);
         if(Math.random()<0.32)B.effects.push({x:an.x+(Math.random()*150-75),y:an.y+(Math.random()*120-60),life:16,type:Math.random()<0.5?'spark':'boom'});
       }
@@ -2193,6 +2180,7 @@ function showTalentInfo(tn){const t=TALENT_DB[tn];if(!t)return;$('talentTitle').
   $('talentBody').innerHTML='✦ <b>Mảng:</b> '+TALENT_DOM[t.dom]+'<br>📖 <b>Tác dụng:</b> '+t.desc+'<br>🎯 <b>Mục tiêu:</b> '+TALENT_TARGET_LABEL[t.target]+'<br>🎲 <b>Tỷ lệ thành công:</b> '+Math.round((t.rate||0.8)*100)+'%<br>⏳ <b>Hồi chiêu:</b> '+t.cd+' tháng<br>📅 <b>Dùng vào:</b> tháng '+MONTH_TYPES[t.dom].icon+' '+MONTH_TYPES[t.dom].name+' · mỗi tháng tối đa 3 lần talent';
   $('talentModal').classList.remove('hidden');}
 if(document.addEventListener)document.addEventListener('click',e=>{const el=e.target&&e.target.closest?e.target.closest('[data-talent]'):null;if(el){e.stopPropagation();showTalentInfo(el.dataset.talent);}},true);
+if(document.addEventListener)document.addEventListener('click',e=>{const el=e.target&&e.target.closest?e.target.closest('[data-hero]'):null;if(el){e.stopPropagation();showHeroDetail(el.dataset.hero);}},true);
 function talentTargetUI(name,boxEl,doneFn){
   const h=HMAP[name];const t=TALENT_DB[h.talent];const home=heroHome(name);const box=boxEl||$('talentTargets');if(!box||!t||!home)return;
   const finish=()=>{if(doneFn)doneFn();else{showHeroDetail(name);refreshNodes();renderPanel();}};
