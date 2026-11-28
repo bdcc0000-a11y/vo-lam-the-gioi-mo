@@ -213,6 +213,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
     <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><button id="ordBtn1">🔥 Tổng công</button><button id="ordBtn2">🧱 Cố thủ</button><button id="ordBtn3">🎯 Săn tướng</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
     <div id="genChips" style="display:flex;gap:6px;align-items:center"></div>
     <button id="skillBtn">⚡ Tung chiêu</button>
+    <div id="skillTip" class="hidden" style="position:absolute;right:158px;bottom:12px;max-width:300px;background:#141210ee;border:1.5px solid #c9a959;border-radius:10px;padding:9px 11px;color:#f2e3b6;font-size:13px;z-index:30;pointer-events:none"></div>
     <button id="spdBtn">⏩ Tốc độ x1</button>
     <button id="quitBtn">🏳️ Rút quân</button>
     <button id="sndBtn" style="background:#3a2d1a;color:#f0e6d2;border:1px solid #6a5636;padding:11px 12px;border-radius:10px">🔊</button>
@@ -794,14 +795,14 @@ function handleCityPrisoners(cityId,newOwner){
   if(!S.prisoners)return;
   Object.keys(S.prisoners).forEach(n=>{const pr=S.prisoners[n];if(pr.city!==cityId)return;
     if(pr.from===newOwner){delete S.prisoners[n];if(!S.regions[cityId].garrison.includes(n))S.regions[cityId].garrison.push(n);log('🕊️ '+n+' được giải cứu ở '+RMAP[cityId].name+', trở về hàng ngũ '+FACTIONS[newOwner].name+'!');if(newOwner===S.player)toast('🕊️ '+n+' đã được giải cứu!');}
-    else if(pr.holder!==newOwner){pr.holder=newOwner;log('⛓️ Tù binh '+n+' ở '+RMAP[cityId].name+' rơi vào tay '+FACTIONS[newOwner].name+'.');}});
+    else if(pr.holder!==newOwner){if(pr.holder===S.player)toast('⚠️ '+RMAP[cityId].name+' thất thủ — tù binh '+n+' bị '+FACTIONS[newOwner].name+' đoạt mất!');pr.holder=newOwner;log('⛓️ Tù binh '+n+' ở '+RMAP[cityId].name+' rơi vào tay '+FACTIONS[newOwner].name+'.');}});
 }
 function processPrisoners(){
   if(!S.prisoners)return;
   Object.keys(S.prisoners).forEach(n=>{const pr=S.prisoners[n];if(!pr)return;
     pr.turns=(pr.turns||0)+1;pr.tried=false;
     if(!REGIONS.some(r=>S.regions[r.id].owner===pr.holder)){delete S.prisoners[n];if(placeGeneralHome(n,pr.from))log('🕊️ '+FACTIONS[pr.holder].name+' sụp đổ — '+n+' được tự do, trở về '+FACTIONS[pr.from].name+'.');return;}
-    if(Math.random()<0.08){delete S.prisoners[n];if(placeGeneralHome(n,pr.from)){log('🏃 '+n+' đã vượt ngục trốn về '+FACTIONS[pr.from].name+'!');if(pr.holder===S.player)toast('🏃 Tù binh '+n+' vượt ngục trốn thoát!');}return;}
+    if(pr.turns>=3&&Math.random()<0.04){delete S.prisoners[n];if(placeGeneralHome(n,pr.from)){log('🏃 '+n+' đã vượt ngục trốn về '+FACTIONS[pr.from].name+'!');if(pr.holder===S.player)toast('🏃 Tù binh '+n+' vượt ngục trốn thoát!');}return;}
     if(pr.holder!==S.player&&Math.random()*100<prisonerRate(n,pr)){const hf=pr.holder;delete S.prisoners[n];placeGeneralHome(n,hf);log('😱 '+n+' đã bị '+FACTIONS[hf].name+' chiêu hàng và theo địch!');if(pr.from===S.player)toast('😱 '+n+' đã đầu hàng '+FACTIONS[hf].name+'!');}
   });
 }
@@ -809,7 +810,7 @@ function openPrisoners(){
   if(!S.prisoners)S.prisoners={};
   const mine=Object.keys(S.prisoners).filter(n=>S.prisoners[n].holder===S.player);
   const ours=Object.keys(S.prisoners).filter(n=>S.prisoners[n].from===S.player&&S.prisoners[n].holder!==S.player);
-  let h='<h4>⛓️ Tù binh ba đang giam ('+mine.length+')</h4>';
+  let h='<h4>⛓️ Tù binh ba đang giam ('+mine.length+')</h4><div class="info">🎯 Chiêu hàng chỉ làm được ở tháng 🤝 Ngoại giao. Tù binh bị giam đủ 3 tháng mới có thể vượt ngục (4%/tháng) — và nếu thành đang giam bị địch chiếm, tù binh sẽ bị địch đoạt mất.</div>';
   if(!mine.length)h+='<div class="info">Chưa giam ai. Thắng trận và bắt sống tướng địch để có tù binh.</div>';
   for(const n of mine){const pr=S.prisoners[n];const hh=HMAP[n];const rate=prisonerRate(n,pr);
     h+='<div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:6px"><span><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+FACTIONS[pr.from].name+' · giam ở '+RMAP[pr.city].name+' · đã giam '+pr.turns+' tháng · chiêu hàng: <b>'+rate+'%</b></small></span>'
@@ -1079,13 +1080,13 @@ function renderGenFormBox(){const box=$('genFormBox');if(!box)return;if(!PREP){b
   const gen=PREP.formSel;
   if(!gen){box.innerHTML='<div class="info">🏳️ Ấn vào thẻ một tướng của ta để chọn <b>đội hình riêng</b> cho tướng đó — mỗi tướng một đội hình khác nhau cũng được.</div>';return;}
   const cur=PREP.genForms[gen];
-  box.innerHTML='<div class="info" style="margin-bottom:5px">🏳️ Đội hình của <b>'+gen+'</b>:'+(PREP.swapArm===gen?' <b style="color:#ffd94a">đang chờ — ấn thẻ tướng khác của ta để đổi cặp đấu</b>':'')+'</div><div class="forms">'+FORM_KEYS.map(k=>'<button class="fbtn'+(cur===k?' on':'')+'" data-gf="'+k+'"><b>'+FORMS[k].name+'</b><small>'+FORMS[k].desc+'</small></button>').join('')+'</div><div style="margin-top:6px;display:flex;gap:8px"><button class="tbtn" id="gfSwap">⇄ Đổi cặp đấu</button><button class="tbtn" id="gfClose">✖ Đóng</button></div>';
+  box.innerHTML='<div class="info" style="margin-bottom:5px">🏳️ Đội hình của <b>'+gen+'</b> — <small>ấn thẻ một tướng khác của ta là <b>đổi cặp đấu</b> với tướng đó luôn</small></div><div class="forms">'+FORM_KEYS.map(k=>'<button class="fbtn'+(cur===k?' on':'')+'" data-gf="'+k+'"><b>'+FORMS[k].name+'</b><small>'+FORMS[k].desc+'</small></button>').join('')+'</div><div style="margin-top:6px"><button class="tbtn" id="gfClose">✖ Đóng</button></div>';
   box.querySelectorAll('[data-gf]').forEach(b=>b.onclick=()=>{PREP.genForms[gen]=b.dataset.gf;$('prepVs').innerHTML=prepRowsHTML(PREP.cfg);wirePrepSwap();renderGenFormBox();});
-  const sw=$('gfSwap');if(sw)sw.onclick=()=>{PREP.swapArm=PREP.swapArm===gen?null:gen;renderGenFormBox();};
-  const cl=$('gfClose');if(cl)cl.onclick=()=>{PREP.formSel=null;PREP.swapArm=null;renderGenFormBox();};
+  const cl=$('gfClose');if(cl)cl.onclick=()=>{PREP.formSel=null;renderGenFormBox();};
 }
 function wirePrepSwap(){const vs=$('prepVs');if(!vs||!PREP)return;vs.querySelectorAll('[data-slot]').forEach(c=>{c.onclick=()=>{const i=+c.dataset.slot;const cfg=PREP.cfg;const arr=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens;const gen=arr[i];
-  if(PREP.swapArm&&PREP.swapArm!==gen){const j=arr.indexOf(PREP.swapArm);const n1=arr[j],n2=arr[i];arr[j]=n2;arr[i]=n1;PREP.swapArm=null;PREP.formSel=gen;toast('⇄ Đã đổi cặp đấu: '+n1+' ↔ '+n2);}
+  if(PREP.formSel&&PREP.formSel!==gen){const j=arr.indexOf(PREP.formSel);const n1=arr[j],n2=arr[i];arr[j]=n2;arr[i]=n1;PREP.formSel=gen;toast('⇄ Đã đổi cặp đấu: '+n1+' ↔ '+n2);}
+  else if(PREP.formSel===gen)PREP.formSel=null;
   else PREP.formSel=gen;
   vs.innerHTML=prepRowsHTML(cfg);wirePrepSwap();renderGenFormBox();};});}
 function showPrep(cfg){
@@ -2015,7 +2016,15 @@ function battleLoop(ts){
   }
   B.raf=requestAnimationFrame(battleLoop);
 }
-$('skillBtn').onclick=()=>{if(!B||B.over)return;useSkill(B.playerSide,B.selGen);};
+let _skHoldT=null,_skHoldShown=false;
+function showSkillTip(){if(!B||!B.selGen)return;const g=B.selGen;const h=HMAP[g.name];if(!h)return;const sk=SKILL_DB[h.skill]||{mult:1};const tip=$('skillTip');if(!tip)return;
+  tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>'+(h.skillDesc||'Chiêu thức riêng của '+g.name)+'<br>💥 Hệ số sát thương: <b>×'+sk.mult+'</b> · SP cần: 34 (bậc 1) / 67 (bậc 2) / 100 (bậc 3) — bậc càng cao càng mạnh · Hồi chiêu 15 giây sau khi tung</small>';
+  tip.classList.remove('hidden');_skHoldShown=true;}
+function hideSkillTip(){const tip=$('skillTip');if(tip)tip.classList.add('hidden');}
+const _sb=$('skillBtn');
+_sb.addEventListener('pointerdown',()=>{_skHoldShown=false;if(_skHoldT)clearTimeout(_skHoldT);_skHoldT=setTimeout(showSkillTip,450);});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>_sb.addEventListener(ev,()=>{if(_skHoldT){clearTimeout(_skHoldT);_skHoldT=null;}}));
+$('skillBtn').onclick=()=>{if(_skHoldShown){_skHoldShown=false;hideSkillTip();return;}hideSkillTip();if(!B||B.over)return;useSkill(B.playerSide,B.selGen);};
 $('spdBtn').onclick=()=>{if(!B)return;B.speed=B.speed>=3?1:B.speed+1;$('spdBtn').textContent='⏩ Tốc độ x'+B.speed;};
 $('quitBtn').onclick=()=>{if(!B||B.over)return;B.over=true;B.winner=B.playerSide==='atk'?'def':'atk';B.retreat=true;B.retreatSide=B.playerSide;setTimeout(finishBattle,300);};
 $('sndBtn').onclick=()=>{if(!B)return;const order=['nomusic','all','mute'];const nx=order[(order.indexOf(sndState())+1)%3];
