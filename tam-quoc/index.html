@@ -185,6 +185,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div style="display:flex;gap:10px;justify-content:center;margin:10px 0 2px;flex-wrap:wrap">
     <button id="scenClassic" class="tbtn gold" style="font-size:14px;padding:9px 16px">🏯 4 màu bem nhau · 183</button>
     <button id="scenKV" class="tbtn" style="font-size:14px;padding:9px 16px">🟡 Móa mấy thằng màu vàng · 184</button>
+    <button id="scenDT" class="tbtn" style="font-size:14px;padding:9px 16px">⚔️ Loạn Đổng Trác · 190</button>
   </div>
   <div class="sub" id="scenDesc" style="margin:4px 0 8px"></div>
   <div class="factions" id="factionCards"></div>
@@ -308,9 +309,41 @@ const HMAP={}; HEROES.forEach(h=>HMAP[h.name]=h);
 /* ---- scenario: Yellow Turban rebellion 184 (5 factions) ---- */
 const KV_OWNERS={lacduong:'vang',nghiep:'vang',binhnguyen:'vang',bachai:'vang',bocduong:'vang',nambi:'vang',quandu:'vang',uyenthanh:'vang',huxuong:'vang',tuchau:'vang',tanya:'vang',nhunam:'vang',thoxuan:'vang',giangha:'vang',lugiang:'vang',kinhchau:'vang',truongan:'quan',tayluong:'quan',tanyang:'quan',bacbinh:'quan',tudong:'thuc',thanhdo:'thuc',giangchau:'thuc',vannam:'thuc',saitan:'ngo',kiennghiep:'ngo',ngoquan:'ngo',hoike:'ngo',hanzhong:'nguy',giangling:'nguy',truongsa:'nguy',giaochau:'nguy'};
 const KV_VANG_NAMES=(()=>{const w={SR:4,S:3,R:2,N:1};const q=HEROES.filter(h=>h.faction==='quan');q.sort((a,b)=>((w[a.tier]-w[b.tier])||((Math.max(a.vo,a.tri)+(a.vo+a.tri+a.chi)/6)-(Math.max(b.vo,b.tri)+(b.vo+b.tri+b.chi)/6))));return q.slice(0,30).map(h=>h.name);})();
+const DT_FACTIONS={
+ dong:{name:'Đổng Trác',color:'#b06fc0',icon:'🟣'},vienthieu:{name:'Viên Thiệu',color:'#5aa2e0',icon:'🔵'},vienthuat:{name:'Viên Thuật',color:'#e89b4e',icon:'🟠'},
+ hanphuc:{name:'Hàn Phức',color:'#c9ced6',icon:'⚪'},congtontoan:{name:'Công Tôn Toản',color:'#f2d54e',icon:'🐴'},truongduong:{name:'Trương Dương',color:'#7fd1c0',icon:'🔷'},
+ madang:{name:'Mã Đằng',color:'#c98a5a',icon:'🟤'},luudai:{name:'Lưu Đại',color:'#8fb8dd',icon:'🔹'},luubieu:{name:'Lưu Biểu',color:'#6fce62',icon:'🟢'},
+ khongtru:{name:'Khổng Trụ',color:'#d8c56a',icon:'📜'},khongdung:{name:'Khổng Dung',color:'#a3c585',icon:'📚'},daokhiem:{name:'Đào Khiêm',color:'#c39bd3',icon:'🌾'},
+ tonkien:{name:'Tôn Kiên',color:'#ef6157',icon:'🔴'},luuyen:{name:'Lưu Yên',color:'#7ac74f',icon:'🐼'},taothao:{name:'Tào Tháo',color:'#6fa8dc',icon:'🦉'},
+ truonglo:{name:'Trương Lỗ',color:'#e6e6e6',icon:'☯️'},luubi:{name:'Lưu Bị',color:'#58d68d',icon:'💚'}};
+const DT_OWNERS={lacduong:'dong',truongan:'dong',tayluong:'madang',hanzhong:'truonglo',tanyang:'truongduong',nghiep:'hanphuc',nambi:'vienthieu',quandu:'vienthieu',bacbinh:'congtontoan',binhnguyen:'luubi',bachai:'khongdung',bocduong:'luudai',huxuong:'taothao',uyenthanh:'vienthuat',thoxuan:'khongtru',lugiang:'vienthuat',nhunam:'khongtru',tuchau:'daokhiem',tanya:'daokhiem',kinhchau:'luubieu',giangha:'luubieu',giangling:'luubieu',giaochau:'luubieu',truongsa:'tonkien',saitan:'tonkien',kiennghiep:'tonkien',ngoquan:'tonkien',hoike:'tonkien',thanhdo:'luuyen',tudong:'luuyen',giangchau:'luuyen',vannam:'luuyen'};
+const DT_CAPITALS={dong:'lacduong',vienthieu:'nambi',vienthuat:'uyenthanh',hanphuc:'nghiep',congtontoan:'bacbinh',truongduong:'tanyang',madang:'tayluong',luudai:'bocduong',luubieu:'kinhchau',khongtru:'nhunam',khongdung:'bachai',daokhiem:'tuchau',tonkien:'truongsa',luuyen:'thanhdo',taothao:'huxuong',truonglo:'hanzhong',luubi:'binhnguyen'};
+const DT_GARRISONS={
+ lacduong:['Đổng Trác','Lữ Bố','Điêu Thuyền','Giả Hủ','Hoa Hùng'],truongan:['Trương Liêu','Cao Thuận','Trương Tú','Hầu Thành'],
+ tayluong:['Mã Đằng','Mã Siêu','Bàng Đức','Hàn Toại'],hanzhong:['Trương Lỗ','Vương Hàm'],tanyang:['Hác Manh','Ngưu Kim'],
+ nghiep:['Trương Cáp'],nambi:['Viên Thiệu','Nhan Lương','Văn Xú','Điền Phong','Thẩm Phối'],quandu:['Quách Đồ','Thư Thụ'],
+ bacbinh:['Công Tôn Toản','Tang Bá'],binhnguyen:['Lưu Bị','Quan Vũ','Trương Phi','Giản Ung'],bachai:['Khổng Dung','Thái Sử Từ'],
+ bocduong:['Hồ Chất','Tần Lãng'],huxuong:['Tào Tháo','Hạ Hầu Đôn','Hạ Hầu Uyên','Tào Nhân','Tào Hồng'],
+ uyenthanh:['Viên Thuật','Kỷ Linh'],thoxuan:['Đổng Chiêu'],lugiang:['Tôn Lễ'],nhunam:['Tân Tì'],
+ tuchau:['Đào Khiêm','Mi Trúc'],tanya:['Chu Phường'],kinhchau:['Lưu Biểu','Văn Sính'],giangha:['Hoắc Tuấn'],giangling:['Đặng Chi'],giaochau:['Sĩ Nhiếp'],
+ truongsa:['Tôn Kiên','Tôn Sách','Trình Phổ','Hoàng Cái','Hàn Đương'],saitan:['Chu Trị','Tổ Mậu'],kiennghiep:['Trương Chiêu','Lữ Phạm'],ngoquan:['Cố Ung','Ngu Phiên'],hoike:['Bộ Chất','Hạ Tề'],
+ thanhdo:['Lưu Chương','Ngô Ý'],tudong:['Lý Khôi'],giangchau:['Nghiêm Nhan'],vannam:['Mạnh Hoạch','Chúc Dung']};
+const DT_FREE_SEED={huxuong:['Tuân Úc','Quách Gia','Hứa Chử','Trần Quần','Chung Do','Mãn Sủng','Mao Giới'],nghiep:['Triệu Vân'],uyenthanh:['Hoàng Trung'],lacduong:['Từ Hoảng'],bachai:['Tôn Càn'],lugiang:['Chu Thái']};
 function applyScenario(scen){
+  // reset to the classic base first
+  if(FACTIONS.vang)delete FACTIONS.vang;if(CAPITALS.vang)delete CAPITALS.vang;
+  Object.keys(DT_FACTIONS).forEach(k=>{delete FACTIONS[k];delete CAPITALS[k];});
+  if(!FACTIONS.nguy){FACTIONS.nguy={name:'Ngụy',color:'#4a7ebb',icon:'🐉'};FACTIONS.thuc={name:'Thục',color:'#4da653',icon:'🐲'};FACTIONS.ngo={name:'Ngô',color:'#c0453e',icon:'🔥'};FACTIONS.quan={name:'Quần Hùng',color:'#8a7a5c',icon:'🐺'};}
+  CAPITALS.nguy='lacduong';CAPITALS.thuc='thanhdo';CAPITALS.ngo='kiennghiep';CAPITALS.quan='truongan';
+  HEROES.forEach(h=>{h.faction=h._bf||h.faction;});
   if(scen==='khanvang'){FACTIONS.vang={name:'Khăn Vàng',color:'#e3b505',icon:'🟡'};CAPITALS.vang='lacduong';CAPITALS.nguy='giangling';HEROES.forEach(h=>{if(KV_VANG_NAMES.indexOf(h.name)>=0)h.faction='vang';});}
-  else{if(FACTIONS.vang)delete FACTIONS.vang;if(CAPITALS.vang)delete CAPITALS.vang;CAPITALS.nguy='lacduong';HEROES.forEach(h=>{if(KV_VANG_NAMES.indexOf(h.name)>=0)h.faction='quan';});}
+  else if(scen==='dongtrac'){
+    delete FACTIONS.nguy;delete FACTIONS.thuc;delete FACTIONS.ngo;delete FACTIONS.quan;
+    delete CAPITALS.nguy;delete CAPITALS.thuc;delete CAPITALS.ngo;delete CAPITALS.quan;
+    Object.keys(DT_FACTIONS).forEach(k=>{FACTIONS[k]=DT_FACTIONS[k];CAPITALS[k]=DT_CAPITALS[k];});
+    HEROES.forEach(h=>{h.faction='free';});
+    Object.keys(DT_GARRISONS).forEach(cid=>{DT_GARRISONS[cid].forEach(n=>{const h=HMAP[n];if(h)h.faction=DT_OWNERS[cid];});});
+  }
 }
 /* ---- tiers SR/S/R/N, signature skills, passives ---- */
 const FXSRC={thunder:'assets/fx/fx-thunder.png',fire:'assets/fx/fx-fire.png',sun:'assets/fx/fx-sun.png',slash:'assets/fx/fx-slash.png',
@@ -695,6 +728,7 @@ function decorateHeroes(){
   });
   TROOPS.forEach(t=>t.rank={5:'SR',4:'S',3:'R',2:'N',1:'N'}[t.tier]);
 }
+HEROES.forEach(h=>{h._bf=h.faction;});
 decorateHeroes();
 const REGIONS=[
  {id:'tayluong',name:'Tây Lương',x:7,y:15,owner:'quan',nb:['truongan','hanzhong']},
@@ -812,17 +846,19 @@ function load(){try{const s=localStorage.getItem('huyetma_tq_v1');return s?JSON.
 function facHeroes(f){return HEROES.filter(h=>h.faction===f).sort((a,b)=>(b.vo+b.tri+b.chi)-(a.vo+a.tri+a.chi));}
 function newGame(fac,scen){
   scen=scen||'classic';applyScenario(scen);
-  S={player:fac,scenario:scen,startYear:scen==='khanvang'?184:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},freeBuild:{},defPenalty:{},tribute:null,yearPlan:genYearPlan(null),planYear:scen==='khanvang'?184:183,talentCount:{}};
+  S={player:fac,scenario:scen,startYear:scen==='khanvang'?184:scen==='dongtrac'?190:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},freeBuild:{},defPenalty:{},tribute:null,yearPlan:genYearPlan(null),planYear:scen==='khanvang'?184:scen==='dongtrac'?190:183,talentCount:{}};
   Object.keys(FACTIONS).forEach(f=>{S.gold[f]=900;S.food[f]=600;});
-  REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:(scen==='khanvang'&&KV_OWNERS[r.id])?KV_OWNERS[r.id]:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
+  REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:scen==='khanvang'&&KV_OWNERS[r.id]?KV_OWNERS[r.id]:scen==='dongtrac'&&DT_OWNERS[r.id]?DT_OWNERS[r.id]:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
   // distribute heroes: capital 4, others 3, rest stay in faction pool (shown in gallery)
   Object.keys(FACTIONS).forEach(f=>{
     const hs=facHeroes(f).slice();const regs=REGIONS.filter(r=>S.regions[r.id].owner===f);
     regs.sort((a,b)=>(CAPITALS[f]===b.id)-(CAPITALS[f]===a.id));
-    if(scen==='khanvang'&&f==='vang'){let pool=hs.slice();regs.forEach((r,i)=>{let n;if(i===0)n=3;else{const citiesLeft=regs.length-i;n=(pool.length-3>=(citiesLeft-1)+2)?2:1;}n=Math.min(n,pool.length);S.regions[r.id].garrison=pool.splice(0,n).map(h=>h.name);});}
+    if(scen==='dongtrac'){regs.forEach(r=>{S.regions[r.id].garrison=(DT_GARRISONS[r.id]||[]).slice();});}
+    else if(scen==='khanvang'&&f==='vang'){let pool=hs.slice();regs.forEach((r,i)=>{let n;if(i===0)n=3;else{const citiesLeft=regs.length-i;n=(pool.length-3>=(citiesLeft-1)+2)?2:1;}n=Math.min(n,pool.length);S.regions[r.id].garrison=pool.splice(0,n).map(h=>h.name);});}
     else regs.forEach((r,i)=>{const n=(scen==='khanvang'&&f==='quan')?(CAPITALS[f]===r.id?3:2):(CAPITALS[f]===r.id?4:3);S.regions[r.id].garrison=hs.splice(0,n).map(h=>h.name);});
   });
-  S.log=[scen==='khanvang'?('🟡 Năm 184 — giặc Khăn Vàng nổi dậy chiếm 16 thành khắp trung nguyên, chư hầu khắp nơi khởi binh dẹp loạn. '+FACTIONS[fac].name+' nhập cuộc!'):('Thiên hạ đại loạn — '+FACTIONS[fac].name+' khởi binh tranh hùng!')];
+  if(scen==='dongtrac'){const placed=new Set();REGIONS.forEach(r=>S.regions[r.id].garrison.forEach(n=>placed.add(n)));S.freePool=HEROES.filter(h=>!placed.has(h.name)).map(h=>h.name);S.freeVisits={};Object.keys(DT_FREE_SEED).forEach(cid=>{S.freeVisits[cid]=DT_FREE_SEED[cid].filter(n=>S.freePool.indexOf(n)>=0);});}
+  S.log=[scen==='dongtrac'?('⚔️ Năm 190 — Đổng Trác phế lập ở Lạc Dương, chư hầu Quan Đông kết liên minh thảo phạt. 17 thế lực chia nhau 32 thành, tướng chưa xuất hiện đang ở dạng tự do chờ chiêu mộ. '+FACTIONS[fac].name+' nhập cuộc!'):scen==='khanvang'?('🟡 Năm 184 — giặc Khăn Vàng nổi dậy chiếm 16 thành khắp trung nguyên, chư hầu khắp nơi khởi binh dẹp loạn. '+FACTIONS[fac].name+' nhập cuộc!'):('Thiên hạ đại loạn — '+FACTIONS[fac].name+' khởi binh tranh hùng!')];
   save();showGame();
 }
 /* ================= CALENDAR: months of the year, one kind of work per month ================= */
@@ -2449,19 +2485,20 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
   let PENDING_SCEN='classic';
   function renderStartCards(){
     applyScenario(PENDING_SCEN);
-    $('scenClassic').className='tbtn'+(PENDING_SCEN==='classic'?' gold':'');$('scenKV').className='tbtn'+(PENDING_SCEN==='khanvang'?' gold':'');
-    $('scenDesc').innerHTML=PENDING_SCEN==='khanvang'?'🟡 <b>Móa mấy thằng màu vàng (184):</b> giặc Khăn Vàng chiếm sẵn <b>16 thành</b> khắp trung nguyên, các thế lực khác mỗi phe chỉ còn <b>4 thành</b> gốc — đúng thế cục năm 184, chư hầu còn yếu, giặc ở khắp nơi. Chọn một phe — kể cả phe Khăn Vàng — và thống nhất thiên hạ.':'🏯 <b>4 màu bem nhau (183):</b> 4 thế lực Ngụy · Thục · Ngô · Quần Hùng, mỗi phe 8 thành, ai chiếm đủ 32 thành là thắng.';
+    $('scenClassic').className='tbtn'+(PENDING_SCEN==='classic'?' gold':'');$('scenKV').className='tbtn'+(PENDING_SCEN==='khanvang'?' gold':'');$('scenDT').className='tbtn'+(PENDING_SCEN==='dongtrac'?' gold':'');
+    $('scenDesc').innerHTML=PENDING_SCEN==='dongtrac'?'⚔️ <b>Loạn Đổng Trác (190):</b> theo đúng thế cục RTK11 — <b>17 thế lực</b> chư hầu chia nhau 32 thành: Đổng Trác giữ Lạc Dương · Trường An, Viên Thiệu ở Nam Bì, Tào Tháo ở Trần Lưu (Hứa Xương), Lưu Bị 4 tướng ở Bình Nguyên, Tôn Kiên ở Trường Sa... Tướng chưa xuất hiện (Triệu Vân, Tuân Úc, Quách Gia, Hoàng Trung...) đang là <b>tướng tự do</b> chờ chiêu mộ tại đúng thành lịch sử của họ. Chọn 1 trong 17 thế lực và thống nhất thiên hạ.':PENDING_SCEN==='khanvang'?'🟡 <b>Móa mấy thằng màu vàng (184):</b> giặc Khăn Vàng chiếm sẵn <b>16 thành</b> khắp trung nguyên, các thế lực khác mỗi phe chỉ còn <b>4 thành</b> gốc — đúng thế cục năm 184, chư hầu còn yếu, giặc ở khắp nơi. Chọn một phe — kể cả phe Khăn Vàng — và thống nhất thiên hạ.':'🏯 <b>4 màu bem nhau (183):</b> 4 thế lực Ngụy · Thục · Ngô · Quần Hùng, mỗi phe 8 thành, ai chiếm đủ 32 thành là thắng.';
     const cards=$('factionCards');
     cards.innerHTML=Object.keys(FACTIONS).map(f=>{const hs=facHeroes(f);const lord=hs.find(h=>['Tào Tháo','Lưu Bị','Tôn Quyền','Đổng Trác'].includes(h.name))||hs.slice().sort((a,b)=>(Math.max(b.vo,b.tri)-Math.max(a.vo,a.tri)))[0];
-      const nCities=PENDING_SCEN==='khanvang'?REGIONS.filter(r=>KV_OWNERS[r.id]===f).length:REGIONS.filter(r=>r.owner===f).length;
+      const nCities=PENDING_SCEN==='khanvang'?REGIONS.filter(r=>KV_OWNERS[r.id]===f).length:PENDING_SCEN==='dongtrac'?REGIONS.filter(r=>DT_OWNERS[r.id]===f).length:REGIONS.filter(r=>r.owner===f).length;
       return '<div class="fcard"><div class="lord"><img src="'+lord.img+'"></div><h2 style="color:'+FACTIONS[f].color+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</h2><p>'+hs.length+' danh tướng · '+nCities+' thành · Kinh đô: '+RMAP[CAPITALS[f]].name+'<br>Chủ công tiêu biểu: '+lord.name+'</p><button data-fac="'+f+'">Khởi binh ⚔️</button></div>';}).join('');
     cards.querySelectorAll('[data-fac]').forEach(b=>b.onclick=()=>newGame(b.dataset.fac,PENDING_SCEN));
   }
   $('scenClassic').onclick=()=>{PENDING_SCEN='classic';renderStartCards();};
   $('scenKV').onclick=()=>{PENDING_SCEN='khanvang';renderStartCards();};
+  $('scenDT').onclick=()=>{PENDING_SCEN='dongtrac';renderStartCards();};
   renderStartCards();
   const old=load();
-  if(old&&old.scenario==='khanvang')applyScenario('khanvang');
+  if(old&&old.scenario&&old.scenario!=='classic')applyScenario(old.scenario);
   if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(!old.techDiscountF)old.techDiscountF=old.techDiscount?{[old.player]:old.techDiscount}:{};if(old.incomeBuff&&!old.incomeBuff.fac)old.incomeBuff.fac=old.player;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};if(!old.prisoners)old.prisoners={};if(!old.freeBuild)old.freeBuild={};if(!old.defPenalty)old.defPenalty={};if(old.tribute===undefined)old.tribute=null;if(!old.talentCount)old.talentCount={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
 })();
 </script>
