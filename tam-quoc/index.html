@@ -1259,7 +1259,7 @@ for(const n in SR_SKILL){const k=SR_SKILL[n];if(SKILL_FX_STYLE[k])SKILL_FX_STYLE
 function maskRadial(src,w,h){try{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(src,0,0,w,h);g.globalCompositeOperation='destination-in';const gr=g.createRadialGradient(w/2,h/2,Math.min(w,h)*0.30,w/2,h/2,Math.min(w,h)*0.52);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(0.75,'rgba(0,0,0,0.96)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,w,h);return c;}catch(e){return src;}}
 function loadFx(src){if(!B||!B.fx)return;if(!B.fxGlow)B.fxGlow={};if(B.fx[src])return;const im=new Image();B.fx[src]=im;im.onload=()=>{try{const mc=maskRadial(im,256,256);B.fx[src]=mc;const c=document.createElement('canvas');c.width=c.height=256;const g2=c.getContext('2d');g2.filter='blur(16px)';g2.drawImage(mc,-24,-24,304,304);g2.filter='none';B.fxGlow[src]=maskRadial(c,256,256);}catch(e){}};im.src=src;}
 const FX_COMPANION=[['fire','vfire'],['phoenix','vfire'],['flame','vfire'],['meteor','vfire'],['sun','vholy'],['ice','vfrost'],['frost','vfrost'],['snow','vfrost'],['water','vfrost'],['thunder','vthunder'],['purple','vvenom'],['poison','vvenom'],['blood','vshadow'],['shadow','vshadow'],['rainbow','vholy'],['lotus','vholy'],['yang','vholy'],['taiji','vholy'],['star','vholy'],['dipper','vholy']];
-function skillImg2(fxSrc,tier,sk){if(tier<2&&(sk.mult||1)<1.35)return null;let key=null;for(const [kw,k] of FX_COMPANION){if(fxSrc.includes(kw)){key=k;break;}}if(!key)key=['vfire','vfrost','vholy','vshadow','vthunder','vvenom'][[...sk.name].reduce((a,c)=>a+c.charCodeAt(0),0)%6];const src=FXSRC[key];if(!src)return null;if(!B.fx[src])loadFx(src);return B.fx[src]||null;}
+function skillImg2(fxSrc,tier,sk,skName){try{if(tier<2&&(sk.mult||1)<1.35)return null;let key=null;for(const [kw,k] of FX_COMPANION){if(fxSrc.includes(kw)){key=k;break;}}if(!key)key=['vfire','vfrost','vholy','vshadow','vthunder','vvenom'][[...(skName||'skill')].reduce((a,c)=>a+c.charCodeAt(0),0)%6];const src=FXSRC[key];if(!src)return null;if(!B.fx[src])loadFx(src);return B.fx[src]||null;}catch(e){return null;}}
 function pushSkillAnim(o){
   const sty=SKILL_FX_STYLE[o.skName]||{hue:0,pat:'blast'};o.hue=sty.hue;
   if(B.effects.length<110){B.effects.push({x:o.x,y:o.y,life:24,type:'ring',color:'#ffe9a0'});
@@ -1290,13 +1290,13 @@ function useSkill(side,gen){
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
     const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    pushSkillAnim({role:pattern,tier,skName:gen.skill,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk,gen.skill),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+22+i*6,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:24,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }else if(sk.kind==='buff'){
     const maxT=side==='atk'?B.atkMax:B.defMax;
     const amount=Math.round(maxT*0.05*sk.mult*tier);
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:gen.x,y:gen.y-30,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:[]});
+    pushSkillAnim({role:pattern,tier,skName:gen.skill,side,x:gen.x,y:gen.y-30,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk,gen.skill),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:[]});
     B.pending.push({at:B.t+34,fn:()=>{spawnReinforce(side,amount);
       B.moraleBonus[side]=Math.min(24,B.moraleBonus[side]+7*tier);
       B.genUnits.filter(g=>g.side===side&&!g.dead).forEach(g=>{g.hp=Math.min(g.maxHp,g.hp+g.maxHp*0.05*tier);});
@@ -1306,7 +1306,7 @@ function useSkill(side,gen){
     const myCx=mine.length?mine.reduce((a,u)=>a+u.x,0)/mine.length:cv.width/2;
     const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    pushSkillAnim({role:pattern,tier,skName:gen.skill,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk,gen.skill),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+16+i*5,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }
@@ -1384,7 +1384,7 @@ function endTurn(){
   $('turnGo').textContent='⚔️ Xung phong hiệp '+(B.turn+1)+' (12s)';
   $('turnGo').onclick=()=>startTurn();
   $('turnPrep').classList.remove('hidden');
-  for(const g of B.genUnits){if(!g.dead&&g.side!==B.playerSide&&B.sp[g.side]>=67)useSkill(g.side,g);}
+  for(const g of B.genUnits){if(!g.dead&&g.side!==B.playerSide&&B.sp[g.side]>=67){try{useSkill(g.side,g);}catch(e){}}}
   const aiSide=B.playerSide==='atk'?'def':'atk';
   if(B.turn>=2&&aliveTroops(aiSide)>0&&aliveTroops(aiSide)<aliveTroops(B.playerSide)*0.3&&Math.random()<0.5){B.retreat=true;B.retreatSide=aiSide;B.winner=B.playerSide;B.over=true;B.endReason='retreat';toast('🏳️ Quân địch thế yếu đã rút lui để bảo toàn lực lượng!');setTimeout(finishBattle,700);}
 }
@@ -1637,7 +1637,7 @@ function battleLoop(ts){
   B.aiT+=dt;
   for(const sd of ['atk','def']){
     if(sd===B.playerSide||B.over)continue;
-    if(spTier(sd)>=2&&Math.random()<0.005*dt){const gs=(B.genUnits||[]).filter(g=>g.side===sd&&!g.dead&&g.skillCd<=0);if(gs.length)useSkill(sd,gs.sort((a,b)=>(b.lead-a.lead)||(b.vo-a.vo))[0]);}
+    if(spTier(sd)>=2&&Math.random()<0.005*dt){const gs=(B.genUnits||[]).filter(g=>g.side===sd&&!g.dead&&g.skillCd<=0);if(gs.length){try{useSkill(sd,gs.sort((a,b)=>(b.lead-a.lead)||(b.vo-a.vo))[0]);}catch(e){}}}
     if(B.aiT>560){const myF=aliveTroops(sd)/(sd==='atk'?B.atkMax:B.defMax),foF=aliveTroops(sd==='atk'?'def':'atk')/(sd==='atk'?B.defMax:B.atkMax);
       B.stance[sd]=myF<foF-0.10?'def':(myF>foF+0.12?'break':'normal');
       if(B.orderCd[sd]<=0&&Math.random()<0.6){const foeGen=sd==='atk'?B.genDef:B.genAtk;
