@@ -677,18 +677,18 @@ function recruitFree(name,cityId){
   const h=HMAP[name];if(!h)return;const cost=FREE_COST[h.tier]||150;
   if(!((S.freeVisits||{})[cityId]||[]).includes(name))return;
   if(monthType()!=='noi'){toast('⏳ Chỉ chiêu mộ được tướng tự do vào tháng 🏯 Nội chính — họ vẫn ở lại thành này chờ ba.');return;}
-  if(S.gold[S.player]<cost){toast('Không đủ vàng chiêu mộ '+name+' (cần '+cost+'💰).');return;}
+  if(((S.cmd||{})[cityId]||0)<cost){toast('Thành này chưa đủ điểm Chỉ Huy để chiêu mộ '+name+' — cần '+cost+'🎖️, đang có '+(((S.cmd||{})[cityId]||0))+'🎖️. Điểm Chỉ Huy tăng mỗi tháng theo tổng Chỉ của tướng trấn giữ thành.');return;}
   if(st.garrison.length>=6){toast('Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác đã!');return;}
-  S.gold[S.player]-=cost;st.garrison.push(name);
+  S.cmd[cityId]-=cost;st.garrison.push(name);
   S.freePool=S.freePool.filter(n=>n!==name);S.freeVisits[cityId]=S.freeVisits[cityId].filter(n=>n!==name);
-  log('🎲 Chiêu mộ thành công tướng tự do '+name+' (hạng '+h.tier+') tại '+RMAP[cityId].name+' với '+cost+' vàng.');
+  log('🎲 Chiêu mộ thành công tướng tự do '+name+' (hạng '+h.tier+') tại '+RMAP[cityId].name+' với '+cost+' điểm Chỉ Huy.');
   toast('🎉 '+name+' (hạng '+h.tier+') đã về dưới trướng ba!');save();
 }
 function aiFreeRecruit(f){
   if(!S.freeVisits||!S.freePool)return;
   for(const r of REGIONS){const st=S.regions[r.id];if(!st||st.owner!==f)continue;const vis=(S.freeVisits[r.id]||[]).slice();
     for(const n of vis){const h=HMAP[n];if(!h)continue;const cost=FREE_COST[h.tier]||150;
-      if(st.garrison.length<6&&(S.gold[f]||0)>=cost&&Math.random()<0.3){S.gold[f]-=cost;st.garrison.push(n);S.freePool=S.freePool.filter(x=>x!==n);S.freeVisits[r.id]=S.freeVisits[r.id].filter(x=>x!==n);
+      if(st.garrison.length<6&&((S.cmd||{})[r.id]||0)>=cost&&Math.random()<0.3){S.cmd[r.id]-=cost;st.garrison.push(n);S.freePool=S.freePool.filter(x=>x!==n);S.freeVisits[r.id]=S.freeVisits[r.id].filter(x=>x!==n);
         if(h.tier==='SR'||h.tier==='S')log('🎲 '+FACTIONS[f].name+' chiêu mộ được tướng tự do '+n+' (hạng '+h.tier+') tại '+r.name+'!');}}}
 }
 function processTurnFlags(){
@@ -702,6 +702,8 @@ function processTurnFlags(){
   if(S.tribute&&S.tribute.turns>0){const tb=S.tribute;const pay=Math.min(tb.amt,S.gold[tb.from]||0);S.gold[tb.from]-=pay;S.gold[tb.to]+=pay;tb.turns--;log('🐉 '+FACTIONS[tb.from].name+' cống nạp '+pay+' vàng cho '+FACTIONS[tb.to].name+'.');if(tb.turns<=0)S.tribute=null;}
   if(S.focus)Object.keys(S.focus).forEach(k=>{S.focus[k].turns--;if(S.focus[k].turns<=0)delete S.focus[k];});
   if(S.incomeBuff){S.incomeBuff.turns--;if(S.incomeBuff.turns<=0)S.incomeBuff=null;}
+  if(!S.cmd)S.cmd={};
+  for(const r of REGIONS){const st=S.regions[r.id];if(st)S.cmd[r.id]=(S.cmd[r.id]||0)+st.garrison.reduce((a,n)=>a+(HMAP[n]?HMAP[n].chi:0),0);}
   rollFreeVisits();
 }
 function nameHash(n){let x=5381;for(let i=0;i<n.length;i++)x=((x*33)^n.charCodeAt(i))>>>0;return x;}
@@ -850,7 +852,7 @@ function load(){try{const s=localStorage.getItem('huyetma_tq_v1');return s?JSON.
 function facHeroes(f){return HEROES.filter(h=>h.faction===f).sort((a,b)=>(b.vo+b.tri+b.chi)-(a.vo+a.tri+a.chi));}
 function newGame(fac,scen){
   scen=scen||'classic';applyScenario(scen);
-  S={player:fac,scenario:scen,startYear:scen==='dongtrac'?190:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},freeBuild:{},defPenalty:{},tribute:null,yearPlan:genYearPlan(null),planYear:scen==='dongtrac'?190:183,talentCount:{}};
+  S={player:fac,scenario:scen,startYear:scen==='dongtrac'?190:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},freeBuild:{},defPenalty:{},tribute:null,yearPlan:genYearPlan(null),planYear:scen==='dongtrac'?190:183,talentCount:{},cmd:{}};
   Object.keys(FACTIONS).forEach(f=>{S.gold[f]=900;S.food[f]=600;});
   REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:scen==='dongtrac'&&DT_OWNERS[r.id]?DT_OWNERS[r.id]:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
   // distribute heroes: capital 4, others 3, rest stay in faction pool (shown in gallery)
@@ -1018,7 +1020,7 @@ function buildCity(id,k){
 /* ================= MAP / UI ================= */
 function showGame(){
   if(S&&!S.freePool)S.freePool=FREE_NAMES().filter(n=>!REGIONS.some(r=>S.regions[r.id]&&S.regions[r.id].garrison.includes(n)));
-  if(S&&!S.freeVisits)S.freeVisits={};
+  if(S&&!S.freeVisits)S.freeVisits={};if(S&&!S.cmd)S.cmd={};
   $('startScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
   buildMap();renderTop();renderPanel();renderLog();showMonthSplash();
 }
@@ -1076,21 +1078,19 @@ function openCityMenu(id){
   let h='<div class="cmHead"><b>'+r.name+'</b><span>'+f.icon+' '+f.name+(CAPITALS[st.owner]===id?' · kinh đô':'')+'</span></div>';
   h+='<div class="cmInfo">🪖 '+st.troops+'/'+cityCap(st)+' quân · 💰 '+cityGold(st)+' · 🍚 '+cityFood(st)+'/tháng</div>';
   if(mine){
-    const freeCard=n=>{const hh=HMAP[n];const cost=FREE_COST[hh.tier]||150;const dis=monthType()!=='noi'||S.gold[S.player]<cost||st.garrison.length>=6;return '<div style="display:flex;align-items:center;gap:7px;margin:5px 0;background:#241b0e;border:1px solid #6a5636;border-radius:9px;padding:5px 7px"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:7px;object-fit:cover"><span style="flex:1;font-size:12.5px"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b> · '+hh.role+'<br><small>Võ '+hh.vo+' · Trí '+hh.tri+' · Chỉ '+hh.chi+' · ⚡ '+hh.skill+'</small></span><button data-freerec="'+n+'" '+(dis?'disabled':'')+'>Chiêu mộ<br>'+cost+'💰</button></div>';};
+    const freeCard=n=>{const hh=HMAP[n];const cost=FREE_COST[hh.tier]||150;const dis=monthType()!=='noi'||((S.cmd||{})[id]||0)<cost||st.garrison.length>=6;return '<div style="display:flex;align-items:center;gap:7px;margin:5px 0;background:#241b0e;border:1px solid #6a5636;border-radius:9px;padding:5px 7px"><img src="'+hh.img+'" data-hero="'+n+'" style="width:38px;height:38px;border-radius:7px;object-fit:cover;cursor:pointer"><span style="flex:1;font-size:12.5px"><span data-hero="'+n+'" style="cursor:pointer"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b></span> · '+hh.role+'<br><small>Võ '+hh.vo+' · Trí '+hh.tri+' · Chỉ '+hh.chi+' · ⚡ '+hh.skill+' · <i>bấm hình/tên để xem chi tiết</i></small></span><button data-freerec="'+n+'" '+(dis?'disabled':'')+'>Chiêu mộ<br>'+cost+'🎖️</button></div>';};
     const fvHere=(S.freeVisits&&S.freeVisits[id])||[];
     if(fvHere.length){
-      h+='<div style="margin:7px 0;background:#2a2110;border:1.5px solid #e8c85a;border-radius:10px;padding:6px 8px"><div style="font-size:13px">🕊️ <b>Tướng tự do đang ghé thành này:</b></div>'+fvHere.map(freeCard).join('')+(monthType()!=='noi'?'<div class="cmInfo">⏳ Tháng này là tháng '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+' — đợi tháng 🏯 Nội chính mới chiêu mộ được, họ vẫn ở lại đây chờ ba.</div>':'')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'')+'</div>';
+      h+='<div style="margin:7px 0;background:#2a2110;border:1.5px solid #e8c85a;border-radius:10px;padding:6px 8px"><div style="font-size:13px">🕊️ <b>Tướng tự do đang ghé thành này:</b><br><small>🎖️ Điểm Chỉ Huy của thành: <b>'+((S.cmd||{})[id]||0)+'</b> — chiêu mộ tốn điểm này (không tốn vàng), điểm tăng mỗi tháng theo tổng Chỉ của tướng trấn giữ</small></div>'+fvHere.map(freeCard).join('')+(monthType()!=='noi'?'<div class="cmInfo">⏳ Tháng này là tháng '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+' — đợi tháng 🏯 Nội chính mới chiêu mộ được, họ vẫn ở lại đây chờ ba.</div>':'')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'')+'</div>';
     }else{
       const nbVis=r.nb.filter(x=>S.regions[x]&&S.regions[x].owner===S.player&&((S.freeVisits||{})[x]||[]).length);
       if(nbVis.length)h+='<div class="cmInfo" style="margin-top:6px">🕊️ Tướng tự do đang ghé thành kề của mình: <b>'+nbVis.map(x=>RMAP[x].name).join(', ')+'</b> — mở popup của thành đó để chiêu mộ vào tháng 🏯 Nội chính.</div>';
     }
     const mtNow=monthType();
-    const monthTab=mtNow==='war'?'mil':mtNow;
+    const monthTab=mtNow==='war'?'mil':(mtNow==='noi'?'noi':'gen');
     const tabDefs=[['gen','🎖️','Tướng']];
     if(mtNow==='war')tabDefs.push(['mil','⚔️','Quân sự']);
     else if(mtNow==='noi')tabDefs.push(['noi','🏯','Nội chính']);
-    else if(mtNow==='ke')tabDefs.push(['ke','🎭','Kế sách']);
-    else tabDefs.push(['ngoai','🤝','Ngoại giao']);
     tabDefs.push(['talent','✦','Talent']);
     const effTab=tabDefs.some(t=>t[0]===PANEL_TAB)?PANEL_TAB:monthTab;
     const tabBtn=(tid,icon,label)=>'<button data-mtab="'+tid+'" style="flex:1;padding:6px 2px;border-radius:8px;border:1px solid '+(effTab===tid?'#e8c85a':'#5a4a2a')+';background:'+(effTab===tid?'#4a3a14':'#241a0c')+';color:'+(effTab===tid?'#ffe9a0':'#cbbd93')+';font-weight:'+(effTab===tid?'700':'400')+';cursor:pointer;font-size:13px">'+icon+' '+label+'</button>';
@@ -1113,8 +1113,6 @@ function openCityMenu(id){
         +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=monthType()!=='noi'||lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
           return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:5px 7px;font-size:12.5px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
         +'</div>';
-      const fv=(S.freeVisits&&S.freeVisits[id])||[];
-      if(fv.length){h+='<div class="cmInfo" style="margin-top:8px">🎲 <b>Tướng tự do đang ghé thành</b> — chiêu mộ ngay trong tháng Nội chính này (họ ở lại chờ tới tháng Nội chính sau):</div>'+fv.map(freeCard).join('')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'');}
     }else if(effTab==='mil'){
       const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
       if(foes.length){
