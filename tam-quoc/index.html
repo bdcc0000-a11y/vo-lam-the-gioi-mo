@@ -657,18 +657,26 @@ function aiUseTalent(f){
 }
 const FREE_COST={SR:600,S:400,R:250,N:150};
 function FREE_NAMES(){return HEROES.filter(h=>h.free).map(h=>h.name);}
+function hasPath(fromId,toId,fac){
+  fac=fac||S.player;if(fromId===toId)return true;
+  const seen=new Set([fromId]),q=[fromId];
+  while(q.length){const c=q.shift();for(const nb of (RMAP[c]?RMAP[c].nb:[])){if(seen.has(nb))continue;seen.add(nb);if(!S.regions[nb]||S.regions[nb].owner!==fac)continue;if(nb===toId)return true;q.push(nb);}}
+  return false;
+}
 function rollFreeVisits(){
-  if(!S)return;S.freeVisits={};
+  if(!S)return;
   if(monthType()!=='noi'||!S.freePool||!S.freePool.length)return;
+  S.freeVisits={};
   const taken=new Set();
   for(const r of REGIONS){if(Math.random()>=0.4)continue;const pool=S.freePool.filter(n=>!taken.has(n));if(!pool.length)break;const nm=pool[Math.floor(Math.random()*pool.length)];taken.add(nm);(S.freeVisits[r.id]=S.freeVisits[r.id]||[]).push(nm);}
   const mine=Object.keys(S.freeVisits).filter(c=>S.regions[c]&&S.regions[c].owner===S.player);
-  if(mine.length)toast('🎲 Có tướng tự do ghé '+mine.length+' thành của ba — mở tab 🏯 Nội chính của thành để chiêu mộ trước khi hết tháng!');
+  if(mine.length)toast('🎲 Có tướng tự do ghé '+mine.length+' thành của ba — mở popup của thành là thấy thẻ chiêu mộ ngay ở đầu!');
 }
 function recruitFree(name,cityId){
   const st=S.regions[cityId];if(!st||st.owner!==S.player)return;
   const h=HMAP[name];if(!h)return;const cost=FREE_COST[h.tier]||150;
   if(!((S.freeVisits||{})[cityId]||[]).includes(name))return;
+  if(monthType()!=='noi'){toast('⏳ Chỉ chiêu mộ được tướng tự do vào tháng 🏯 Nội chính — họ vẫn ở lại thành này chờ ba.');return;}
   if(S.gold[S.player]<cost){toast('Không đủ vàng chiêu mộ '+name+' (cần '+cost+'💰).');return;}
   if(st.garrison.length>=6){toast('Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác đã!');return;}
   S.gold[S.player]-=cost;st.garrison.push(name);
@@ -1068,6 +1076,14 @@ function openCityMenu(id){
   let h='<div class="cmHead"><b>'+r.name+'</b><span>'+f.icon+' '+f.name+(CAPITALS[st.owner]===id?' · kinh đô':'')+'</span></div>';
   h+='<div class="cmInfo">🪖 '+st.troops+'/'+cityCap(st)+' quân · 💰 '+cityGold(st)+' · 🍚 '+cityFood(st)+'/tháng</div>';
   if(mine){
+    const freeCard=n=>{const hh=HMAP[n];const cost=FREE_COST[hh.tier]||150;const dis=monthType()!=='noi'||S.gold[S.player]<cost||st.garrison.length>=6;return '<div style="display:flex;align-items:center;gap:7px;margin:5px 0;background:#241b0e;border:1px solid #6a5636;border-radius:9px;padding:5px 7px"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:7px;object-fit:cover"><span style="flex:1;font-size:12.5px"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b> · '+hh.role+'<br><small>Võ '+hh.vo+' · Trí '+hh.tri+' · Chỉ '+hh.chi+' · ⚡ '+hh.skill+'</small></span><button data-freerec="'+n+'" '+(dis?'disabled':'')+'>Chiêu mộ<br>'+cost+'💰</button></div>';};
+    const fvHere=(S.freeVisits&&S.freeVisits[id])||[];
+    if(fvHere.length){
+      h+='<div style="margin:7px 0;background:#2a2110;border:1.5px solid #e8c85a;border-radius:10px;padding:6px 8px"><div style="font-size:13px">🕊️ <b>Tướng tự do đang ghé thành này:</b></div>'+fvHere.map(freeCard).join('')+(monthType()!=='noi'?'<div class="cmInfo">⏳ Tháng này là tháng '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+' — đợi tháng 🏯 Nội chính mới chiêu mộ được, họ vẫn ở lại đây chờ ba.</div>':'')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'')+'</div>';
+    }else{
+      const nbVis=r.nb.filter(x=>S.regions[x]&&S.regions[x].owner===S.player&&((S.freeVisits||{})[x]||[]).length);
+      if(nbVis.length)h+='<div class="cmInfo" style="margin-top:6px">🕊️ Tướng tự do đang ghé thành kề của mình: <b>'+nbVis.map(x=>RMAP[x].name).join(', ')+'</b> — mở popup của thành đó để chiêu mộ vào tháng 🏯 Nội chính.</div>';
+    }
     const mtNow=monthType();
     const monthTab=mtNow==='war'?'mil':mtNow;
     const tabDefs=[['gen','🎖️','Tướng']];
@@ -1086,7 +1102,7 @@ function openCityMenu(id){
         if(MOVE_FROM!==id){MOVE_SEL=new Set();MOVE_FROM=id;}
         h+='<div class="cmInfo" style="margin-top:6px">🚚 <b>Điều tướng:</b> chạm vào tướng bên dưới để chọn — điều được nhiều tướng trong 1 lần — rồi bấm thành đích:</div>'
           +'<div class="garr">'+st.garrison.map(n=>{const hh=HMAP[n];const on=MOVE_SEL.has(n);return '<span class="gchip '+(on?'':'off')+'" data-movesel="'+n+'" style="cursor:pointer;'+(on?'outline:2px solid #ffd94a':'')+'"><img src="'+hh.img+'" alt=""><span><b>'+(on?'✓ ':'')+'<span class="tier t'+hh.tier+'">'+hh.tier+'</span> '+n+'</b></span></span>';}).join('')+'</div>'
-          +(MOVE_SEL.size?'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px">'+mvOthers.map(x=>'<button data-movedest="'+x.id+'">➡️ '+x.name+' ('+S.regions[x.id].garrison.length+'/6)</button>').join('')+'</div><div class="cmInfo">Sẽ điều '+MOVE_SEL.size+' tướng đã chọn tới thành được bấm.</div>':'<div class="cmInfo">Chưa chọn tướng nào — hoặc bấm vào thẻ tướng ở trên để xem chi tiết.</div>');
+          +(MOVE_SEL.size?'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px">'+mvOthers.map(x=>{const ok=hasPath(id,x.id);return '<button data-movedest="'+x.id+'" '+(ok?'':'disabled')+'>'+(ok?'➡️ ':'🚫 ')+x.name+' ('+S.regions[x.id].garrison.length+'/6)</button>';}).join('')+'</div><div class="cmInfo">Sẽ điều '+MOVE_SEL.size+' tướng đã chọn tới thành được bấm. Nút 🚫 = không có đường đi thông qua đất của mình tới thành đó.</div>':'<div class="cmInfo">Chưa chọn tướng nào — hoặc bấm vào thẻ tướng ở trên để xem chi tiết.</div>');
       }else h+='<div class="cmInfo">Bấm vào thẻ tướng để xem chi tiết / nâng binh kỹ.</div>';
     }else if(effTab==='noi'){
       const devB=(key,icon,label)=>{const v=st[key]||0;const cost=60+v*2;return '<div style="display:flex;align-items:center;gap:5px;margin:4px 0"><span style="width:74px;font-size:12.5px;white-space:nowrap">'+icon+' '+label+'</span><b style="width:24px;text-align:right">'+v+'</b><span style="flex:1;height:7px;background:#2a2013;border-radius:4px;overflow:hidden;min-width:36px"><span style="display:block;height:100%;width:'+v+'%;background:#8fbf5a"></span></span><button data-dev="'+key+'" '+((monthType()!=='noi'||acted.dev||v>=100||S.gold[S.player]<cost)?'disabled':'')+' style="white-space:nowrap">+8 · '+cost+'💰</button></div>';};
@@ -1098,7 +1114,7 @@ function openCityMenu(id){
           return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:5px 7px;font-size:12.5px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
         +'</div>';
       const fv=(S.freeVisits&&S.freeVisits[id])||[];
-      if(fv.length){h+='<div class="cmInfo" style="margin-top:8px">🎲 <b>Tướng tự do đang ghé thành</b> — chiêu mộ ngay trong tháng Nội chính này, hết tháng họ sẽ rời đi:</div>'+fv.map(n=>{const hh=HMAP[n];const cost=FREE_COST[hh.tier]||150;const dis=S.gold[S.player]<cost||st.garrison.length>=6;return '<div style="display:flex;align-items:center;gap:7px;margin:5px 0;background:#241b0e;border:1px solid #6a5636;border-radius:9px;padding:5px 7px"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:7px;object-fit:cover"><span style="flex:1;font-size:12.5px"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b> · '+hh.role+'<br><small>Võ '+hh.vo+' · Trí '+hh.tri+' · Chỉ '+hh.chi+' · ⚡ '+hh.skill+'</small></span><button data-freerec="'+n+'" '+(dis?'disabled':'')+'>Chiêu mộ<br>'+cost+'💰</button></div>';}).join('')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'');}
+      if(fv.length){h+='<div class="cmInfo" style="margin-top:8px">🎲 <b>Tướng tự do đang ghé thành</b> — chiêu mộ ngay trong tháng Nội chính này (họ ở lại chờ tới tháng Nội chính sau):</div>'+fv.map(freeCard).join('')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'');}
     }else if(effTab==='mil'){
       const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
       if(foes.length){
@@ -1152,6 +1168,7 @@ function openCityMenu(id){
   m.querySelectorAll('[data-tuse]').forEach(b=>b.onclick=()=>talentTargetUI(b.dataset.tuse,$('cmTalentBox'),()=>{refreshNodes();openCityMenu(id);}));
   m.querySelectorAll('[data-movesel]').forEach(c=>c.onclick=()=>{const n=c.dataset.movesel;if(MOVE_SEL.has(n))MOVE_SEL.delete(n);else MOVE_SEL.add(n);openCityMenu(id);});
   m.querySelectorAll('[data-movedest]').forEach(b=>b.onclick=()=>{const toId=b.dataset.movedest;const to=S.regions[toId];const room=6-to.garrison.length;
+    if(!hasPath(id,toId)){toast('🚫 Không có đường đi qua đất của mình từ '+r.name+' tới '+RMAP[toId].name+' — phải giữ đường thông qua các thành của mình mới điều tướng được.');return;}
     if(room<=0){toast('Thành đích đã đủ 6 tướng.');return;}
     const names=[...MOVE_SEL].filter(n=>st.garrison.includes(n));const mv=names.slice(0,room);
     mv.forEach(n=>{st.garrison=st.garrison.filter(x=>x!==n);if(!to.garrison.includes(n))to.garrison.push(n);});
@@ -2434,9 +2451,10 @@ function showHeroDetail(name){
   $('heroDetail').classList.remove('hidden');
   const hu=$('hdUp');if(hu)hu.onclick=()=>{if(upgradeGen(name)){showHeroDetail(name);renderPanel();}};
   const hm=$('hdMove');if(hm)hm.onclick=()=>{const box=$('moveTargets');if(!box)return;const fromId=homes[0].id;
-    box.innerHTML=REGIONS.filter(r=>S.regions[r.id].owner===S.player&&r.id!==fromId).map(r=>'<button class="tbtn" data-mv="'+r.id+'">🏯 '+r.name+' ('+S.regions[r.id].garrison.length+' tướng · '+S.regions[r.id].troops+' quân)</button>').join('')||'<span class="info">Không có thành nào khác.</span>';
+    box.innerHTML=REGIONS.filter(r=>S.regions[r.id].owner===S.player&&r.id!==fromId).map(r=>{const ok=hasPath(fromId,r.id);return '<button class="tbtn" data-mv="'+r.id+'" '+(ok?'':'disabled')+'>'+(ok?'🏯 ':'🚫 ')+r.name+' ('+S.regions[r.id].garrison.length+' tướng · '+S.regions[r.id].troops+' quân)'+(ok?'':' — không có đường đi')+'</button>';}).join('')||'<span class="info">Không có thành nào khác.</span>';
     box.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const toId=b.dataset.mv;const from=S.regions[fromId],to=S.regions[toId];
       if(to.garrison.length>=6){toast('Thành đích đã đủ 6 tướng.');return;}
+      if(!hasPath(fromId,toId)){toast('🚫 Không có đường đi qua đất của mình tới '+RMAP[toId].name+'.');return;}
       from.garrison=from.garrison.filter(n=>n!==name);if(!to.garrison.includes(name))to.garrison.push(name);
       save();refreshNodes();renderPanel();showHeroDetail(name);toast('➡️ Đã điều '+name+' tới '+RMAP[toId].name+' thủ thành.');});};
 }
