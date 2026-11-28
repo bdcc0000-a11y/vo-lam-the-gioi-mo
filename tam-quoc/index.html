@@ -37,7 +37,7 @@ button{font-family:inherit;cursor:pointer}
 .node .nm{font-size:12.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;margin-top:1px}
 .node .tr{font-size:11px;color:#ffe9a8;text-shadow:0 1px 3px #000}
 .node.sel .dot{outline:3px solid var(--gold);outline-offset:1px}
-@media (max-height:540px){.node{width:58px}.node .dot{width:22px;height:22px;font-size:11px;border-width:2px}.node .nm{font-size:10px}.node .tr{font-size:9px}}
+@media (max-height:540px){.node{width:48px}.node .dot{width:18px;height:18px;font-size:10px;border-width:2px}.node .nm{font-size:9.5px}.node .tr{font-size:8.5px}}
 .node.warT .dot{animation:pulse .7s infinite;outline:3px solid #ff5347;outline-offset:1px}
 .node.warO .dot{animation:pulse .7s infinite;outline:3px solid var(--gold);outline-offset:1px}
 .node.warFrom .dot{outline:3px solid #fff;outline-offset:1px}
@@ -430,7 +430,7 @@ const TROOP_PASSIVE_POOLS={
      t=>({name:'Đạp Trận',slowC:0.08+0.02*t,desc:'Đòn đánh có '+(8+2*t)+'% cơ hội làm địch chậm 40% trong 1.5 giây'})]};
 TROOPS.forEach(tr=>{const pool=TROOP_PASSIVE_POOLS[tr.cls];if(pool)tr.passive=pool[nameHash(tr.name)%pool.length](tr.tier);});
 /* ---- 30 talents: Nội chính / Kế sách / Ngoại giao — used on the strategic map, cooldown in turns ---- */
-const TALENT_DOM={noi:'Nội chính',ke:'Kế sách',ngoai:'Ngoại giao'};
+const TALENT_DOM={noi:'Nội chính',ke:'Kế sách',ngoai:'Ngoại giao',war:'Chiến tranh'};
 const TALENT_DB={
  'Chiêu Hiền Nạp Sĩ':{icon:'🧑‍🤝‍🧑',dom:'noi',cd:3,target:'self',desc:'Thành của tướng +120 quân, quốc khố +80 vàng'},
  'Đúc Tiền':{icon:'🪙',dom:'noi',cd:3,target:'self',desc:'Quốc khố +200 vàng'},
@@ -446,17 +446,17 @@ const TALENT_DB={
  'Đoạn Lương Kế':{icon:'✂️',dom:'ke',cd:3,target:'enemyAdj',desc:'Thành địch kề bên −150 quân và bị cấm tuyển quân 1 tháng'},
  'Hỏa Công Kế':{icon:'🏮',dom:'ke',cd:3,target:'enemyAdj',desc:'Đốt kho thành địch kề bên — −220 quân'},
  'Phục Binh Kế':{icon:'🌲',dom:'ke',cd:4,target:'self',desc:'Thành của tướng +180 quân, phòng thủ +15% trong 3 tháng'},
- 'Hồi Mã Thương':{icon:'🐎',dom:'ke',cd:4,target:'self',desc:'Thành của tướng +160 quân, phòng thủ +20% trong 3 tháng'},
+ 'Hồi Mã Thương':{icon:'🐎',dom:'ke',cd:4,target:'enemyAdj',desc:'Giả thua dụ địch truy kích vào mai phục: thành địch kề −140 quân, thành nhà phòng thủ +15% trong 2 tháng'},
  'Điệu Hổ Ly Sơn':{icon:'🐅',dom:'ke',cd:4,target:'enemyAdj',desc:'Điều tướng mạnh nhất của thành địch kề bên về thành xa của địch'},
  'Ly Gián Kế':{icon:'💔',dom:'ke',cd:4,target:'enemyAdj',desc:'Tướng mạnh nhất của thành địch kề bên bất mãn — không xuất chinh 2 tháng'},
  'Không Thành Kế':{icon:'🏯',dom:'ke',cd:4,target:'self',desc:'Thành của tướng phòng thủ +30% trong 3 tháng'},
  'Ám Độ Trần Thương':{icon:'🌙',dom:'ke',cd:5,target:'ownCity',desc:'Tướng bí mật di chuyển ngay tới một thành khác của phe'},
  'Thiên Hỏa Kế':{icon:'☄️',dom:'ke',cd:5,target:'self',desc:'Mọi thành địch quanh thành của tướng −150 quân'},
- 'Tặng Lễ Thông Hiếu':{icon:'🎁',dom:'ngoai',cd:4,target:'faction',desc:'+150 vàng, đình chiến với phe được chọn 2 tháng'},
- 'Mật Ước':{icon:'📜',dom:'ngoai',cd:4,target:'faction',desc:'+120 vàng, đình chiến với phe được chọn 2 tháng'},
+ 'Tặng Lễ Thông Hiếu':{icon:'🎁',dom:'ngoai',cd:4,target:'faction',desc:'Tốn 100 vàng lễ vật, đình chiến với phe được chọn 3 tháng'},
+ 'Mật Ước':{icon:'📜',dom:'ngoai',cd:4,target:'faction',desc:'Đình chiến với phe được chọn 3 tháng, bí mật thông thương +60 vàng'},
  'Sứ Giả Như Vân':{icon:'🕊️',dom:'ngoai',cd:4,target:'self',desc:'+80 vàng cho mỗi phe còn tồn tại'},
  'Hòa Đàm':{icon:'🤝',dom:'ngoai',cd:5,target:'faction',desc:'Đình chiến với phe được chọn 3 tháng'},
- 'Trao Đổi Con Tin':{icon:'👥',dom:'ngoai',cd:5,target:'faction',desc:'+100 vàng, đình chiến với phe được chọn 4 tháng'},
+ 'Trao Đổi Con Tin':{icon:'👥',dom:'ngoai',cd:5,target:'faction',desc:'Cần đang giam tù binh của phe được chọn: trả tù binh hạng cao nhất của họ về, đổi lấy tù binh của ta bị họ giam (không có thì họ bồi thường 120 vàng), đình chiến 3 tháng'},
  'Mượn Binh':{icon:'⚔️',dom:'ngoai',cd:5,target:'self',desc:'Cần đang có phe đình chiến/đồng minh — phe đó gửi 200 quân tới thành của tướng'},
  'Viễn Giao Cận Công':{icon:'🗺️',dom:'ngoai',cd:5,target:'faction',desc:'Phe được chọn sẽ tránh tấn công phe ta trong 4 tháng'},
  'Liên Hoành':{icon:'🔗',dom:'ngoai',cd:6,target:'faction',desc:'Đình chiến với phe được chọn 5 tháng'},
@@ -467,13 +467,23 @@ const TALENT_DB={
  'Đốt Lương Thảo':{icon:'🔥',dom:'ke',cd:4,target:'enemyAdj',desc:'Đốt kho lương địch: phe địch mất 250 lương, thành đó −80 quân'},
  'Phản Gián Kế':{icon:'🕵️',dom:'ke',cd:5,target:'enemyAdj',desc:'Mua chuộc nội gián ở thành địch kề: phe địch mất 150 vàng, ta thu về 150 vàng'},
  'Kết Minh Ước':{icon:'🤲',dom:'ngoai',cd:6,target:'faction',desc:'Đình chiến 3 tháng với phe được chọn, phe đó gửi 120 quân tới thành của tướng'},
- 'Thuyết Khách':{icon:'🗣️',dom:'ngoai',cd:5,target:'self',desc:'Thuyết phục 1 tù binh đang giam: thử chiêu hàng ngay với tỷ lệ +20%'}};
+ 'Thuyết Khách':{icon:'🗣️',dom:'ngoai',cd:5,target:'self',desc:'Thuyết phục 1 tù binh đang giam: thử chiêu hàng ngay với tỷ lệ +20%'},
+ 'Tu Sửa Thủy Lợi':{icon:'💧',dom:'noi',cd:4,target:'self',desc:'Thành của tướng Nông nghiệp +8 vĩnh viễn, các thành kề của phe Nông nghiệp +4'},
+ 'Chiêu Mộ Công Tượng':{icon:'🔨',dom:'noi',cd:4,target:'self',desc:'Lần xây/nâng công trình tiếp theo ở thành của tướng được miễn phí'},
+ 'Giả Mệnh Lệnh':{icon:'📯',dom:'ke',cd:5,target:'enemyAdj',desc:'Giả lệnh điều binh gây rối loạn: thành địch kề −15% quân, tướng yếu nhất của thành đó bị phong tỏa 1 tháng'},
+ 'Truyền Đơn Chiêu Hàng':{icon:'📣',dom:'ke',cd:4,target:'enemyAdj',desc:'Rải truyền đơn chiêu hàng: thành địch kề −12% quân đào ngũ; tướng hạng N ở đó có 35% sẽ bỏ về phe ta'},
+ 'Cống Nạp Xưng Thần':{icon:'🐉',dom:'ngoai',cd:5,target:'faction',desc:'Tốn 200 vàng cống nạp: đình chiến 3 tháng với phe được chọn, phe đó phải cống lại 50 vàng/tháng trong 3 tháng'},
+ 'Đổi Chác Quân Nhu':{icon:'⚖️',dom:'ngoai',cd:3,target:'faction',desc:'Buôn bán quân nhu với phe được chọn: đổi 200 lương lấy 170 vàng (nếu thiếu lương thì đổi 150 vàng lấy 220 lương)'},
+ 'Hỏa Công Doanh Trại':{icon:'🔥',dom:'war',cd:4,target:'enemyAdj',desc:'Đột kích đốt doanh trại thành địch kề: −200 quân, phá hỏng 1 cấp công trình của thành đó'},
+ 'Nghi Binh':{icon:'🎏',dom:'war',cd:4,target:'enemyAdj',desc:'Cắm cờ dựng trại giả dụ địch lơi lỏng: thành địch kề phòng thủ −30% trong tháng này'}};
+const TALENT_RATES_NEW={'Tu Sửa Thủy Lợi':0.70,'Chiêu Mộ Công Tượng':0.65,'Giả Mệnh Lệnh':0.50,'Truyền Đơn Chiêu Hàng':0.55,'Cống Nạp Xưng Thần':0.50,'Đổi Chác Quân Nhu':0.75,'Hỏa Công Doanh Trại':0.65,'Nghi Binh':0.60};
 const TALENT_RATES={'Chiêu Hiền Nạp Sĩ':0.90,'Đúc Tiền':0.85,'Đồn Điền':0.80,'Khai Kho Phát Thóc':0.75,'An Dân':0.70,'Thương Tài':0.65,'Công Tượng Tâm':0.60,'Thần Nông':0.55,'Tu Tạo Thành Quách':0.50,'Quân Nhu Đại Kế':0.40,'Nội Loạn Kế':0.85,'Đoạn Lương Kế':0.80,'Hỏa Công Kế':0.70,'Phục Binh Kế':0.70,'Hồi Mã Thương':0.70,'Điệu Hổ Ly Sơn':0.65,'Ly Gián Kế':0.60,'Không Thành Kế':0.55,'Ám Độ Trần Thương':0.50,'Thiên Hỏa Kế':0.40,'Tặng Lễ Thông Hiếu':0.90,'Mật Ước':0.85,'Sứ Giả Như Vân':0.80,'Hòa Đàm':0.70,'Trao Đổi Con Tin':0.65,'Mượn Binh':0.65,'Viễn Giao Cận Công':0.60,'Liên Hoành':0.55,'Chiêu An':0.45,'Hòa Thân':0.40,'Khuyến Nông Tang':0.75,'Chiêu Mộ Lưu Dân':0.70,'Đốt Lương Thảo':0.65,'Phản Gián Kế':0.55,'Kết Minh Ước':0.50,'Thuyết Khách':0.60};
-Object.keys(TALENT_RATES).forEach(k=>{if(TALENT_DB[k])TALENT_DB[k].rate=TALENT_RATES[k];});
+Object.keys(TALENT_RATES).forEach(k=>{if(TALENT_DB[k])TALENT_DB[k].rate=TALENT_RATES[k];});Object.keys(TALENT_RATES_NEW).forEach(k=>{if(TALENT_DB[k])TALENT_DB[k].rate=TALENT_RATES_NEW[k];});
 const TALENTS_BY_DOM={
  noi:['Chiêu Hiền Nạp Sĩ','Đúc Tiền','Đồn Điền','Khai Kho Phát Thóc','An Dân','Thương Tài','Công Tượng Tâm','Thần Nông','Tu Tạo Thành Quách','Quân Nhu Đại Kế'],
  ke:['Nội Loạn Kế','Đoạn Lương Kế','Hỏa Công Kế','Phục Binh Kế','Hồi Mã Thương','Điệu Hổ Ly Sơn','Ly Gián Kế','Không Thành Kế','Ám Độ Trần Thương','Thiên Hỏa Kế'],
- ngoai:['Tặng Lễ Thông Hiếu','Mật Ước','Sứ Giả Như Vân','Hòa Đàm','Trao Đổi Con Tin','Mượn Binh','Viễn Giao Cận Công','Liên Hoành','Chiêu An','Hòa Thân']};
+ ngoai:['Tặng Lễ Thông Hiếu','Mật Ước','Sứ Giả Như Vân','Hòa Đàm','Trao Đổi Con Tin','Mượn Binh','Viễn Giao Cận Công','Liên Hoành','Chiêu An','Hòa Thân'],
+ war:['Hỏa Công Doanh Trại','Nghi Binh']};
 function truceKey(a,b){return [a,b].sort().join('|');}
 function truceActive(a,b){return !!(S&&S.truce&&S.truce[truceKey(a,b)]>0);}
 function heroHome(name){if(!S||!S.regions)return null;const r=REGIONS.find(r=>S.regions[r.id].garrison.includes(name));return r?r.id:null;}
@@ -484,6 +494,10 @@ function talentPrecheck(name,owner,home,target){const tn=HMAP[name].talent;
   if(tn==='Ly Gián Kế'||tn==='Điệu Hổ Ly Sơn'){const tg=S.regions[target];if(!tg||!tg.garrison.length)return 'Thành đó không có tướng để tác động';}
   if(tn==='Ám Độ Trần Thương'&&(!target||target===home))return 'Hãy chọn một thành khác của phe để di chuyển tới';
   if(tn==='Thuyết Khách'&&!Object.keys(S.prisoners||{}).some(n=>S.prisoners[n].holder===owner))return 'Hiện không giam tù binh nào để thuyết phục';
+  if(tn==='Trao Đổi Con Tin'&&!Object.keys(S.prisoners||{}).some(n=>S.prisoners[n].holder===owner&&S.prisoners[n].from===target))return 'Không giam tù binh nào của phe đó để trao đổi';
+  if(tn==='Tặng Lễ Thông Hiếu'&&S.gold[owner]<100)return 'Cần 100 vàng làm lễ vật';
+  if(tn==='Cống Nạp Xưng Thần'&&S.gold[owner]<200)return 'Cần 200 vàng để cống nạp';
+  if(tn==='Đổi Chác Quân Nhu'&&S.food[owner]<200&&S.gold[owner]<150)return 'Cần 200 lương hoặc 150 vàng để đổi chác';
   return null;}
 function applyTalent(name,target){
   const h=HMAP[name];const t=TALENT_DB[h.talent];if(!t||!talentReady(name))return false;
@@ -520,15 +534,18 @@ function applyTalent(name,target){
     case 'Nội Loạn Kế': {const tg=S.regions[target];tg.troops=Math.max(60,tg.troops-120);if(tg.garrison.length)S.blocked[tg.garrison[Math.floor(Math.random()*tg.garrison.length)]]=1;return done('Nội loạn — '+RMAP[target].name+' −120 quân, 1 tướng bị phong tỏa 1 tháng.');}
     case 'Phục Binh Kế': S.regions[home].troops+=180;S.defBonus[home]={mult:1.15,turns:3}; return done('Phục binh — '+RMAP[home].name+' +180 quân, thủ +15% trong 3 tháng.');
     case 'Không Thành Kế': S.defBonus[home]={mult:1.3,turns:3}; return done('Không thành kế — '+RMAP[home].name+' thủ +30% trong 3 tháng.');
-    case 'Hồi Mã Thương': S.regions[home].troops+=160;S.defBonus[home]={mult:1.2,turns:3}; return done('Hồi mã thương — '+RMAP[home].name+' +100 quân, thủ +20% trong 3 tháng.');
+    case 'Hồi Mã Thương': {const tg=S.regions[target];tg.troops=Math.max(60,tg.troops-140);S.defBonus[home]={mult:1.15,turns:2};return done('Hồi mã thương — dụ quân '+RMAP[target].name+' vào mai phục, địch −140 quân; '+RMAP[home].name+' thủ +15% trong 2 tháng.');}
     case 'Ám Độ Trần Thương': {if(!target||target===home)return false;S.regions[home].garrison=S.regions[home].garrison.filter(n=>n!==name);S.regions[target].garrison.push(name);return done('Ám độ trần thương — '+name+' bí mật chuyển tới '+RMAP[target].name+'.');}
     case 'Liên Hoành': S.truce[truceKey(owner,target)]=5; return done('Liên hoành — đình chiến với '+FACTIONS[target].name+' 5 tháng.');
     case 'Hòa Đàm': S.truce[truceKey(owner,target)]=3; return done('Hòa đàm — đình chiến với '+FACTIONS[target].name+' 3 tháng.');
     case 'Hòa Thân': S.truce[truceKey(owner,target)]=6; return done('Hòa thân — đình chiến với '+FACTIONS[target].name+' 6 tháng.');
-    case 'Tặng Lễ Thông Hiếu': S.truce[truceKey(owner,target)]=2;S.gold[owner]+=150; return done('Tặng lễ — +150 vàng, đình chiến với '+FACTIONS[target].name+' 2 tháng.');
-    case 'Mật Ước': S.truce[truceKey(owner,target)]=2;S.gold[owner]+=120; return done('Mật ước — +120 vàng, đình chiến với '+FACTIONS[target].name+' 2 tháng.');
-    case 'Trao Đổi Con Tin': S.truce[truceKey(owner,target)]=4;S.gold[owner]+=100; return done('Trao đổi con tin — +100 vàng, đình chiến với '+FACTIONS[target].name+' 4 tháng.');
-    case 'Sứ Giả Như Vân': {const others=Object.keys(FACTIONS).filter(f=>f!==owner&&REGIONS.some(r=>S.regions[r.id].owner===f));S.gold[owner]+=80*others.length;return done('Sứ giả như vân — +'+(80*others.length)+' vàng từ các nước.');}
+    case 'Tặng Lễ Thông Hiếu': S.truce[truceKey(owner,target)]=3;S.gold[owner]-=100; return done('Tặng lễ — tốn 100 vàng lễ vật, đình chiến với '+FACTIONS[target].name+' 3 tháng.');
+    case 'Mật Ước': S.truce[truceKey(owner,target)]=3;S.gold[owner]+=60; return done('Mật ước — đình chiến với '+FACTIONS[target].name+' 3 tháng, bí mật thông thương +60 vàng.');
+    case 'Trao Đổi Con Tin': {const TW={SR:4,S:3,R:2,N:1};const mine=Object.keys(S.prisoners||{}).filter(n=>S.prisoners[n].holder===owner&&S.prisoners[n].from===target);mine.sort((a,b)=>(TW[HMAP[b].tier]||1)-(TW[HMAP[a].tier]||1));const give=mine[0];delete S.prisoners[give];placeGeneralHome(give,target);S.truce[truceKey(owner,target)]=3;
+      const theirs=Object.keys(S.prisoners||{}).filter(n=>S.prisoners[n].holder===target&&S.prisoners[n].from===owner);
+      if(theirs.length){theirs.sort((a,b)=>(TW[HMAP[b].tier]||1)-(TW[HMAP[a].tier]||1));const back=theirs[0];delete S.prisoners[back];placeGeneralHome(back,owner);return done('Trao đổi con tin — trả '+give+' về '+FACTIONS[target].name+', đón '+back+' trở về hàng ngũ, đình chiến 3 tháng.');}
+      S.gold[owner]+=120;return done('Trao đổi con tin — trả '+give+' về '+FACTIONS[target].name+'; họ không giam người của ta nên bồi thường 120 vàng, đình chiến 3 tháng.');}
+    case 'Sứ Giả Như Vân': {const others=Object.keys(FACTIONS).filter(f=>f!==owner&&REGIONS.some(r=>S.regions[r.id].owner===f));others.forEach(f=>{S.gold[f]=Math.max(0,S.gold[f]-60);});S.gold[owner]+=60*others.length;return done('Sứ giả như vân — các nước đáp lễ tổng cộng +'+(60*others.length)+' vàng.');}
     case 'Mượn Binh': {const ally=Object.keys(S.truce||{}).find(k=>k.split('|').includes(owner)&&S.truce[k]>0);if(!ally){if(owner===P)toast('Cần đang đình chiến/đồng minh với một phe trước mới mượn binh được');return false;}S.regions[home].troops+=200;return done('Mượn binh — đồng minh gửi 200 quân tới '+RMAP[home].name+'.');}
     case 'Viễn Giao Cận Công': S.focus[target]={avoid:owner,turns:4}; return done('Viễn giao cận công — '+FACTIONS[target].name+' tránh đánh ta 4 tháng.');
     case 'Khuyến Nông Tang': {const st=S.regions[home];st.agri=Math.min(100,(st.agri||0)+12);st.troops+=60;return done('Khuyến nông tang — '+RMAP[home].name+' Nông nghiệp +12, +60 quân.');}
@@ -536,6 +553,14 @@ function applyTalent(name,target){
     case 'Đốt Lương Thảo': {const tg=S.regions[target];const ef=tg.owner;S.food[ef]=Math.max(0,(S.food[ef]||0)-250);tg.troops=Math.max(60,tg.troops-80);return done('Đốt lương thảo — '+FACTIONS[ef].name+' mất 250 lương, '+RMAP[target].name+' −80 quân.');}
     case 'Phản Gián Kế': {const tg=S.regions[target];const ef=tg.owner;const steal=Math.min(150,S.gold[ef]||0);S.gold[ef]-=steal;S.gold[owner]+=steal;return done('Phản gián — nội gián chuyển '+steal+' vàng từ '+FACTIONS[ef].name+' về quốc khố.');}
     case 'Kết Minh Ước': S.truce[truceKey(owner,target)]=3;S.regions[home].troops+=120; return done('Kết minh ước — đình chiến với '+FACTIONS[target].name+' 3 tháng, họ gửi 120 quân tới '+RMAP[home].name+'.');
+    case 'Tu Sửa Thủy Lợi': {S.regions[home].agri=Math.min(100,(S.regions[home].agri||50)+8);let cnt=0;RMAP[home].nb.forEach(id=>{if(S.regions[id].owner===owner){S.regions[id].agri=Math.min(100,(S.regions[id].agri||50)+4);cnt++;}});return done('Tu sửa thủy lợi — '+RMAP[home].name+' Nông nghiệp +8, '+cnt+' thành kề +4.');}
+    case 'Chiêu Mộ Công Tượng': if(!S.freeBuild)S.freeBuild={};S.freeBuild[home]=true; return done('Chiêu mộ công tượng — lần xây/nâng công trình tiếp theo ở '+RMAP[home].name+' được miễn phí.');
+    case 'Giả Mệnh Lệnh': {const tg=S.regions[target];const cut=Math.floor(tg.troops*0.15);tg.troops=Math.max(80,tg.troops-cut);let blocked='';if(tg.garrison.length){const weak=tg.garrison.slice().sort((a,b)=>(Math.max(HMAP[a].vo,HMAP[a].tri))-(Math.max(HMAP[b].vo,HMAP[b].tri)))[0];S.blocked[weak]=1;blocked=', '+weak+' bị phong tỏa 1 tháng';}return done('Giả mệnh lệnh — '+RMAP[target].name+' rối loạn, mất '+cut+' quân'+blocked+'.');}
+    case 'Truyền Đơn Chiêu Hàng': {const tg=S.regions[target];const cut=Math.floor(tg.troops*0.12);tg.troops=Math.max(80,tg.troops-cut);let extra='';const cand=tg.garrison.find(n=>HMAP[n].tier==='N');if(cand&&Math.random()<0.35){tg.garrison=tg.garrison.filter(n=>n!==cand);placeGeneralHome(cand,owner);extra=' '+cand+' cảm động bỏ về phe ta!';}return done('Truyền đơn chiêu hàng — '+RMAP[target].name+' đào ngũ '+cut+' quân.'+extra);}
+    case 'Cống Nạp Xưng Thần': S.gold[owner]-=200;S.truce[truceKey(owner,target)]=3;S.tribute={from:target,to:owner,amt:50,turns:3}; return done('Cống nạp — tốn 200 vàng, đình chiến với '+FACTIONS[target].name+' 3 tháng; họ phải cống 50 vàng/tháng trong 3 tháng.');
+    case 'Đổi Chác Quân Nhu': if(S.food[owner]>=200){S.food[owner]-=200;S.gold[owner]+=170;return done('Đổi chác quân nhu — bán 200 lương cho '+FACTIONS[target].name+', thu 170 vàng.');} S.gold[owner]-=150;S.food[owner]+=220; return done('Đổi chác quân nhu — mua 220 lương từ '+FACTIONS[target].name+' với 150 vàng.');
+    case 'Hỏa Công Doanh Trại': {const tg=S.regions[target];tg.troops=Math.max(60,tg.troops-200);let extra='';const bk=Object.keys(tg.bld||{}).filter(k=>tg.bld[k]>0);if(bk.length){const k=bk[Math.floor(Math.random()*bk.length)];tg.bld[k]--;if(!tg.bld[k])delete tg.bld[k];extra=' Phá hỏng 1 cấp '+BUILDINGS[k].name+'.';}return done('Hỏa công doanh trại — '+RMAP[target].name+' cháy trại, −200 quân.'+extra);}
+    case 'Nghi Binh': if(!S.defPenalty)S.defPenalty={};S.defPenalty[target]={mult:0.7,turns:1}; return done('Nghi binh — quân thủ '+RMAP[target].name+' lơi lỏng, phòng thủ thành đó −30% trong tháng này.');
     case 'Thuyết Khách': {const pn=Object.keys(S.prisoners||{}).find(n=>S.prisoners[n].holder===owner);const rate=Math.min(90,prisonerRate(pn,S.prisoners[pn])+20);if(Math.random()*100<rate){delete S.prisoners[pn];placeGeneralHome(pn,owner);return done('Thuyết khách — '+pn+' cảm phục, quy hàng về phe ta (tỷ lệ '+rate+'%)!');}return done('Thuyết khách — '+pn+' vẫn chưa chịu quy hàng (tỷ lệ '+rate+'%).');}
     case 'Chiêu An': {const tg=S.regions[target];const cand=tg.garrison.filter(n=>HMAP[n].tier==='N'||HMAP[n].tier==='R');if(!cand.length){if(owner===P)toast('Thành đó không có tướng hạng N/R để chiêu an');return false;}const g0=cand[Math.floor(Math.random()*cand.length)];tg.garrison=tg.garrison.filter(n=>n!==g0);S.regions[home].garrison.push(g0);return done('Chiêu an — '+g0+' quy hàng, về đóng ở '+RMAP[home].name+'!');}
   }
@@ -558,12 +583,14 @@ function processTurnFlags(){
   processPrisoners();
   if(S.talentCd)Object.keys(S.talentCd).forEach(n=>{const home=REGIONS.find(r=>S.regions[r.id].garrison.includes(n));if(home){const lv=bldLv(S.regions[home.id],'hoc');if(lv>0){S.talentCd[n]-=lv;if(S.talentCd[n]<=0)delete S.talentCd[n];}}});
   if(S.defBonus)Object.keys(S.defBonus).forEach(k=>{S.defBonus[k].turns--;if(S.defBonus[k].turns<=0)delete S.defBonus[k];});
+  if(S.defPenalty)Object.keys(S.defPenalty).forEach(k=>{S.defPenalty[k].turns--;if(S.defPenalty[k].turns<=0)delete S.defPenalty[k];});
+  if(S.tribute&&S.tribute.turns>0){const tb=S.tribute;const pay=Math.min(tb.amt,S.gold[tb.from]||0);S.gold[tb.from]-=pay;S.gold[tb.to]+=pay;tb.turns--;log('🐉 '+FACTIONS[tb.from].name+' cống nạp '+pay+' vàng cho '+FACTIONS[tb.to].name+'.');if(tb.turns<=0)S.tribute=null;}
   if(S.focus)Object.keys(S.focus).forEach(k=>{S.focus[k].turns--;if(S.focus[k].turns<=0)delete S.focus[k];});
   if(S.incomeBuff){S.incomeBuff.turns--;if(S.incomeBuff.turns<=0)S.incomeBuff=null;}
 }
 function nameHash(n){let x=5381;for(let i=0;i<n.length;i++)x=((x*33)^n.charCodeAt(i))>>>0;return x;}
 function decorateHeroes(){
-  const TALENT_OVERRIDE={'Đặng Ngải':'Khuyến Nông Tang','Lưu Chương':'Chiêu Mộ Lưu Dân','Quách Gia':'Đốt Lương Thảo','Giả Hủ':'Phản Gián Kế','Lỗ Túc':'Kết Minh Ước','Đặng Chi':'Thuyết Khách'};
+  const TALENT_OVERRIDE={'Đặng Ngải':'Khuyến Nông Tang','Lưu Chương':'Chiêu Mộ Lưu Dân','Quách Gia':'Đốt Lương Thảo','Giả Hủ':'Phản Gián Kế','Lỗ Túc':'Kết Minh Ước','Đặng Chi':'Thuyết Khách','Hạ Hầu Đôn':'Tu Sửa Thủy Lợi','Tôn Quyền':'Chiêu Mộ Công Tượng','Tào Tháo':'Giả Mệnh Lệnh','Trương Liêu':'Truyền Đơn Chiêu Hàng','Tào Phi':'Cống Nạp Xưng Thần','Chung Do':'Đổi Chác Quân Nhu','Chu Du':'Hỏa Công Doanh Trại','Gia Cát Lượng':'Nghi Binh'};
   const scored=HEROES.map(h=>({h,s:Math.max(h.vo,h.tri)+(h.vo+h.tri+h.chi)/6})).sort((a,b)=>b.s-a.s||nameHash(a.h.name)-nameHash(b.h.name));
   const rankOf={};scored.forEach((e,i)=>rankOf[e.h.name]=i);
   HEROES.forEach(h=>{
@@ -575,7 +602,8 @@ function decorateHeroes(){
     const dom=(nameHash(h.name+'dom')%4===0)?['noi','ke','ngoai'][nameHash(h.name+'dom2')%3]:aff;
     const list=TALENTS_BY_DOM[dom];
     const idx=h.tier==='SR'?7+nameHash(h.name)%3:h.tier==='S'?5+nameHash(h.name)%4:h.tier==='R'?2+nameHash(h.name)%5:nameHash(h.name)%6;
-    h.talent=list[Math.min(9,idx)];h.talentDom=dom;
+    if(h.role==='Võ tướng'&&nameHash(h.name+'war')%6===0){h.talent=TALENTS_BY_DOM.war[nameHash(h.name+'war2')%2];h.talentDom='war';}
+    else h.talent=list[Math.min(list.length-1,idx)];h.talentDom=h.talentDom||dom;if(h.talentDom===undefined)h.talentDom=dom;
     if(TALENT_OVERRIDE[h.name]&&TALENT_DB[TALENT_OVERRIDE[h.name]]){h.talent=TALENT_OVERRIDE[h.name];h.talentDom=TALENT_DB[TALENT_OVERRIDE[h.name]].dom;}
     const p=h.passive;p.desc=[p.dmg?('đòn đánh +'+Math.round((p.dmg-1)*100)+'%'):null,p.def?('nhận sát thương −'+Math.round((1-p.def)*100)+'%'):null,p.sp?('hồi SP toàn đội +'+p.sp+'%'):null,p.morale?('sĩ khí đầu trận +'+p.morale):null,p.moralePen?('sĩ khí địch đầu trận −'+p.moralePen):null,p.skillDmg?('sát thương chiêu +'+Math.round((p.skillDmg-1)*100)+'%'):null].filter(Boolean).join(' · ');
   });
@@ -698,7 +726,7 @@ function load(){try{const s=localStorage.getItem('huyetma_tq_v1');return s?JSON.
 function facHeroes(f){return HEROES.filter(h=>h.faction===f).sort((a,b)=>(b.vo+b.tri+b.chi)-(a.vo+a.tri+a.chi));}
 function newGame(fac,scen){
   scen=scen||'classic';applyScenario(scen);
-  S={player:fac,scenario:scen,startYear:scen==='khanvang'?184:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},yearPlan:genYearPlan(null),planYear:scen==='khanvang'?184:183,talentCount:{}};
+  S={player:fac,scenario:scen,startYear:scen==='khanvang'?184:183,turn:1,gold:{},food:{},regions:{},log:[],sel:null,acted:{},tech:initTech(),genTroop:{},talentCd:{},truce:{},blocked:{},noRecruit:{},defBonus:{},focus:{},techDiscount:0,techDiscountF:{},incomeBuff:null,prisoners:{},freeBuild:{},defPenalty:{},tribute:null,yearPlan:genYearPlan(null),planYear:scen==='khanvang'?184:183,talentCount:{}};
   Object.keys(FACTIONS).forEach(f=>{S.gold[f]=900;S.food[f]=600;});
   REGIONS.forEach(r=>{const d=initCityStats(r);S.regions[r.id]={owner:(scen==='khanvang'&&KV_OWNERS[r.id])?KV_OWNERS[r.id]:r.owner,troops:650+Math.floor(Math.random()*350),garrison:[],agri:d.agri,comm:d.comm,pop:d.pop,bld:{}};});
   // distribute heroes: capital 4, others 3, rest stay in faction pool (shown in gallery)
@@ -855,10 +883,12 @@ function buildCity(id,k){
   st.bld=st.bld||{};const lv=st.bld[k]||0;
   if(lv>=3||(S.acted[id]&&S.acted[id].built))return;
   if(!st.bld[k]&&Object.keys(st.bld).length>=3){toast('Mỗi thành tối đa 3 loại công trình.');return;}
-  const cost=BLD_COST[lv+1];
+  let cost=BLD_COST[lv+1];let free=false;
+  if(S.freeBuild&&S.freeBuild[id]){cost=0;free=true;}
   if(S.gold[S.player]<cost){toast('Không đủ vàng (cần '+cost+').');return;}
+  if(free)delete S.freeBuild[id];
   S.gold[S.player]-=cost;st.bld[k]=lv+1;(S.acted[id]=S.acted[id]||{}).built=true;
-  save();renderTop();renderPanel();refreshNodes();toast('🏯 Đã xây '+BUILDINGS[k].name+' cấp '+(lv+1)+' ở '+RMAP[id].name+'.');
+  save();renderTop();renderPanel();refreshNodes();toast('🏯 Đã xây '+BUILDINGS[k].name+' cấp '+(lv+1)+' ở '+RMAP[id].name+(free?' (miễn phí nhờ công tượng)':'')+'.');
 }
 /* ================= MAP / UI ================= */
 function showGame(){
@@ -964,8 +994,7 @@ function openCityMenu(id){
       const left=talentLeft(S.player);
       const domGens=st.garrison.filter(n=>HMAP[n].talentDom===mtNow);
       const ready=domGens.filter(n=>!(((S.talentCd||{})[n]||0)>0));
-      if(mtNow==='war')h+='<div class="cmInfo">⚔️ Tháng Chiến tranh không dùng được talent — talent dùng vào tháng 🏯 Nội chính, 🎭 Kế sách và 🤝 Ngoại giao.</div>';
-      else{
+      {
         h+='<div class="cmInfo">✦ Tướng dùng được talent tháng này ('+MONTH_TYPES[mtNow].icon+' '+TALENT_DOM[mtNow]+') · còn <b>'+left+'/3</b> lần dùng.</div>';
         if(!domGens.length)h+='<div class="cmInfo">Thành này không có tướng nào có talent mảng '+TALENT_DOM[mtNow]+' — điều tướng phù hợp về đây vào tháng 🏯 Nội chính.</div>';
         else if(!ready.length)h+='<div class="cmInfo">Tướng có talent mảng này ở đây đang hồi chiêu hết rồi.</div>';
@@ -1155,7 +1184,7 @@ function openBattle(cfg){
     if(g){B.selGen=g;renderGenChips();}};
   B.raf=requestAnimationFrame(battleLoop);
 }
-function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRect();const Z=(r.width>r.height&&r.height<=560)?1.3:1;cv.width=Math.max(320,Math.round(r.width*Z));cv.height=Math.max(240,Math.round(r.height*Z));cv.style.width=r.width+'px';cv.style.height=r.height+'px';}
+function resizeCanvas(){const cv=$('cv');const r=$('cvWrap').getBoundingClientRect();const Z=(r.width>r.height&&r.height<=560)?1.55:1;cv.width=Math.max(320,Math.round(r.width*Z));cv.height=Math.max(240,Math.round(r.height*Z));cv.style.width=r.width+'px';cv.style.height=r.height+'px';}
 window.addEventListener('resize',()=>{if(B){resizeCanvas();try{buildBattlefield();}catch(e){}}});
 function spawnUnits(){
   const cv=$('cv'),W=cv.width,H=cv.height;B.units=[];
@@ -1726,7 +1755,7 @@ function battleLoop(ts){
   drawFlags(ctx,B.t*16);
   if(B.zones)for(const z of B.zones){ctx.save();ctx.globalAlpha=0.20+0.05*Math.sin(B.t*0.3+z.x);ctx.fillStyle=z.kind==='fire'?'#ff6a1e':'#6fc4ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.29);ctx.fill();ctx.globalAlpha=0.5;ctx.strokeStyle=z.kind==='fire'?'#ffb03a':'#bfe6ff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
   const atkPow=B.atkGens.length?B.atkGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.atkGens.length:45;
-  const defPow=(B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45)*wallMult(B.toId);
+  const defPow=(B.defGens.length?B.defGens.reduce((a,n)=>a+HMAP[n].vo,0)/B.defGens.length:45)*wallMult(B.toId)*((S.defPenalty&&S.defPenalty[B.toId])?S.defPenalty[B.toId].mult:1);
   const alive=B.units.filter(u=>!u.dead);
   const genPos={atk:{x:W*0.055,y:H*0.60},def:{x:W*0.945,y:H*0.60}};
   if(B.pending&&B.pending.length)B.pending=B.pending.filter(p=>{if(B.t>=p.at){try{p.fn();}catch(e){}return false;}return true;});
@@ -2122,7 +2151,7 @@ function checkEnd(){
 function instantBattle(atkFac,fromId,toId){
   const from=S.regions[fromId],to=S.regions[toId];
   const gens=from.garrison.filter(n=>!(S.blocked&&S.blocked[n])).slice(0,3);const atkTroops=Math.floor(from.troops*0.8);
-  const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac)*((S.defBonus&&S.defBonus[toId])?S.defBonus[toId].mult:1)*wallMult(toId);
+  const pa=sidePower(gens,atkTroops,to.garrison,atkFac,to.owner),pd=sidePower(to.garrison,Math.max(1,to.troops),gens,to.owner,atkFac)*((S.defBonus&&S.defBonus[toId])?S.defBonus[toId].mult:1)*wallMult(toId)*((S.defPenalty&&S.defPenalty[toId])?S.defPenalty[toId].mult:1);
   from.troops-=atkTroops;
   if(pa>pd){const surv=Math.max(60,Math.round(atkTroops*(1-pd/pa*0.75)));const oldG=to.garrison.slice(),oldOwner=to.owner;to.owner=atkFac;handleCityPrisoners(toId,atkFac);to.troops=surv;to.garrison=gens.slice();from.garrison=from.garrison.filter(n=>!gens.includes(n));retreatGenerals(oldG.filter(n=>!gens.includes(n)),oldOwner,toId);log(FACTIONS[atkFac].name+' chiếm '+RMAP[toId].name+'.');return 'win';}
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
@@ -2286,7 +2315,7 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
   renderStartCards();
   const old=load();
   if(old&&old.scenario==='khanvang')applyScenario('khanvang');
-  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(!old.techDiscountF)old.techDiscountF=old.techDiscount?{[old.player]:old.techDiscount}:{};if(old.incomeBuff&&!old.incomeBuff.fac)old.incomeBuff.fac=old.player;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};if(!old.prisoners)old.prisoners={};if(!old.talentCount)old.talentCount={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
+  if(old&&old.player&&old.regions&&REGIONS.every(r=>old.regions[r.id])){if(!old.tech)old.tech=initTech();if(!old.genTroop)old.genTroop={};if(!old.talentCd)old.talentCd={};if(!old.truce)old.truce={};if(!old.blocked)old.blocked={};if(!old.noRecruit)old.noRecruit={};if(!old.defBonus)old.defBonus={};if(!old.focus)old.focus={};if(old.techDiscount===undefined)old.techDiscount=0;if(!old.techDiscountF)old.techDiscountF=old.techDiscount?{[old.player]:old.techDiscount}:{};if(old.incomeBuff&&!old.incomeBuff.fac)old.incomeBuff.fac=old.player;if(old.incomeBuff===undefined)old.incomeBuff=null;if(!old.food)old.food={};if(!old.prisoners)old.prisoners={};if(!old.freeBuild)old.freeBuild={};if(!old.defPenalty)old.defPenalty={};if(old.tribute===undefined)old.tribute=null;if(!old.talentCount)old.talentCount={};Object.keys(FACTIONS).forEach(f=>{if(old.food[f]===undefined)old.food[f]=600;});REGIONS.forEach(r=>{const st=old.regions[r.id];if(st.agri===undefined){let x=5381;for(let i=0;i<r.id.length;i++)x=((x*33)^r.id.charCodeAt(i))>>>0;const cap=CAPITALS[r.owner]===r.id;const base=cap?58:32,spread=cap?24:30;st.agri=base+(x%spread);st.comm=base+((x>>3)%spread);st.pop=base+((x>>5)%spread);}if(!st.bld)st.bld={};});$('continueBtn').classList.remove('hidden');$('contTurn').textContent=old.turn;$('continueBtn').onclick=()=>{S=old;showGame();};}
 })();
 </script>
 </body>
