@@ -360,11 +360,11 @@ const SKILL_DB={
  'Kim Quang Thập Tự Trảm':{fx:'xslashgold',kind:'front',mult:1.35,targets:10},
  'Lôi Chùy Phá Trận':{fx:'thunderhammer',kind:'front',mult:1.3,targets:10},
  'Trượng Ảnh Toàn Phong':{fx:'staffspin',kind:'front',mult:1.2,targets:11},
- 'Mai Hoa Kiếm Vũ':{fx:'plumslash',kind:'front',mult:1.2,targets:10},
- 'Thanh Xà Triền Sát':{fx:'snakecoil',kind:'front',mult:1.2,targets:9},
+ 'Liên Hoàn Khoái Kiếm':{fx:'plumslash',kind:'front',mult:1.2,targets:10},
+ 'Xà Thương Triền Sát':{fx:'snakecoil',kind:'front',mult:1.2,targets:9},
  'Ảnh Trảo Dạ Hành':{fx:'shadowclaw',kind:'front',mult:1.25,targets:9},
  'Trúc Lâm Thương Trận':{fx:'bamboospears',kind:'front',mult:1.2,targets:11},
- 'Thanh Mộc Chưởng':{fx:'palmgreen',kind:'front',mult:1.15,targets:9},
+ 'Phá Trận Thương':{fx:'palmgreen',kind:'front',mult:1.15,targets:9},
  'Đoạt Mệnh Thích':{fx:'thrustsword',kind:'deep',mult:1.4,targets:5},
  'Băng Long Giáng Thế':{fx:'icedragon',kind:'deep',mult:1.4,targets:12},
  'Thủy Long Cuồng Nộ':{fx:'waterdragon',kind:'deep',mult:1.35,targets:12},
@@ -385,37 +385,85 @@ const SKILL_DB={
  'Liên Hoa Tịnh Thế':{fx:'lotus',kind:'buff',mult:1.35},
  'Hạo Dương Thần Uy':{fx:'yangring',kind:'buff',mult:1.35},
  'Kim Chung Hộ Thể':{fx:'belldome',kind:'buff',mult:1.25},
- 'Thái Cực Sinh Huy':{fx:'utaiji',kind:'buff',mult:1.3},
+ 'An Dân Lệnh':{fx:'utaiji',kind:'buff',mult:1.3},
  'Hào Khí Vân Thiên':{fx:'winewave',kind:'buff',mult:1.2},
  'Huyết Tế Chiến Kỳ':{fx:'blooddrop',kind:'buff',mult:1.3,drain:5},
- 'Vô Ảnh Vô Hình':{fx:'formless',kind:'buff',mult:1.25},
- 'Đào Hoa Mê Trận':{fx:'peach',kind:'deep',mult:1.15,targets:10,drain:8},
+ 'Ẩn Quân Kỳ':{fx:'formless',kind:'buff',mult:1.25},
+ 'Mê Hồn Trận':{fx:'peach',kind:'deep',mult:1.15,targets:10,drain:8},
  'Huyết Nguyệt Cuồng Vũ':{fx:'bloodmoon',kind:'front',mult:1.3,targets:11},
  'Liệt Diễm Song Vũ':{fx:'uflamearc',kind:'front',mult:1.3,targets:10},
  'Bôn Lôi Quyền':{fx:'thunderfist',kind:'front',mult:1.25,targets:9},
  'Thiết Phiến Toàn Phong':{fx:'needlesfan',kind:'front',mult:1.2,targets:10},
  'Nguyệt Hoa Trảm':{fx:'moon',kind:'front',mult:1.2,targets:9},
- 'Nhu Chưởng Hóa Kình':{fx:'softpalm',kind:'front',mult:1.15,targets:9},
+ 'Tá Lực Phá Quân':{fx:'softpalm',kind:'front',mult:1.15,targets:9},
  'Tinh Hà Thiên Phạt':{fx:'star',kind:'deep',mult:1.25,targets:11},
  'Thủy Tiễn Tề Phát':{fx:'uwater',kind:'deep',mult:1.15,targets:10},
  'Hàn Thủy Ngâm':{fx:'water',kind:'deep',mult:1.2,targets:10},
  'Độc Châm Phá Giáp':{fx:'poison',kind:'deep',mult:1.15,targets:8,drain:4},
  'Mê Vụ Tỏa Tâm':{fx:'haze',kind:'deep',mult:1.15,targets:10,drain:8},
- 'Cửu Dương Thiên Quang':{fx:'ninesuns',kind:'buff',mult:1.3},
- 'Âm Dương Luân Chuyển':{fx:'taiji',kind:'buff',mult:1.25},
- 'Tử Khí Đông Lai':{fx:'purple',kind:'buff',mult:1.25},
+ 'Hạo Thiên Lệnh':{fx:'ninesuns',kind:'buff',mult:1.3},
+ 'Hòa Hợp Lệnh':{fx:'taiji',kind:'buff',mult:1.25},
+ 'Thiên Tử Khí':{fx:'purple',kind:'buff',mult:1.25},
  'Nhật Luân Chiếu Thế':{fx:'sunorb',kind:'buff',mult:1.3},
- 'Trúc Diệp Thanh Phong':{fx:'bamboo',kind:'buff',mult:1.2},
+ 'Thanh Phong Lệnh':{fx:'bamboo',kind:'buff',mult:1.2},
  'Thất Thải Tường Vân':{fx:'rainbow',kind:'buff',mult:1.3}};
 const SR_SKILL={'Lữ Bố':'Vô Song Loạn Vũ','Quan Vũ':'Thanh Long Yển Nguyệt','Trương Phi':'Trường Bản Hống','Triệu Vân':'Thất Thám Xà Bàn','Mã Siêu':'Thiết Kỵ Tây Lương','Hoàng Trung':'Bách Bộ Xuyên Dương','Điển Vi':'Song Kích Cuồng Nộ','Hạ Hầu Đôn':'Cương Liệt Độc Nhãn','Trương Liêu':'Uy Chấn Tiêu Dao Tân','Khương Duy':'Cửu Phạt Trung Nguyên','Tôn Sách':'Tiểu Bá Vương','Gia Cát Lượng':'Ngọa Long Thiên Hỏa','Tư Mã Ý':'Quỷ Mưu Thiên Toán','Chu Du':'Xích Bích Thiên Hỏa','Quách Gia':'Thập Thắng Thập Bại','Lục Tốn':'Liên Doanh Hỏa Thiêu','Tào Tháo':'Kiêu Hùng Hiệu Lệnh','Lưu Bị':'Nhân Đức Chiêu Hiền','Đổng Trác':'Bạo Chính Vô Đạo','Điêu Thuyền':'Liên Hoàn Mỹ Nhân Kế'};
 const SR_PASSIVE={'Lữ Bố':{name:'Vô Song',dmg:1.18},'Quan Vũ':{name:'Võ Thánh',dmg:1.12},'Trương Phi':{name:'Hổ Uy',moralePen:6},'Triệu Vân':{name:'Long Đảm',def:0.85},'Gia Cát Lượng':{name:'Ngọa Long',sp:25},'Tư Mã Ý':{name:'Nhẫn Nhục',def:0.88},'Chu Du':{name:'Đô Đốc',skillDmg:1.15},'Tào Tháo':{name:'Kiêu Hùng',morale:8},'Lưu Bị':{name:'Nhân Đức',morale:6},'Quách Gia':{name:'Quỷ Tài',sp:18},'Mã Siêu':{name:'Thần Uy',dmg:1.12},'Hoàng Trung':{name:'Lão Tướng',skillDmg:1.12},'Trương Liêu':{name:'Uy Danh',moralePen:5},'Lục Tốn':{name:'Nho Tướng',skillDmg:1.1},'Đổng Trác':{name:'Bạo Ngược',dmg:1.1,moralePen:4},'Điêu Thuyền':{name:'Khuynh Thành',moralePen:8},'Tôn Sách':{name:'Bá Vương',dmg:1.12},'Hạ Hầu Đôn':{name:'Cương Liệt',def:0.9},'Điển Vi':{name:'Trung Dũng',def:0.88},'Khương Duy':{name:'Đảm Lược',sp:12}};
 const S_SKILLS={'Võ tướng':['Phá Quân Trảm','Hổ Gầm Xung Phong','Hổ Trảo Liệt Thiên','Kim Quang Thập Tự Trảm','Song Kiếm Hợp Bích','Huyết Nguyệt Cuồng Vũ','Liệt Diễm Song Vũ'],'Mưu sĩ':['Phong Hỏa Liên Thiên','Lạc Thạch Thiên Giáng','Băng Long Giáng Thế','Thủy Long Cuồng Nộ','Nguyệt Lạc Thiên Khuynh'],'Quân chủ':['Vương Giả Hiệu Triệu','Liên Hoa Tịnh Thế','Hạo Dương Thần Uy','Nhật Luân Chiếu Thế']};
-const R_SKILLS={'Võ tướng':['Lôi Chùy Phá Trận','Trượng Ảnh Toàn Phong','Mai Hoa Kiếm Vũ','Ảnh Trảo Dạ Hành','Trúc Lâm Thương Trận','Thanh Xà Triền Sát','Đoạt Mệnh Thích','Hoàng Sa Long Quyển','Bôn Lôi Quyền','Thiết Phiến Toàn Phong','Nguyệt Hoa Trảm','Nhu Chưởng Hóa Kình'],'Mưu sĩ':['Hàn Liên Băng Phong','Phi Tuyết Liên Thiên','Địa Liệt Thạch Thứ','Thiên La Địa Võng','Độc Vụ Mê Tâm','Ma Âm Nhiếp Hồn','Châm Vũ Mãn Thiên','Lục Quang Phá Không','Tử Viêm Lưu Tinh','Lân Hỏa Dạ Tập','Băng Tinh Liệt','Kim Tiêu Đoạt Mệnh','Tinh Hà Thiên Phạt','Thủy Tiễn Tề Phát','Hàn Thủy Ngâm','Độc Châm Phá Giáp','Mê Vụ Tỏa Tâm'],'Quân chủ':['Kim Chung Hộ Thể','Thái Cực Sinh Huy','Hào Khí Vân Thiên','Huyết Tế Chiến Kỳ','Vô Ảnh Vô Hình','Đào Hoa Mê Trận','Cửu Dương Thiên Quang','Âm Dương Luân Chuyển','Tử Khí Đông Lai','Trúc Diệp Thanh Phong','Thất Thải Tường Vân']};
-const S_PASSIVES=[{name:'Tinh Binh',dmg:1.08},{name:'Kiên Thủ',def:0.92},{name:'Túc Mưu',sp:12},{name:'Danh Tướng',morale:4},{name:'Thiện Chiến',skillDmg:1.08},{name:'Đột Kích',dmg:1.05,skillDmg:1.05}];
+const R_SKILLS={'Võ tướng':['Lôi Chùy Phá Trận','Trượng Ảnh Toàn Phong','Liên Hoàn Khoái Kiếm','Ảnh Trảo Dạ Hành','Trúc Lâm Thương Trận','Xà Thương Triền Sát','Đoạt Mệnh Thích','Hoàng Sa Long Quyển','Bôn Lôi Quyền','Thiết Phiến Toàn Phong','Nguyệt Hoa Trảm','Tá Lực Phá Quân'],'Mưu sĩ':['Hàn Liên Băng Phong','Phi Tuyết Liên Thiên','Địa Liệt Thạch Thứ','Thiên La Địa Võng','Độc Vụ Mê Tâm','Ma Âm Nhiếp Hồn','Châm Vũ Mãn Thiên','Lục Quang Phá Không','Tử Viêm Lưu Tinh','Lân Hỏa Dạ Tập','Băng Tinh Liệt','Kim Tiêu Đoạt Mệnh','Tinh Hà Thiên Phạt','Thủy Tiễn Tề Phát','Hàn Thủy Ngâm','Độc Châm Phá Giáp','Mê Vụ Tỏa Tâm'],'Quân chủ':['Kim Chung Hộ Thể','An Dân Lệnh','Hào Khí Vân Thiên','Huyết Tế Chiến Kỳ','Ẩn Quân Kỳ','Mê Hồn Trận','Hạo Thiên Lệnh','Hòa Hợp Lệnh','Thiên Tử Khí','Thanh Phong Lệnh','Thất Thải Tường Vân']};
+const S_PASSIVES=[{name:'Tinh Binh',dmg:1.08},{name:'Kiên Thủ',def:0.92},{name:'Túc Mưu',sp:12},{name:'Danh Tướng',morale:4},{name:'Thiện Chiến',skillDmg:1.08},{name:'Đột Kích',dmg:1.05,skillDmg:1.05},{name:'Nhiếp Hồn',moralePen:4},{name:'Bất Khuất',def:0.94,morale:2}];
 const ROLE_PASSIVE={'Võ tướng':{name:'Dũng Mãnh',dmg:1.05},'Mưu sĩ':{name:'Túc Trí',sp:8},'Quân chủ':{name:'Uy Tín',morale:3}};
 const ROLE_PASSIVE_N={'Võ tướng':{name:'Ra Trận',dmg:1.02},'Mưu sĩ':{name:'Mưu Kế',sp:5},'Quân chủ':{name:'Danh Tiếng',morale:2}};
-const N_SKILLS={'Võ tướng':['Trảm Kích','Thanh Mộc Chưởng'],'Mưu sĩ':['Hỏa Tiễn','Phi Tuyết Liên Thiên'],'Quân chủ':['Hiệu Triệu','Hào Khí Vân Thiên']};
+const N_SKILLS={'Võ tướng':['Trảm Kích','Phá Trận Thương'],'Mưu sĩ':['Hỏa Tiễn','Phi Tuyết Liên Thiên'],'Quân chủ':['Hiệu Triệu','Hào Khí Vân Thiên']};
 const N_SKILL={'Võ tướng':'Trảm Kích','Mưu sĩ':'Hỏa Tiễn','Quân chủ':'Hiệu Triệu'};
+/* SKILL_FX2 — lớp hiệu ứng phụ cho từng skill: stun (giây choáng), slow (giây làm chậm 40%),
+   dd = phá giáp (địch nhận thêm % sát thương, 8s), bd = buff % sát thương phe ta (8s),
+   bf = buff % giảm sát thương nhận phe ta (8s), sd = trừ SP địch/bậc, gh = đòn kết liễu tướng địch gần nhất (% máu tối đa/bậc),
+   heal = hồi % máu cho mọi tướng phe ta/bậc, mu = tăng sĩ khí phe ta/bậc. Mọi con số đều ăn thật vào trận. */
+const SKILL_FX2={
+ 'Vô Song Loạn Vũ':{stun:1.2,dd:0.25,gh:0.10},'Thanh Long Yển Nguyệt':{gh:0.14,dd:0.15},'Trường Bản Hống':{stun:1.6},
+ 'Thất Thám Xà Bàn':{gh:0.08,slow:2},'Thiết Kỵ Tây Lương':{stun:0.8,bd:0.10},'Bách Bộ Xuyên Dương':{gh:0.16},
+ 'Song Kích Cuồng Nộ':{bd:0.15},'Cương Liệt Độc Nhãn':{dd:0.15,stun:0.6},'Uy Chấn Tiêu Dao Tân':{stun:1.0},
+ 'Cửu Phạt Trung Nguyên':{sd:15,slow:2},'Tiểu Bá Vương':{bd:0.12,mu:4},'Ngọa Long Thiên Hỏa':{dd:0.20},
+ 'Quỷ Mưu Thiên Toán':{sd:20,dd:0.15},'Xích Bích Thiên Hỏa':{dd:0.18},'Thập Thắng Thập Bại':{dd:0.22},
+ 'Liên Doanh Hỏa Thiêu':{slow:2},'Kiêu Hùng Hiệu Lệnh':{bd:0.20,mu:3},'Nhân Đức Chiêu Hiền':{heal:0.06,mu:5,bf:0.10},
+ 'Bạo Chính Vô Đạo':{bd:0.18},'Liên Hoàn Mỹ Nhân Kế':{sd:25,slow:3},
+ 'Lôi Đình Trảm':{stun:0.7},'Trảm Kích':{},'Phá Quân Trảm':{dd:0.12},'Hổ Gầm Xung Phong':{stun:1.0},
+ 'Hổ Trảo Liệt Thiên':{gh:0.06},'Song Kiếm Hợp Bích':{bd:0.08},'Kim Quang Thập Tự Trảm':{gh:0.07},
+ 'Lôi Chùy Phá Trận':{stun:0.9},'Trượng Ảnh Toàn Phong':{slow:2},'Liên Hoàn Khoái Kiếm':{bd:0.06},
+ 'Xà Thương Triền Sát':{slow:2.5},'Ảnh Trảo Dạ Hành':{gh:0.08},'Trúc Lâm Thương Trận':{bf:0.08},
+ 'Phá Trận Thương':{},'Hoàng Sa Long Quyển':{slow:2},'Bôn Lôi Quyền':{stun:0.6},'Thiết Phiến Toàn Phong':{slow:1.5},
+ 'Nguyệt Hoa Trảm':{gh:0.05},'Tá Lực Phá Quân':{dd:0.10},'Huyết Nguyệt Cuồng Vũ':{bd:0.10},'Liệt Diễm Song Vũ':{dd:0.10},
+ 'Hỏa Công Liên Hoàn':{dd:0.10},'Hỏa Tiễn':{},'Phong Hỏa Liên Thiên':{dd:0.12},'Lạc Thạch Thiên Giáng':{stun:0.8},
+ 'Đoạt Mệnh Thích':{gh:0.12},'Băng Long Giáng Thế':{slow:3},'Thủy Long Cuồng Nộ':{dd:0.12},'Tử Viêm Lưu Tinh':{sd:12},
+ 'Hàn Liên Băng Phong':{slow:2.5},'Phi Tuyết Liên Thiên':{slow:2},'Nguyệt Lạc Thiên Khuynh':{dd:0.14},
+ 'Địa Liệt Thạch Thứ':{stun:0.7},'Thiên La Địa Võng':{slow:3},'Độc Vụ Mê Tâm':{dd:0.12},'Ma Âm Nhiếp Hồn':{sd:15},
+ 'Châm Vũ Mãn Thiên':{gh:0.05},'Kim Tiêu Đoạt Mệnh':{gh:0.09},'Lân Hỏa Dạ Tập':{dd:0.10},'Lục Quang Phá Không':{dd:0.12},
+ 'Băng Tinh Liệt':{slow:2},'Tinh Hà Thiên Phạt':{dd:0.13},'Thủy Tiễn Tề Phát':{slow:1.5},'Hàn Thủy Ngâm':{slow:2},
+ 'Độc Châm Phá Giáp':{dd:0.16},'Mê Vụ Tỏa Tâm':{sd:12},'Mê Hồn Trận':{slow:2.5,sd:10},
+ 'Hiệu Triệu Thiên Hạ':{mu:5,bd:0.08},'Hiệu Triệu':{mu:3},'Vương Giả Hiệu Triệu':{mu:6,bf:0.10},
+ 'Liên Hoa Tịnh Thế':{heal:0.05,bf:0.08},'Hạo Dương Thần Uy':{bd:0.12},'Kim Chung Hộ Thể':{bf:0.18},
+ 'An Dân Lệnh':{heal:0.04,mu:4},'Hào Khí Vân Thiên':{mu:5,bd:0.06},'Huyết Tế Chiến Kỳ':{bd:0.16},
+ 'Ẩn Quân Kỳ':{bf:0.12,bd:0.06},'Hạo Thiên Lệnh':{bd:0.10,mu:3},'Hòa Hợp Lệnh':{heal:0.03,bf:0.08},
+ 'Thiên Tử Khí':{mu:6},'Nhật Luân Chiếu Thế':{bd:0.10,heal:0.03},'Thanh Phong Lệnh':{bf:0.08,mu:3},'Thất Thải Tường Vân':{heal:0.04,mu:4}};
+const FIRE_FX=['fire','phoenix','flamearc','uphoenix','meteorsfire','uflamearc'];
+const FROST_FX=['ice','water','uwater','icedragon','waterdragon','frostlotus','icecrystal','snowflake'];
+function skillTags(n){const sk=SKILL_DB[n];if(!sk)return[];const F=SKILL_FX2[n]||{};const t=[];
+  t.push(sk.kind==='buff'?'Hỗ trợ / Hồi quân':sk.kind==='deep'?'AoE đánh sâu':'AoE diện rộng');
+  if(FIRE_FX.includes(sk.fx))t.push('Thiêu đốt');
+  if(FROST_FX.includes(sk.fx))t.push('Băng: làm chậm');
+  if(sk.drain)t.push('Debuff: trừ sĩ khí');
+  if(F.stun)t.push('Khống chế: choáng');
+  if(F.slow)t.push('Debuff: làm chậm');
+  if(F.dd)t.push('Debuff: phá giáp');
+  if(F.sd)t.push('Debuff: trừ SP địch');
+  if(F.gh)t.push('Săn tướng');
+  if(F.bd)t.push('Buff: tăng sát thương');
+  if(F.bf)t.push('Buff: tăng phòng thủ');
+  if(F.heal)t.push('Hồi máu tướng');
+  if(F.mu)t.push('Buff: tăng sĩ khí');
+  if(sk.sp)t.push('Hồi SP');
+  return t;}
 /* ---- troop passives: every troop type has its own innate, scaled by its tier ---- */
 const TROOP_PASSIVE_POOLS={
  giao:[t=>({name:'Giữ Khoảng',defM:1-0.01*t,desc:'Giảm sát thương nhận '+(1*t)+'%'}),
@@ -1181,7 +1229,7 @@ function openBattle(cfg){
   if(cfg.atkGens[0]&&cfg.genForms[cfg.atkGens[0]])cfg.atkForm=cfg.genForms[cfg.atkGens[0]];
   if(cfg.defGens[0]&&cfg.genForms[cfg.defGens[0]])cfg.defForm=cfg.genForms[cfg.defGens[0]];
   B={...cfg,over:false,speed:1,t:0,units:[],effects:[],shake:0,winner:null,endReason:null,
-     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0,projs:[],pending:[],anims:[],selGen:null,hasteT:{atk:0,def:0},order:{atk:null,def:null},orderT:{atk:0,def:0},orderCd:{atk:0,def:0},slowmo:0,banner:null,freeze:0,routNote:{},deployT:18,duel:null,duelCharge:false,zones:[],break:{atk:0,def:0},phase:'fight',turn:1,turnT:0,prepT:0,turnStartCounts:null};
+     sp:{atk:0,def:0},stance:{atk:'normal',def:'normal'},moraleBonus:{atk:0,def:0},buffFx:{atk:{t:0},def:{t:0}},defDown:{atk:0,def:0},defDownT:{atk:0,def:0},genCd:{atk:30,def:30},aiT:0,projs:[],pending:[],anims:[],selGen:null,hasteT:{atk:0,def:0},order:{atk:null,def:null},orderT:{atk:0,def:0},orderCd:{atk:0,def:0},slowmo:0,banner:null,freeze:0,routNote:{},deployT:18,duel:null,duelCharge:false,zones:[],break:{atk:0,def:0},phase:'fight',turn:1,turnT:0,prepT:0,turnStartCounts:null};
   const gHp=(gens,troops)=>Math.round(troops*0.20)+220;
   B.genAtk={hp:gHp(cfg.atkGens,cfg.atkTroops),name:cfg.atkGens[0]||'Chủ tướng'};B.genAtk.max=B.genAtk.hp;
   B.genDef={hp:gHp(cfg.defGens,cfg.defTroops),name:cfg.defGens[0]||'Chủ tướng'};B.genDef.max=B.genDef.hp;
@@ -1371,13 +1419,13 @@ function useSkill(side,gen){
   B.shake=Math.max(B.shake,8);B.slowmo=48;sfxSkillSfx(sk.fx);
   const fxSrc=FXSRC[sk.fx];if(!B.fx)B.fx={};if(!B.fx[fxSrc])loadFx(fxSrc);
   const pattern=FX_PATTERN[sk.fx]||'Võ tướng';
-  const dmgM=(gen.passive&&gen.passive.skillDmg)||1;let zoneC=null;
+  const dmgM=(gen.passive&&gen.passive.skillDmg)||1;let zoneC=null;let hitTargets=[];
   const centroid=pool=>pool.length?{x:pool.reduce((a,u)=>a+u.x,0)/pool.length,y:pool.reduce((a,u)=>a+u.y,0)/pool.length}:{x:cv.width/2,y:cv.height/2};
   if(sk.drain)B.moraleBonus[foe]=Math.max(-30,B.moraleBonus[foe]-sk.drain*tier);
   if(sk.sp)B.sp[side]=Math.min(100,B.sp[side]+sk.sp);
   if(sk.kind==='deep'){
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
-    const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));
+    const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));hitTargets=targets;
     const c=centroid(targets);zoneC=c;
     pushSkillAnim({role:pattern,tier,skName:gen.skill,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk,gen.skill),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
@@ -1393,7 +1441,7 @@ function useSkill(side,gen){
       for(let i=0;i<8;i++)B.effects.push({x:gen.x+(Math.random()*80-40),y:gen.y+(Math.random()*90-45),life:24,type:'heal'});}});
   }else{
     const myCx=mine.length?mine.reduce((a,u)=>a+u.x,0)/mine.length:cv.width/2;
-    const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));
+    const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));hitTargets=targets;
     const c=centroid(targets);zoneC=c;
     pushSkillAnim({role:pattern,tier,skName:gen.skill,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk,gen.skill),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
@@ -1408,6 +1456,19 @@ function useSkill(side,gen){
       B.effects.push({x:zoneC.x,y:zoneC.y,life:30,type:'ring',color:'#ffd94a'});
       playSmp('boom',0.3,0.9);B.shake=Math.max(B.shake,9);
     }
+  }
+  const F=SKILL_FX2[gen.skill];
+  if(F){
+    if(F.sd)B.sp[foe]=Math.max(0,B.sp[foe]-F.sd*tier);
+    if(F.mu)B.moraleBonus[side]=Math.min(24,B.moraleBonus[side]+F.mu*tier);
+    if(F.bd){B.buffFx[side].dmg=F.bd;B.buffFx[side].t=480;}
+    if(F.bf){B.buffFx[side].def=F.bf;if(!F.bd)B.buffFx[side].t=480;else B.buffFx[side].t=480;}
+    if(F.dd){B.defDown[foe]=F.dd;B.defDownT[foe]=480;}
+    if(F.heal){B.genUnits.filter(g=>g.side===side&&!g.dead).forEach(g=>{g.hp=Math.min(g.maxHp,g.hp+g.maxHp*F.heal*tier);});syncGenHp();}
+    if(F.gh){const eg=B.genUnits.filter(g=>g.side===foe&&!g.dead);if(eg.length){eg.sort((a,b)=>Math.hypot(a.x-gen.x,a.y-gen.y)-Math.hypot(b.x-gen.x,b.y-gen.y));const t0=eg[0];
+      B.pending.push({at:B.t+20,fn:()=>{if(t0.dead)return;t0.hp-=t0.maxHp*F.gh*tier;t0.flash=10;B.texts.push({x:t0.x,y:t0.y-72,life:52,txt:'-'+Math.round(F.gh*tier*100)+'% HP tướng!',color:'#ff9a9a'});if(t0.hp<=0)killGeneral(t0);}});}}
+    if((F.stun||F.slow)&&hitTargets.length){const stF=F.stun?Math.round(F.stun*60*(0.6+0.4*tier)):0;const slF=F.slow?Math.round(F.slow*60):0;
+      B.pending.push({at:B.t+18,fn:()=>{for(const u of hitTargets){if(u.dead)continue;if(stF){u.cd=Math.max(u.cd,stF);u.slowT=Math.max(u.slowT,stF);}else if(slF)u.slowT=Math.max(u.slowT,slF);}}});}
   }
   return true;
 }
@@ -1716,6 +1777,9 @@ function stanceMult(side){
   const od=B.order&&B.order[side];
   if(od==='tongcong'){m.dealt*=1.15;m.taken*=1.10;}
   else if(od==='cothu'){m.dealt*=0.92;m.taken*=0.75;}
+  const bf=B.buffFx&&B.buffFx[side];
+  if(bf&&bf.t>0){if(bf.dmg)m.dealt*=1+bf.dmg;if(bf.def)m.taken*=1-bf.def;}
+  if(B.defDownT&&B.defDownT[side]>0)m.taken*=1+(B.defDown[side]||0);
   return m;
 }
 const ORDER_LABEL={tongcong:'🔥 TỔNG TẤN CÔNG!',cothu:'🧱 CỐ THỦ!',san:'🎯 SĂN CHỦ TƯỚNG!'};
@@ -1790,6 +1854,8 @@ function battleLoop(ts){
   if(B.ambT<=0){B.ambT=45+Math.random()*80;if(!B.over)playSmp(['clash','armor','parry','clang','sw6'][(Math.random()*5)|0],0.035,0.58+Math.random()*0.15,Math.random()*1.5-0.75);}
   if(Math.random()<0.12&&B.effects.length<85&&alive.length){const ru=alive[(Math.random()*alive.length)|0];if(ru&&(ru.atkAnim>0||ru.cd<12))B.effects.push({x:ru.x,y:ru.y+5,life:11,type:'dust'});}
   for(const sd of ['atk','def']){if(B.orderCd[sd]>0)B.orderCd[sd]-=dt;if(B.orderT[sd]>0){B.orderT[sd]-=dt;if(B.orderT[sd]<=0)B.order[sd]=null;}
+  if(B.buffFx)for(const sd of ['atk','def']){const bf=B.buffFx[sd];if(bf.t>0){bf.t-=dt;if(bf.t<=0){bf.dmg=0;bf.def=0;}}}
+  if(B.defDownT)for(const sd of ['atk','def']){if(B.defDownT[sd]>0)B.defDownT[sd]-=dt;}
     if(B.hasteT&&B.hasteT[sd]>0)B.hasteT[sd]-=dt;const spF=1+B.genUnits.filter(g=>g.side===sd&&!g.dead&&g.passive&&g.passive.sp).reduce((a,g)=>a+g.passive.sp,0)/100;
     B.sp[sd]=Math.min(100,B.sp[sd]+dt*0.075*stanceMult(sd).sp*spF);}
   // AI: skills + stance decisions
@@ -2084,7 +2150,7 @@ function battleLoop(ts){
 }
 let _skHoldT=null,_skHoldShown=false,_skTipTimer=null;
 function showSkillTipFor(g,sticky){if(!B||!g)return;const h=HMAP[g.name];if(!h)return;const sk=SKILL_DB[h.skill]||{mult:1};const tip=$('skillTip');if(!tip)return;
-  tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>'+(h.skillDesc||'Chiêu thức riêng của '+g.name)+'<br>💥 Hệ số sát thương: <b>×'+sk.mult+'</b> · SP cần: 34 (bậc 1) / 67 (bậc 2) / 100 (bậc 3) — bậc càng cao càng mạnh · Hồi chiêu 15 giây sau khi tung</small>';
+  tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>🏷️ '+skillTags(h.skill).join(' · ')+'<br>'+skillDesc(h.skill)+'<br>SP cần: 34 (bậc 1) / 67 (bậc 2) / 100 (bậc 3) — bậc càng cao càng mạnh · Hồi chiêu 15 giây sau khi tung</small>';
   tip.classList.remove('hidden');if(sticky)_skHoldShown=true;
   if(_skTipTimer)clearTimeout(_skTipTimer);if(!sticky)_skTipTimer=setTimeout(hideSkillTip,2600);}
 function showSkillTip(){showSkillTipFor(B?B.selGen:null,true);}
@@ -2248,7 +2314,25 @@ $('heroesBtn').onclick=()=>{renderGallery();$('heroModal').classList.remove('hid
 $('ctabs').innerHTML='<button data-c="all" class="on">Tất cả</button>'+[['giao','Giáo'],['kiem','Kiếm'],['giap','Giáp'],['ky','Kỵ']].map(x=>'<button data-c="'+x[0]+'">'+x[1]+'</button>').join('');
 document.querySelectorAll('#ctabs button').forEach(b=>b.onclick=()=>{TROOPF.c=b.dataset.c;renderTroops();});
 $('troopsBtn').onclick=()=>{renderTroops();$('troopModal').classList.remove('hidden');};
-function skillDesc(n){const sk=SKILL_DB[n];if(!sk)return '';return (sk.kind==='front'?'Đòn đánh diện rộng vào hàng quân phía trước':sk.kind==='deep'?'Đòn đánh sâu vào hậu quân địch':'Hiệu lệnh: viện binh và sĩ khí cho toàn quân')+' · hệ số ×'+sk.mult+(sk.targets?' · trúng '+sk.targets+'+ lính':'')+(sk.drain?' · trừ sĩ khí địch '+sk.drain+'/bậc SP':'')+(sk.sp?' · hoàn lại '+sk.sp+' SP':'');}
+function skillDesc(n){const sk=SKILL_DB[n];if(!sk)return '';const F=SKILL_FX2[n]||{};const p=[];
+  p.push(sk.kind==='front'?('Sát thương diện rộng vào hàng quân phía trước — hệ số ×'+sk.mult+', trúng khoảng '+sk.targets+' lính mỗi bậc SP')
+    :sk.kind==='deep'?('Sát thương đánh sâu vào hậu quân địch — hệ số ×'+sk.mult+', trúng khoảng '+sk.targets+' lính mỗi bậc SP')
+    :('Hiệu lệnh hỗ trợ — gọi viện binh bằng 5% quân số tối đa × hệ số '+sk.mult+' mỗi bậc SP, +7 sĩ khí mỗi bậc, hồi 5% máu cho các tướng phe ta'));
+  if(FIRE_FX.includes(sk.fx))p.push('để lại VÙNG LỬA thiêu đốt địch đứng trong ~8 giây');
+  if(FROST_FX.includes(sk.fx))p.push('để lại VÙNG BĂNG: địch trong vùng bị làm chậm và đánh yếu đi ~8 giây');
+  if((sk.mult||1)>=1.4)p.push('sóng xung kích hất văng địch quanh điểm nổ');
+  if(sk.drain)p.push('DEBUFF: trừ sĩ khí địch '+sk.drain+' mỗi bậc SP');
+  if(sk.sp)p.push('hoàn lại '+sk.sp+' SP cho phe ta');
+  if(F.stun)p.push('KHỐNG CHẾ: làm choáng lính địch trúng đòn ~'+F.stun+' giây mỗi bậc');
+  if(F.slow)p.push('DEBUFF: làm chậm lính địch trúng đòn trong '+F.slow+' giây');
+  if(F.dd)p.push('DEBUFF phá giáp: địch nhận thêm '+Math.round(F.dd*100)+'% sát thương trong 8 giây');
+  if(F.bd)p.push('BUFF: toàn quân ta tăng '+Math.round(F.bd*100)+'% sát thương trong 8 giây');
+  if(F.bf)p.push('BUFF: toàn quân ta giảm '+Math.round(F.bf*100)+'% sát thương phải nhận trong 8 giây');
+  if(F.sd)p.push('DEBUFF: trừ '+F.sd+' SP của địch mỗi bậc');
+  if(F.gh)p.push('SĂN TƯỚNG: đòn kết liễu vào tướng địch gần nhất, trừ '+Math.round(F.gh*100)+'% máu tối đa của tướng đó mỗi bậc');
+  if(F.heal)p.push('HỒI MÁU: hồi '+Math.round(F.heal*100)+'% máu cho mọi tướng phe ta mỗi bậc');
+  if(F.mu)p.push('BUFF: tăng sĩ khí phe ta +'+F.mu+' mỗi bậc');
+  return p.join(' · ')+'.';}
 function showHeroDetail(name){
   const h=HMAP[name];if(!h)return;
   const tr=troopOf(name);const td=TALENT_DB[h.talent];
@@ -2259,7 +2343,7 @@ function showHeroDetail(name){
     +'<div><h3 style="color:'+FACTIONS[h.faction].color+';margin:0 0 4px"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+name+'</h3>'
     +'<div class="info">'+FACTIONS[h.faction].icon+' '+FACTIONS[h.faction].name+' · '+h.role+'<br>'
     +'⚔️ Võ lực '+bar(h.vo,'#e05c4a')+'<br>🧠 Trí lực '+bar(h.tri,'#5aa7e0')+'<br>🎖️ Chỉ huy '+bar(h.chi,'#e8c766')+'<br>❤️ Sinh lực gốc: '+h.hp+'</div></div></div>'
-    +'<div class="info" style="margin-top:10px;line-height:1.65">⚡ <b>Chủ động — '+h.skill+'</b>: '+skillDesc(h.skill)+'<br>'
+    +'<div class="info" style="margin-top:10px;line-height:1.65">⚡ <b>Chủ động — '+h.skill+'</b> · <i>'+skillTags(h.skill).join(' · ')+'</i><br>'+skillDesc(h.skill)+'<br>'
     +'🛡️ <b>Bị động — '+h.passive.name+'</b>: '+h.passive.desc+'<br>'
     +'✦ <b>Talent ('+TALENT_DOM[h.talentDom]+') — '+(td?td.icon+' ':'')+'<span data-talent="'+h.talent+'" style="text-decoration:underline dotted;cursor:pointer">'+h.talent+'</span></b>: '+(td?td.desc:'')+' · hồi chiêu '+(td?td.cd:0)+' tháng · tỷ lệ thành công '+(td?Math.round((td.rate||0.8)*100):0)+'%<br>'
 
