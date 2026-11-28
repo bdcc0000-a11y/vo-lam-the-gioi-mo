@@ -802,7 +802,8 @@ function processPrisoners(){
   Object.keys(S.prisoners).forEach(n=>{const pr=S.prisoners[n];if(!pr)return;
     pr.turns=(pr.turns||0)+1;pr.tried=false;
     if(!REGIONS.some(r=>S.regions[r.id].owner===pr.holder)){delete S.prisoners[n];if(placeGeneralHome(n,pr.from))log('🕊️ '+FACTIONS[pr.holder].name+' sụp đổ — '+n+' được tự do, trở về '+FACTIONS[pr.from].name+'.');return;}
-    if(pr.turns>=3&&Math.random()<0.04){delete S.prisoners[n];if(placeGeneralHome(n,pr.from)){log('🏃 '+n+' đã vượt ngục trốn về '+FACTIONS[pr.from].name+'!');if(pr.holder===S.player)toast('🏃 Tù binh '+n+' vượt ngục trốn thoát!');}return;}
+    const _esc={N:0.10,R:0.13,S:0.16,SR:0.20}[HMAP[n].tier]||0.10;
+    if(pr.turns>=3&&Math.random()<_esc){delete S.prisoners[n];if(placeGeneralHome(n,pr.from)){log('🏃 '+n+' đã vượt ngục trốn về '+FACTIONS[pr.from].name+'!');if(pr.holder===S.player)toast('🏃 Tù binh '+n+' vượt ngục trốn thoát!');}return;}
     if(pr.holder!==S.player&&Math.random()*100<prisonerRate(n,pr)){const hf=pr.holder;delete S.prisoners[n];placeGeneralHome(n,hf);log('😱 '+n+' đã bị '+FACTIONS[hf].name+' chiêu hàng và theo địch!');if(pr.from===S.player)toast('😱 '+n+' đã đầu hàng '+FACTIONS[hf].name+'!');}
   });
 }
@@ -810,10 +811,10 @@ function openPrisoners(){
   if(!S.prisoners)S.prisoners={};
   const mine=Object.keys(S.prisoners).filter(n=>S.prisoners[n].holder===S.player);
   const ours=Object.keys(S.prisoners).filter(n=>S.prisoners[n].from===S.player&&S.prisoners[n].holder!==S.player);
-  let h='<h4>⛓️ Tù binh ba đang giam ('+mine.length+')</h4><div class="info">🎯 Chiêu hàng chỉ làm được ở tháng 🤝 Ngoại giao. Tù binh bị giam đủ 3 tháng mới có thể vượt ngục (4%/tháng) — và nếu thành đang giam bị địch chiếm, tù binh sẽ bị địch đoạt mất.</div>';
+  let h='<h4>⛓️ Tù binh ba đang giam ('+mine.length+')</h4><div class="info">🎯 Chiêu hàng chỉ làm được ở tháng 🤝 Ngoại giao. Tù binh bị giam đủ 3 tháng mới có thể vượt ngục, tỉ lệ theo hạng tướng: N 10% · R 13% · S 16% · SR 20% mỗi tháng — tướng càng cao cấp càng dễ trốn. Nếu thành đang giam bị địch chiếm, tù binh sẽ bị địch đoạt mất.</div>';
   if(!mine.length)h+='<div class="info">Chưa giam ai. Thắng trận và bắt sống tướng địch để có tù binh.</div>';
   for(const n of mine){const pr=S.prisoners[n];const hh=HMAP[n];const rate=prisonerRate(n,pr);
-    h+='<div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:6px"><span><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+FACTIONS[pr.from].name+' · giam ở '+RMAP[pr.city].name+' · đã giam '+pr.turns+' tháng · chiêu hàng: <b>'+rate+'%</b></small></span>'
+    h+='<div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:6px"><span><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b><br><small>'+FACTIONS[pr.from].name+' · giam ở '+RMAP[pr.city].name+' · đã giam '+pr.turns+' tháng · chiêu hàng: <b>'+rate+'%</b> · vượt ngục: <b>'+Math.round(({N:0.10,R:0.13,S:0.16,SR:0.20}[hh.tier]||0.10)*100)+'%</b>/tháng</small></span>'
     +'<button onclick="tryRecruitPrisoner(\''+n+'\')" '+((pr.tried||monthType()!=='ngoai')?'disabled':'')+'>🎯 Chiêu hàng</button>'
     +'<button onclick="decideCaptive(\''+n+'\',\'release\');openPrisoners()">🤝 Thả</button>'
     +'<button onclick="decideCaptive(\''+n+'\',\'execute\');openPrisoners()">⚔️ Chém</button></div>';}
