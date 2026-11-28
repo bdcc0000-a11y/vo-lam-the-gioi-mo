@@ -294,6 +294,8 @@ const FACTIONS={
 const HMAP={}; HEROES.forEach(h=>HMAP[h.name]=h);
 /* ---- tiers SR/S/R/N, signature skills, passives ---- */
 const FXSRC={thunder:'assets/fx/fx-thunder.png',fire:'assets/fx/fx-fire.png',sun:'assets/fx/fx-sun.png',slash:'assets/fx/fx-slash.png',
+ bamboo:'assets/fx/fxu-bamboo.png',bamboospears:'assets/fx/fxu-bamboospears.png',belldome:'assets/fx/fxu-belldome.png',blooddrop:'assets/fx/fxu-blooddrop.png',ubloodmoon:'assets/fx/fxu-bloodmoon.png',butterflies:'assets/fx/fxu-butterflies.png',coindarts:'assets/fx/fxu-coindarts.png',dipper:'assets/fx/fxu-dipper.png',extinction:'assets/fx/fxu-extinction.png',feather:'assets/fx/fxu-feather.png',uflamearc:'assets/fx/fxu-flamearc.png',flute:'assets/fx/fxu-flute.png',formless:'assets/fx/fxu-formless.png',frostlotus:'assets/fx/fxu-frostlotus.png',icecrystal:'assets/fx/fxu-icecrystal.png',icedragon:'assets/fx/fxu-icedragon.png',lionroar:'assets/fx/fxu-lionroar.png',lotus:'assets/fx/fxu-lotus.png',meteorsfire:'assets/fx/fxu-meteors-fire.png',meteorspurple:'assets/fx/fxu-meteors-purple.png',moonfall:'assets/fx/fxu-moonfall.png',needlerain:'assets/fx/fxu-needlerain.png',needlesfan:'assets/fx/fxu-needles-fan.png',uninesuns:'assets/fx/fxu-ninesuns.png',palmgreen:'assets/fx/fxu-palmgreen.png',peach:'assets/fx/fxu-peach.png',uphoenix:'assets/fx/fxu-phoenix.png',phosphor:'assets/fx/fxu-phosphor.png',plumslash:'assets/fx/fxu-plumslash.png',poisonskull:'assets/fx/fxu-poisonskull.png',purplehaze:'assets/fx/fxu-purplehaze.png',urainbow:'assets/fx/fxu-rainbow.png',rockspikes:'assets/fx/fxu-rockspikes.png',sandnado:'assets/fx/fxu-sandnado.png',shadowclaw:'assets/fx/fxu-shadowclaw.png',sixbeams:'assets/fx/fxu-sixbeams.png',snakecoil:'assets/fx/fxu-snakecoil.png',snowflake:'assets/fx/fxu-snowflake.png',softpalm:'assets/fx/fxu-softpalm.png',spiderweb:'assets/fx/fxu-spiderweb.png',staffspin:'assets/fx/fxu-staffspin.png',sunorb:'assets/fx/fxu-sunorb.png',swordfall:'assets/fx/fxu-swordfall.png',utaiji:'assets/fx/fxu-taiji.png',thrustsword:'assets/fx/fxu-thrustsword.png',thunderfist:'assets/fx/fxu-thunderfist.png',thunderhammer:'assets/fx/fxu-thunderhammer.png',tigerclaw:'assets/fx/fxu-tigerclaw.png',twinswords:'assets/fx/fxu-twinswords.png',uwater:'assets/fx/fxu-water.png',waterdragon:'assets/fx/fxu-waterdragon.png',winewave:'assets/fx/fxu-winewave.png',xslashgold:'assets/fx/fxu-xslash-gold.png',yangring:'assets/fx/fxu-yangring.png',
+ vfire:'assets/fx/fxv-fire.png',vfrost:'assets/fx/fxv-frost.png',vholy:'assets/fx/fxv-holy.png',vshadow:'assets/fx/fxv-shadow.png',vthunder:'assets/fx/fxv-thunder.png',vvenom:'assets/fx/fxv-venom.png',
  phoenix:'assets/fx/fx-phoenix.png',ice:'assets/fx/fx-ice.png',water:'assets/fx/fx-water.png',ninesuns:'assets/fx/fx-ninesuns.png',
  sword:'assets/fx/fx-sword.png',purple:'assets/fx/fx-purple.png',star:'assets/fx/fx-star.png',beams:'assets/fx/fx-beams.png',
  bloodmoon:'assets/fx/fx-bloodmoon.png',roar:'assets/fx/fx-roar.png',tornado:'assets/fx/fx-tornado.png',fist:'assets/fx/fx-fist.png',
@@ -313,33 +315,102 @@ const SKILL_DB={
  'Phong Hỏa Liên Thiên':{fx:'fire',kind:'deep',mult:1.2,targets:11},
  'Lạc Thạch Thiên Giáng':{fx:'ice',kind:'deep',mult:1.25,targets:10},
  'Vương Giả Hiệu Triệu':{fx:'beams',kind:'buff',mult:1.25},
- 'Vô Song Loạn Vũ':{fx:'fist',kind:'front',mult:1.5,targets:12},
- 'Thanh Long Yển Nguyệt':{fx:'sword',kind:'front',mult:1.45,targets:10},
- 'Trường Bản Hống':{fx:'roar',kind:'front',mult:1.25,targets:10,drain:8},
+ 'Vô Song Loạn Vũ':{fx:'extinction',kind:'front',mult:1.5,targets:12},
+ 'Thanh Long Yển Nguyệt':{fx:'swordfall',kind:'front',mult:1.45,targets:10},
+ 'Trường Bản Hống':{fx:'lionroar',kind:'front',mult:1.25,targets:10,drain:8},
  'Thất Thám Xà Bàn':{fx:'slash',kind:'front',mult:1.4,targets:11},
  'Thiết Kỵ Tây Lương':{fx:'tornado',kind:'front',mult:1.35,targets:11},
- 'Bách Bộ Xuyên Dương':{fx:'slash',kind:'deep',mult:1.5,targets:6},
- 'Song Kích Cuồng Nộ':{fx:'flamearc',kind:'front',mult:1.35,targets:10},
+ 'Bách Bộ Xuyên Dương':{fx:'feather',kind:'deep',mult:1.5,targets:6},
+ 'Song Kích Cuồng Nộ':{fx:'uflamearc',kind:'front',mult:1.35,targets:10},
  'Cương Liệt Độc Nhãn':{fx:'thunder',kind:'front',mult:1.3,targets:10},
  'Uy Chấn Tiêu Dao Tân':{fx:'thunder',kind:'front',mult:1.35,targets:10,drain:5},
- 'Cửu Phạt Trung Nguyên':{fx:'slash',kind:'front',mult:1.3,targets:11},
+ 'Cửu Phạt Trung Nguyên':{fx:'sword',kind:'front',mult:1.3,targets:11},
  'Tiểu Bá Vương':{fx:'fist',kind:'front',mult:1.4,targets:11},
- 'Ngọa Long Thiên Hỏa':{fx:'phoenix',kind:'deep',mult:1.45,targets:13},
- 'Quỷ Mưu Thiên Toán':{fx:'purple',kind:'deep',mult:1.35,targets:12,drain:6},
- 'Xích Bích Thiên Hỏa':{fx:'phoenix',kind:'deep',mult:1.5,targets:13},
- 'Thập Thắng Thập Bại':{fx:'star',kind:'deep',mult:1.3,targets:11,sp:15},
- 'Liên Doanh Hỏa Thiêu':{fx:'fire',kind:'deep',mult:1.4,targets:12},
- 'Kiêu Hùng Hiệu Lệnh':{fx:'ninesuns',kind:'buff',mult:1.5,drain:4},
- 'Nhân Đức Chiêu Hiền':{fx:'rainbow',kind:'buff',mult:1.4},
- 'Bạo Chính Vô Đạo':{fx:'bloodmoon',kind:'buff',mult:1.2,drain:10},
- 'Liên Hoàn Mỹ Nhân Kế':{fx:'haze',kind:'deep',mult:1.25,targets:10,drain:12}};
+ 'Ngọa Long Thiên Hỏa':{fx:'uphoenix',kind:'deep',mult:1.45,targets:13},
+ 'Quỷ Mưu Thiên Toán':{fx:'purplehaze',kind:'deep',mult:1.35,targets:12,drain:6},
+ 'Xích Bích Thiên Hỏa':{fx:'meteorsfire',kind:'deep',mult:1.5,targets:13},
+ 'Thập Thắng Thập Bại':{fx:'dipper',kind:'deep',mult:1.3,targets:11,sp:15},
+ 'Liên Doanh Hỏa Thiêu':{fx:'phoenix',kind:'deep',mult:1.4,targets:12},
+ 'Kiêu Hùng Hiệu Lệnh':{fx:'uninesuns',kind:'buff',mult:1.5,drain:4},
+ 'Nhân Đức Chiêu Hiền':{fx:'urainbow',kind:'buff',mult:1.4},
+ 'Bạo Chính Vô Đạo':{fx:'ubloodmoon',kind:'buff',mult:1.2,drain:10},
+ 'Liên Hoàn Mỹ Nhân Kế':{fx:'butterflies',kind:'deep',mult:1.25,targets:10,drain:12},
+ 'Hổ Trảo Liệt Thiên':{fx:'tigerclaw',kind:'front',mult:1.3,targets:10},
+ 'Song Kiếm Hợp Bích':{fx:'twinswords',kind:'front',mult:1.3,targets:10},
+ 'Kim Quang Thập Tự Trảm':{fx:'xslashgold',kind:'front',mult:1.35,targets:10},
+ 'Lôi Chùy Phá Trận':{fx:'thunderhammer',kind:'front',mult:1.3,targets:10},
+ 'Trượng Ảnh Toàn Phong':{fx:'staffspin',kind:'front',mult:1.2,targets:11},
+ 'Mai Hoa Kiếm Vũ':{fx:'plumslash',kind:'front',mult:1.2,targets:10},
+ 'Thanh Xà Triền Sát':{fx:'snakecoil',kind:'front',mult:1.2,targets:9},
+ 'Ảnh Trảo Dạ Hành':{fx:'shadowclaw',kind:'front',mult:1.25,targets:9},
+ 'Trúc Lâm Thương Trận':{fx:'bamboospears',kind:'front',mult:1.2,targets:11},
+ 'Thanh Mộc Chưởng':{fx:'palmgreen',kind:'front',mult:1.15,targets:9},
+ 'Đoạt Mệnh Thích':{fx:'thrustsword',kind:'deep',mult:1.4,targets:5},
+ 'Băng Long Giáng Thế':{fx:'icedragon',kind:'deep',mult:1.4,targets:12},
+ 'Thủy Long Cuồng Nộ':{fx:'waterdragon',kind:'deep',mult:1.35,targets:12},
+ 'Tử Viêm Lưu Tinh':{fx:'meteorspurple',kind:'deep',mult:1.3,targets:12},
+ 'Hàn Liên Băng Phong':{fx:'frostlotus',kind:'deep',mult:1.25,targets:11},
+ 'Phi Tuyết Liên Thiên':{fx:'snowflake',kind:'deep',mult:1.2,targets:11},
+ 'Nguyệt Lạc Thiên Khuynh':{fx:'moonfall',kind:'deep',mult:1.35,targets:11},
+ 'Địa Liệt Thạch Thứ':{fx:'rockspikes',kind:'deep',mult:1.25,targets:10},
+ 'Hoàng Sa Long Quyển':{fx:'sandnado',kind:'front',mult:1.25,targets:11},
+ 'Thiên La Địa Võng':{fx:'spiderweb',kind:'deep',mult:1.15,targets:10,drain:8},
+ 'Độc Vụ Mê Tâm':{fx:'poisonskull',kind:'deep',mult:1.2,targets:10,drain:6},
+ 'Ma Âm Nhiếp Hồn':{fx:'flute',kind:'deep',mult:1.2,targets:10,drain:10},
+ 'Châm Vũ Mãn Thiên':{fx:'needlerain',kind:'deep',mult:1.2,targets:11},
+ 'Kim Tiêu Đoạt Mệnh':{fx:'coindarts',kind:'deep',mult:1.2,targets:8},
+ 'Lân Hỏa Dạ Tập':{fx:'phosphor',kind:'deep',mult:1.25,targets:10},
+ 'Lục Quang Phá Không':{fx:'sixbeams',kind:'deep',mult:1.3,targets:11},
+ 'Băng Tinh Liệt':{fx:'icecrystal',kind:'deep',mult:1.2,targets:10},
+ 'Liên Hoa Tịnh Thế':{fx:'lotus',kind:'buff',mult:1.35},
+ 'Hạo Dương Thần Uy':{fx:'yangring',kind:'buff',mult:1.35},
+ 'Kim Chung Hộ Thể':{fx:'belldome',kind:'buff',mult:1.25},
+ 'Thái Cực Sinh Huy':{fx:'utaiji',kind:'buff',mult:1.3},
+ 'Hào Khí Vân Thiên':{fx:'winewave',kind:'buff',mult:1.2},
+ 'Huyết Tế Chiến Kỳ':{fx:'blooddrop',kind:'buff',mult:1.3,drain:5},
+ 'Vô Ảnh Vô Hình':{fx:'formless',kind:'buff',mult:1.25},
+ 'Đào Hoa Mê Trận':{fx:'peach',kind:'deep',mult:1.15,targets:10,drain:8},
+ 'Huyết Nguyệt Cuồng Vũ':{fx:'bloodmoon',kind:'front',mult:1.3,targets:11},
+ 'Liệt Diễm Song Vũ':{fx:'uflamearc',kind:'front',mult:1.3,targets:10},
+ 'Bôn Lôi Quyền':{fx:'thunderfist',kind:'front',mult:1.25,targets:9},
+ 'Thiết Phiến Toàn Phong':{fx:'needlesfan',kind:'front',mult:1.2,targets:10},
+ 'Nguyệt Hoa Trảm':{fx:'moon',kind:'front',mult:1.2,targets:9},
+ 'Nhu Chưởng Hóa Kình':{fx:'softpalm',kind:'front',mult:1.15,targets:9},
+ 'Tinh Hà Thiên Phạt':{fx:'star',kind:'deep',mult:1.25,targets:11},
+ 'Thủy Tiễn Tề Phát':{fx:'uwater',kind:'deep',mult:1.15,targets:10},
+ 'Hàn Thủy Ngâm':{fx:'water',kind:'deep',mult:1.2,targets:10},
+ 'Độc Châm Phá Giáp':{fx:'poison',kind:'deep',mult:1.15,targets:8,drain:4},
+ 'Mê Vụ Tỏa Tâm':{fx:'haze',kind:'deep',mult:1.15,targets:10,drain:8},
+ 'Cửu Dương Thiên Quang':{fx:'ninesuns',kind:'buff',mult:1.3},
+ 'Âm Dương Luân Chuyển':{fx:'taiji',kind:'buff',mult:1.25},
+ 'Tử Khí Đông Lai':{fx:'purple',kind:'buff',mult:1.25},
+ 'Nhật Luân Chiếu Thế':{fx:'sunorb',kind:'buff',mult:1.3},
+ 'Trúc Diệp Thanh Phong':{fx:'bamboo',kind:'buff',mult:1.2},
+ 'Thất Thải Tường Vân':{fx:'rainbow',kind:'buff',mult:1.3}};
 const SR_SKILL={'Lữ Bố':'Vô Song Loạn Vũ','Quan Vũ':'Thanh Long Yển Nguyệt','Trương Phi':'Trường Bản Hống','Triệu Vân':'Thất Thám Xà Bàn','Mã Siêu':'Thiết Kỵ Tây Lương','Hoàng Trung':'Bách Bộ Xuyên Dương','Điển Vi':'Song Kích Cuồng Nộ','Hạ Hầu Đôn':'Cương Liệt Độc Nhãn','Trương Liêu':'Uy Chấn Tiêu Dao Tân','Khương Duy':'Cửu Phạt Trung Nguyên','Tôn Sách':'Tiểu Bá Vương','Gia Cát Lượng':'Ngọa Long Thiên Hỏa','Tư Mã Ý':'Quỷ Mưu Thiên Toán','Chu Du':'Xích Bích Thiên Hỏa','Quách Gia':'Thập Thắng Thập Bại','Lục Tốn':'Liên Doanh Hỏa Thiêu','Tào Tháo':'Kiêu Hùng Hiệu Lệnh','Lưu Bị':'Nhân Đức Chiêu Hiền','Đổng Trác':'Bạo Chính Vô Đạo','Điêu Thuyền':'Liên Hoàn Mỹ Nhân Kế'};
 const SR_PASSIVE={'Lữ Bố':{name:'Vô Song',dmg:1.18},'Quan Vũ':{name:'Võ Thánh',dmg:1.12},'Trương Phi':{name:'Hổ Uy',moralePen:6},'Triệu Vân':{name:'Long Đảm',def:0.85},'Gia Cát Lượng':{name:'Ngọa Long',sp:25},'Tư Mã Ý':{name:'Nhẫn Nhục',def:0.88},'Chu Du':{name:'Đô Đốc',skillDmg:1.15},'Tào Tháo':{name:'Kiêu Hùng',morale:8},'Lưu Bị':{name:'Nhân Đức',morale:6},'Quách Gia':{name:'Quỷ Tài',sp:18},'Mã Siêu':{name:'Thần Uy',dmg:1.12},'Hoàng Trung':{name:'Lão Tướng',skillDmg:1.12},'Trương Liêu':{name:'Uy Danh',moralePen:5},'Lục Tốn':{name:'Nho Tướng',skillDmg:1.1},'Đổng Trác':{name:'Bạo Ngược',dmg:1.1,moralePen:4},'Điêu Thuyền':{name:'Khuynh Thành',moralePen:8},'Tôn Sách':{name:'Bá Vương',dmg:1.12},'Hạ Hầu Đôn':{name:'Cương Liệt',def:0.9},'Điển Vi':{name:'Trung Dũng',def:0.88},'Khương Duy':{name:'Đảm Lược',sp:12}};
-const S_SKILLS={'Võ tướng':['Phá Quân Trảm','Hổ Gầm Xung Phong'],'Mưu sĩ':['Phong Hỏa Liên Thiên','Lạc Thạch Thiên Giáng'],'Quân chủ':['Vương Giả Hiệu Triệu']};
+const S_SKILLS={'Võ tướng':['Phá Quân Trảm','Hổ Gầm Xung Phong','Hổ Trảo Liệt Thiên','Kim Quang Thập Tự Trảm','Song Kiếm Hợp Bích','Huyết Nguyệt Cuồng Vũ','Liệt Diễm Song Vũ'],'Mưu sĩ':['Phong Hỏa Liên Thiên','Lạc Thạch Thiên Giáng','Băng Long Giáng Thế','Thủy Long Cuồng Nộ','Nguyệt Lạc Thiên Khuynh'],'Quân chủ':['Vương Giả Hiệu Triệu','Liên Hoa Tịnh Thế','Hạo Dương Thần Uy','Nhật Luân Chiếu Thế']};
+const R_SKILLS={'Võ tướng':['Lôi Chùy Phá Trận','Trượng Ảnh Toàn Phong','Mai Hoa Kiếm Vũ','Ảnh Trảo Dạ Hành','Trúc Lâm Thương Trận','Thanh Xà Triền Sát','Đoạt Mệnh Thích','Hoàng Sa Long Quyển','Bôn Lôi Quyền','Thiết Phiến Toàn Phong','Nguyệt Hoa Trảm','Nhu Chưởng Hóa Kình'],'Mưu sĩ':['Hàn Liên Băng Phong','Phi Tuyết Liên Thiên','Địa Liệt Thạch Thứ','Thiên La Địa Võng','Độc Vụ Mê Tâm','Ma Âm Nhiếp Hồn','Châm Vũ Mãn Thiên','Lục Quang Phá Không','Tử Viêm Lưu Tinh','Lân Hỏa Dạ Tập','Băng Tinh Liệt','Kim Tiêu Đoạt Mệnh','Tinh Hà Thiên Phạt','Thủy Tiễn Tề Phát','Hàn Thủy Ngâm','Độc Châm Phá Giáp','Mê Vụ Tỏa Tâm'],'Quân chủ':['Kim Chung Hộ Thể','Thái Cực Sinh Huy','Hào Khí Vân Thiên','Huyết Tế Chiến Kỳ','Vô Ảnh Vô Hình','Đào Hoa Mê Trận','Cửu Dương Thiên Quang','Âm Dương Luân Chuyển','Tử Khí Đông Lai','Trúc Diệp Thanh Phong','Thất Thải Tường Vân']};
 const S_PASSIVES=[{name:'Tinh Binh',dmg:1.08},{name:'Kiên Thủ',def:0.92},{name:'Túc Mưu',sp:12},{name:'Danh Tướng',morale:4},{name:'Thiện Chiến',skillDmg:1.08},{name:'Đột Kích',dmg:1.05,skillDmg:1.05}];
 const ROLE_PASSIVE={'Võ tướng':{name:'Dũng Mãnh',dmg:1.05},'Mưu sĩ':{name:'Túc Trí',sp:8},'Quân chủ':{name:'Uy Tín',morale:3}};
 const ROLE_PASSIVE_N={'Võ tướng':{name:'Ra Trận',dmg:1.02},'Mưu sĩ':{name:'Mưu Kế',sp:5},'Quân chủ':{name:'Danh Tiếng',morale:2}};
+const N_SKILLS={'Võ tướng':['Trảm Kích','Thanh Mộc Chưởng'],'Mưu sĩ':['Hỏa Tiễn','Phi Tuyết Liên Thiên'],'Quân chủ':['Hiệu Triệu','Hào Khí Vân Thiên']};
 const N_SKILL={'Võ tướng':'Trảm Kích','Mưu sĩ':'Hỏa Tiễn','Quân chủ':'Hiệu Triệu'};
+/* ---- troop passives: every troop type has its own innate, scaled by its tier ---- */
+const TROOP_PASSIVE_POOLS={
+ giao:[t=>({name:'Thương Trận',atkMul:1+0.02*t,desc:'Sát thương +'+(2*t)+'%'}),
+       t=>({name:'Đâm Xuyên',crit:0.04+0.02*t,desc:'Bạo kích '+(4+2*t)+'% (gây ×1.6 sát thương)'}),
+       t=>({name:'Giữ Khoảng',defM:1-0.01*t,desc:'Giảm sát thương nhận '+(1*t)+'%'})],
+ kiem:[t=>({name:'Khoái Kiếm',spdMul:1+0.025*t,desc:'Tốc độ +'+Math.round(2.5*t)+'%'}),
+       t=>({name:'Liên Trảm',crit:0.05+0.02*t,desc:'Bạo kích '+(5+2*t)+'% (gây ×1.6 sát thương)'}),
+       t=>({name:'Huyết Chiến',vamp:0.10+0.03*t,desc:'Hạ địch thì hồi máu bằng '+(10+3*t)+'% quân số của địch'})],
+ giap:[t=>({name:'Thiết Bích',defM:1-0.02*t,desc:'Giảm sát thương nhận '+(2*t)+'%'}),
+       t=>({name:'Phản Chấn',thorn:0.03+0.015*t,desc:'Phản lại '+(3+1.5*t)+'% sát thương nhận vào kẻ đánh'}),
+       t=>({name:'Bất Động Như Sơn',hpMul:1+0.04*t,desc:'Máu +'+(4*t)+'%'})],
+ ky:[t=>({name:'Xung Phong',chargeB:0.12*t,desc:'Đòn xung phong đầu tiên +'+(12*t)+'% sát thương'}),
+     t=>({name:'Tật Phong',spdMul:1+0.03*t,desc:'Tốc độ +'+(3*t)+'%'}),
+     t=>({name:'Đạp Trận',slowC:0.08+0.02*t,desc:'Đòn đánh có '+(8+2*t)+'% cơ hội làm địch chậm 40% trong 1.5 giây'})]};
+TROOPS.forEach(tr=>{const pool=TROOP_PASSIVE_POOLS[tr.cls];if(pool)tr.passive=pool[nameHash(tr.name)%pool.length](tr.tier);});
 /* ---- 30 talents: Nội chính / Kế sách / Ngoại giao — used on the strategic map, cooldown in turns ---- */
 const TALENT_DOM={noi:'Nội chính',ke:'Kế sách',ngoai:'Ngoại giao'};
 const TALENT_DB={
@@ -480,8 +551,8 @@ function decorateHeroes(){
   HEROES.forEach(h=>{
     if(SR_SKILL[h.name]){h.tier='SR';h.skill=SR_SKILL[h.name];h.passive=SR_PASSIVE[h.name];}
     else if(rankOf[h.name]<48){h.tier='S';const pool=S_SKILLS[h.role];h.skill=pool[nameHash(h.name)%pool.length];h.passive=S_PASSIVES[nameHash(h.name)%S_PASSIVES.length];}
-    else if(rankOf[h.name]<100){h.tier='R';h.passive=ROLE_PASSIVE[h.role];}
-    else{h.tier='N';h.skill=N_SKILL[h.role];h.passive=ROLE_PASSIVE_N[h.role];}
+    else if(rankOf[h.name]<100){h.tier='R';const rp=R_SKILLS[h.role];h.skill=rp[nameHash(h.name+'rsk')%rp.length];h.passive=ROLE_PASSIVE[h.role];}
+    else{h.tier='N';const np=N_SKILLS[h.role];h.skill=np[nameHash(h.name+'nsk')%np.length];h.passive=ROLE_PASSIVE_N[h.role];}
     const aff=h.role==='Quân chủ'?'ngoai':h.role==='Mưu sĩ'?'ke':'noi';
     const dom=(nameHash(h.name+'dom')%4===0)?['noi','ke','ngoai'][nameHash(h.name+'dom2')%3]:aff;
     const list=TALENTS_BY_DOM[dom];
@@ -558,7 +629,7 @@ function effTroop(name,fac){
   const lad=GEN_LADDER[name];if(!lad)return troopOf(name);
   const step=Math.min(4,(S&&S.genTroop&&S.genTroop[name])||0);
   const t=lad[step];const tb=t.tier-1;
-  return {name:t.name,cls:t.cls,clsLabel:t.clsLabel,tier:t.tier,rank:t.rank,img:t.img,step,
+  return {name:t.name,cls:t.cls,clsLabel:t.clsLabel,tier:t.tier,rank:t.rank,img:t.img,step,passive:t.passive,
     atk:Math.round((t.atk+tb*0.8)*10)/10,def:Math.round((t.def+tb*0.8)*10)/10,spd:Math.round((t.spd+tb*0.4)*10)/10};
 }
 function upgradeGen(name){
@@ -976,7 +1047,7 @@ let PREP=null;
 function prepRowsHTML(cfg){
   const myGens=cfg.playerSide==='atk'?cfg.atkGens:cfg.defGens, foeGens=cfg.playerSide==='atk'?cfg.defGens:cfg.atkGens;
   const card=(n,fac,mine,idx)=>{const h=HMAP[n],t=effTroop(n,fac);const sel=mine&&PREP&&PREP.swapSel===idx;
-    return '<div class="pcard" '+(mine?'data-slot="'+idx+'" style="cursor:pointer'+(sel?';outline:2.5px solid #ffd94a;background:#3a2c10':'')+'"':'')+'><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+(mine?' <small style="color:#c9b98f">⇄</small>':'')+'</div><div class="pt">'+'Quân: '+(t?t.name+' ('+t.clsLabel+', hạng '+t.rank+')':'—')+' · Võ '+h.vo+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): <span data-talent="'+h.talent+'" style="text-decoration:underline dotted;cursor:pointer">'+h.talent+'</span></div></div></div>';};
+    return '<div class="pcard" '+(mine?'data-slot="'+idx+'" style="cursor:pointer'+(sel?';outline:2.5px solid #ffd94a;background:#3a2c10':'')+'"':'')+'><img src="'+(t?t.img:'')+'"><div><div class="pn" style="color:'+FACTIONS[fac].color+'"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+n+(mine?' <small style="color:#c9b98f">⇄</small>':'')+'</div><div class="pt">'+'Quân: '+(t?t.name+' ('+t.clsLabel+', hạng '+t.rank+')':'—')+' · Võ '+h.vo+'<br>✦ Nội tại lính: '+(t&&t.passive?t.passive.name+' — '+t.passive.desc:'—')+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): <span data-talent="'+h.talent+'" style="text-decoration:underline dotted;cursor:pointer">'+h.talent+'</span></div></div></div>';};
   let rows='';
   for(let i=0;i<Math.max(myGens.length,foeGens.length);i++){
     const m=myGens[i],f=foeGens[i];
@@ -1075,12 +1146,12 @@ function spawnUnits(){
       if(fid2==='phongthi')fx0+=(side==='atk'?1:-1)*(1-rd)*68;
       else if(fid2==='hacduc')fx0-=(side==='atk'?1:-1)*rd*46;
       const gname=gens.length?gens[i%gens.length]:null;const tr=gname?effTroop(gname,side==='atk'?B.atkFac:B.defFac):TROOPS[0];
-      const maxHp=per*2.9*(tr?(0.65+tr.def/11):1)*form.hp*(side==='def'&&S.defBonus&&S.defBonus[B.toId]?S.defBonus[B.toId].mult:1);
+      let maxHp=per*2.9*(tr?(0.65+tr.def/11):1)*form.hp*(side==='def'&&S.defBonus&&S.defBonus[B.toId]?S.defBonus[B.toId].mult:1);
       if(tr&&!B.timgs[tr.img]){const im=new Image();im.src=tr.img;B.timgs[tr.img]=im;}
-      const cls=tr?tr.cls:'kiem';
+      const cls=tr?tr.cls:'kiem';const tp=tr?tr.passive:null;if(tp&&tp.hpMul)maxHp*=tp.hpMul;
       const spawnX=side==='atk'?fx0-W*0.30-(cols-1-c)*7:fx0+W*0.30+c*7, spawnY=Math.min(H-24,y0)+(Math.random()*96-48);
       B.units.push({side,x:spawnX,y:spawnY,rally:true,hx:fx0,hy:Math.min(H-24,y0),hp:maxHp,maxHp,per,fac,cls,img:tr?tr.img:null,
-        dmgF:tr?(0.55+tr.atk/9):1,spdF:tr?(0.55+tr.spd/8):1,cd:Math.random()*30,dead:0,ph:Math.random()*6.28,rowF:rd,wing:y0<H/2?-1:1,spear:fid2==='phongthi'&&rd<0.36,startD:side==='atk'?(cols-1-c)*2.5:c*2.5});
+        dmgF:(tr?(0.55+tr.atk/9):1)*(tp&&tp.atkMul?tp.atkMul:1),spdF:(tr?(0.55+tr.spd/8):1)*(tp&&tp.spdMul?tp.spdMul:1),crit:tp?tp.crit||0:0,defM:tp?tp.defM||1:1,thorn:tp?tp.thorn||0:0,vamp:tp?tp.vamp||0:0,slowC:tp?tp.slowC||0:0,chargeB:tp?tp.chargeB||0:0,cd:Math.random()*30,dead:0,ph:Math.random()*6.28,rowF:rd,wing:y0<H/2?-1:1,spear:fid2==='phongthi'&&rd<0.36,startD:side==='atk'?(cols-1-c)*2.5:c*2.5});
     }
   };
   mk('atk',B.atkTroops,B.atkFac);mk('def',B.defTroops,B.defFac);
@@ -1187,6 +1258,8 @@ for(const k in SKILL_DB){const hs=[...k].reduce((a,c)=>a+c.charCodeAt(0)*7,0);SK
 for(const n in SR_SKILL){const k=SR_SKILL[n];if(SKILL_FX_STYLE[k])SKILL_FX_STYLE[k].pat=['rain','sweep','ring','blast'][[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%4];}
 function maskRadial(src,w,h){try{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(src,0,0,w,h);g.globalCompositeOperation='destination-in';const gr=g.createRadialGradient(w/2,h/2,Math.min(w,h)*0.30,w/2,h/2,Math.min(w,h)*0.52);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(0.75,'rgba(0,0,0,0.96)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,w,h);return c;}catch(e){return src;}}
 function loadFx(src){if(!B||!B.fx)return;if(!B.fxGlow)B.fxGlow={};if(B.fx[src])return;const im=new Image();B.fx[src]=im;im.onload=()=>{try{const mc=maskRadial(im,256,256);B.fx[src]=mc;const c=document.createElement('canvas');c.width=c.height=256;const g2=c.getContext('2d');g2.filter='blur(16px)';g2.drawImage(mc,-24,-24,304,304);g2.filter='none';B.fxGlow[src]=maskRadial(c,256,256);}catch(e){}};im.src=src;}
+const FX_COMPANION=[['fire','vfire'],['phoenix','vfire'],['flame','vfire'],['meteor','vfire'],['sun','vholy'],['ice','vfrost'],['frost','vfrost'],['snow','vfrost'],['water','vfrost'],['thunder','vthunder'],['purple','vvenom'],['poison','vvenom'],['blood','vshadow'],['shadow','vshadow'],['rainbow','vholy'],['lotus','vholy'],['yang','vholy'],['taiji','vholy'],['star','vholy'],['dipper','vholy']];
+function skillImg2(fxSrc,tier,sk){if(tier<2&&(sk.mult||1)<1.35)return null;let key=null;for(const [kw,k] of FX_COMPANION){if(fxSrc.includes(kw)){key=k;break;}}if(!key)key=['vfire','vfrost','vholy','vshadow','vthunder','vvenom'][[...sk.name].reduce((a,c)=>a+c.charCodeAt(0),0)%6];const src=FXSRC[key];if(!src)return null;if(!B.fx[src])loadFx(src);return B.fx[src]||null;}
 function pushSkillAnim(o){
   const sty=SKILL_FX_STYLE[o.skName]||{hue:0,pat:'blast'};o.hue=sty.hue;
   if(B.effects.length<110){B.effects.push({x:o.x,y:o.y,life:24,type:'ring',color:'#ffe9a0'});
@@ -1217,13 +1290,13 @@ function useSkill(side,gen){
     const gp=foe==='atk'?{x:cv.width*0.06,y:cv.height*0.55}:{x:cv.width*0.94,y:cv.height*0.55};
     const targets=enemies.sort((a,b)=>Math.hypot(a.x-gp.x,a.y-gp.y)-Math.hypot(b.x-gp.x,b.y-gp.y)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+22+i*6,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:24,type:'boom'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }else if(sk.kind==='buff'){
     const maxT=side==='atk'?B.atkMax:B.defMax;
     const amount=Math.round(maxT*0.05*sk.mult*tier);
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:gen.x,y:gen.y-30,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:[]});
+    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:gen.x,y:gen.y-30,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:[]});
     B.pending.push({at:B.t+34,fn:()=>{spawnReinforce(side,amount);
       B.moraleBonus[side]=Math.min(24,B.moraleBonus[side]+7*tier);
       B.genUnits.filter(g=>g.side===side&&!g.dead).forEach(g=>{g.hp=Math.min(g.maxHp,g.hp+g.maxHp*0.05*tier);});
@@ -1233,14 +1306,14 @@ function useSkill(side,gen){
     const myCx=mine.length?mine.reduce((a,u)=>a+u.x,0)/mine.length:cv.width/2;
     const targets=enemies.sort((a,b)=>Math.abs(a.x-myCx)-Math.abs(b.x-myCx)).slice(0,Math.round(sk.targets+(tier-1)*4));
     const c=centroid(targets);zoneC=c;
-    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
+    pushSkillAnim({role:pattern,tier,skName:sk.name,side,x:c.x,y:c.y,t:0,dur:110,img:B.fx[fxSrc],img2:skillImg2(fxSrc,tier,sk),glow:B.fxGlow[fxSrc],dir:Math.random()<0.5?1:-1,targets:targets.map(u=>({x:u.x,y:u.y}))});
     {const tot=targets.reduce((a,u)=>a+u.per*(sk.mult*tier)*dmgM,0);if(tot>0)B.texts.push({x:c.x,y:c.y-54,life:66,txt:'-'+Math.round(tot)+' quân',color:'#ffd94a',big:true});}
     targets.forEach((u,i)=>B.pending.push({at:B.t+16+i*5,fn:()=>{if(u.dead)return;u.hp-=u.per*(sk.mult*tier)*dmgM;B.effects.push({x:u.x,y:u.y,life:20,type:'bolt'});if(u.hp<=0&&!u.dead){u.dead=1;B.sp[side]=Math.min(100,B.sp[side]+0.5);}}}));
   }
   if(zoneC&&sk.kind!=='buff'){
     if(!B.zones)B.zones=[];
-    if(sk.fx==='fire'||sk.fx==='phoenix'||sk.fx==='flamearc')B.zones.push({kind:'fire',x:zoneC.x,y:zoneC.y,r:98,side,t:0,dur:470});
-    else if(sk.fx==='ice'||sk.fx==='water')B.zones.push({kind:'frost',x:zoneC.x,y:zoneC.y,r:102,side,t:0,dur:470});
+    if(['fire','phoenix','flamearc','uphoenix','meteorsfire','uflamearc'].includes(sk.fx))B.zones.push({kind:'fire',x:zoneC.x,y:zoneC.y,r:98,side,t:0,dur:470});
+    else if(['ice','water','uwater','icedragon','waterdragon','frostlotus','icecrystal','snowflake'].includes(sk.fx))B.zones.push({kind:'frost',x:zoneC.x,y:zoneC.y,r:102,side,t:0,dur:470});
     if((sk.mult||1)>=1.4){
       for(const u of enemies){if(u.dead)continue;const dx=u.x-zoneC.x,dy=u.y-zoneC.y,dd=Math.hypot(dx,dy);if(dd<135&&dd>1){u.x+=dx/dd*46;u.y+=dy/dd*30;u.cd=Math.max(u.cd,26);}}
       B.effects.push({x:zoneC.x,y:zoneC.y,life:30,type:'ring',color:'#ffd94a'});
@@ -1711,20 +1784,26 @@ function battleLoop(ts){
             for(let k=0;k<8;k++)B.effects.push({x:best.x+(Math.random()*30-15),y:best.y+(Math.random()*70-35),life:13+Math.random()*6,type:'dust'});
             }
           let chM=1;
-          if(u.cls==='ky'&&!u.chargeUsed){chM=2.2;u.chargeUsed=1;best.x+=u.passDir*22;best.y+=(Math.random()*10-5);best.cd=Math.max(best.cd,14);
+          if(u.cls==='ky'&&!u.chargeUsed){chM=2.2+(u.chargeB||0);u.chargeUsed=1;best.x+=u.passDir*22;best.y+=(Math.random()*10-5);best.cd=Math.max(best.cd,14);
             B.effects.push({x:best.x,y:best.y+4,life:14,type:'dust'});B.effects.push({x:best.x,y:best.y-4,life:11,type:'dust'});if(Math.random()<0.6)playSmp('thud2',0.2,1,(best.x/W)*1.3-0.65);
             if(!B.lastGallop||B.t-B.lastGallop>75){B.lastGallop=B.t;playSmp('gallop',0.17,1,(best.x/W)*1.3-0.65);}}
-          best.hp-=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM*(u.inFrost>0?0.8:1)
+          let _dmg=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM*(u.inFrost>0?0.8:1)
             *stanceMult(u.side).dealt*stanceMult(best.side).taken*B.rpsMult[u.side];
+          if(u.crit&&Math.random()<u.crit){_dmg*=1.6;if(B.effects.length<90)B.effects.push({x:best.x,y:best.y-16,life:9,type:'spark'});}
+          _dmg*=(best.defM||1);
+          best.hp-=_dmg;
+          if(best.thorn&&_dmg>0&&!u.dead){u.hp-=_dmg*best.thorn;if(u.hp<=0){u.dead=1;u.vx=-u.passDir*2;}}
+          if(u.slowC&&Math.random()<u.slowC)best.slowT=90;
           if(Math.random()<0.45)sfxHit(u.cls,(u.x/W)*1.3-0.65);
           if(Math.random()<0.5&&B.effects.length<90)B.effects.push({x:best.x,y:best.y-8,life:7,type:'spark'});
-          if(best.hp<=0&&!best.dead){best.dead=1;u.surge=22;best.vx=u.passDir*2.1;B.sp[u.side]=Math.min(100,B.sp[u.side]+0.8);B.effects.push({x:best.x,y:best.y-6,life:10,type:'spark'});B.texts.push({x:best.x,y:best.y-32,life:34,txt:'-'+Math.max(1,Math.round(best.per)),color:'#ff9a8a'});sfxHit(best.cls,(best.x/W)*1.3-0.65);if(Math.random()<0.3)playSmp('fall',0.09,0.95+Math.random()*0.1,(best.x/W)*1.3-0.65);}
+          if(best.hp<=0&&!best.dead){best.dead=1;u.surge=22;if(u.vamp)u.hp=Math.min(u.maxHp,u.hp+best.per*u.vamp);best.vx=u.passDir*2.1;B.sp[u.side]=Math.min(100,B.sp[u.side]+0.8);B.effects.push({x:best.x,y:best.y-6,life:10,type:'spark'});B.texts.push({x:best.x,y:best.y-32,life:34,txt:'-'+Math.max(1,Math.round(best.per)),color:'#ff9a8a'});sfxHit(best.cls,(best.x/W)*1.3-0.65);if(Math.random()<0.3)playSmp('fall',0.09,0.95+Math.random()*0.1,(best.x/W)*1.3-0.65);}
         }else u.cd=4;
       }
+      if(u.slowT>0)u.slowT-=dt;
       let runF=(u.spear?1.3:1)*(u.inFrost>0?0.55:1)*(u.surge>0?1.8:1);
       if(contact)runF*=(myFid==='huyenvu'?0.22:(myFid==='phongthi'&&u.spear)?0.85:0.62);
       if(B.initUnits){const foeFrac=(u.side==='atk'?centN.def/ Math.max(1,B.initUnits.def):centN.atk/Math.max(1,B.initUnits.atk));runF*=1+(1-Math.min(1,foeFrac))*0.7;}
-      const run=(u.cls==='ky'?2.2:1.5)*u.spdF*FORMS[myFid].spd*dt*(B.hasteT&&B.hasteT[u.side]>0?1.3:1)*runF;
+      const run=(u.cls==='ky'?2.2:1.5)*u.spdF*FORMS[myFid].spd*dt*(B.hasteT&&B.hasteT[u.side]>0?1.3:1)*runF*(u.slowT>0?0.6:1);
       const gx=u.passDir>0?W+40:-40;
       let gy=u.y;
       if(best)gy=u.y+(best.y-u.y)*(contact?0.5:0.22);
@@ -1772,8 +1851,8 @@ function battleLoop(ts){
     B.anims=B.anims.filter(an=>{
       an.t+=edt;if(an.t<0)return true;if(an.vx)an.x+=an.vx*edt;const p=an.t/an.dur;if(p>=1)return false;
       const ease=1-Math.pow(1-p,3);
-      if(an.hue&&!an._hv&&(an.img&&(an.img.tagName==='CANVAS'||(an.img.complete&&an.img.naturalWidth)))){an._hv=1;try{const mk=im2=>{if(!im2||!im2.width)return null;const c=document.createElement('canvas');c.width=im2.width;c.height=im2.height;const g2=c.getContext('2d');g2.filter='hue-rotate('+an.hue+'deg)';g2.drawImage(im2,0,0);return c;};an._imgV=mk(an.img);an._glowV=mk(an.glow);}catch(e){}}
-      const imgU=an._imgV||an.img,glowU=an._glowV||an.glow;
+      if(an.hue&&!an._hv&&(an.img&&(an.img.tagName==='CANVAS'||(an.img.complete&&an.img.naturalWidth)))){an._hv=1;try{const mk=im2=>{if(!im2||!im2.width)return null;const c=document.createElement('canvas');c.width=im2.width;c.height=im2.height;const g2=c.getContext('2d');g2.filter='hue-rotate('+an.hue+'deg)';g2.drawImage(im2,0,0);return c;};an._imgV=mk(an.img);an._glowV=mk(an.glow);an._img2V=mk(an.img2);}catch(e){}}
+      const imgU=an._imgV||an.img,glowU=an._glowV||an.glow,img2U=an._img2V||an.img2;
       ctx.save();ctx.globalCompositeOperation='lighter';
       const fade=p<0.14?p/0.14:(p>0.78?(1-p)/0.22:1);
       if(imgU&&(imgU.tagName==='CANVAS'||(imgU.complete&&imgU.naturalWidth))){
@@ -1784,7 +1863,9 @@ function battleLoop(ts){
         if(glowU){ctx.globalAlpha=fade*0.55;ctx.drawImage(glowU,-gs/2,-gs/2,gs,gs);}
         else{ctx.globalAlpha=fade*0.28;ctx.drawImage(imgU,-gs/2,-gs/2,gs,gs);}
         ctx.globalAlpha=fade*0.95;ctx.rotate(an.dir*ease*2.1);ctx.drawImage(imgU,-sz/2,-sz/2,sz,sz);
-        ctx.globalAlpha=fade*0.45;ctx.rotate(-an.dir*ease*3.3);const s2=sz*0.64;ctx.drawImage(imgU,-s2/2,-s2/2,s2,s2);
+        if(img2U&&(img2U.tagName==='CANVAS'||(img2U.complete&&img2U.naturalWidth))){ctx.globalAlpha=fade*0.55;ctx.rotate(an.dir*ease*1.4);const s3=sz*0.82;ctx.drawImage(img2U,-s3/2,-s3/2,s3,s3);ctx.rotate(-an.dir*ease*4.7);}
+        else ctx.rotate(-an.dir*ease*3.3);
+        ctx.globalAlpha=fade*0.45;const s2=sz*0.64;ctx.drawImage(imgU,-s2/2,-s2/2,s2,s2);
         ctx.translate(-an.x,-an.y+10*ease);
         if(Math.random()<0.32)B.effects.push({x:an.x+(Math.random()*150-75),y:an.y+(Math.random()*120-60),life:16,type:Math.random()<0.5?'spark':'boom'});
       }
@@ -1996,7 +2077,7 @@ function renderGallery(){
 const TROOPF={c:'all'};
 function renderTroops(){
   const c=TROOPF.c;
-  $('tgrid').innerHTML=TROOPS.filter(t=>c==='all'||t.cls===c).slice().sort((a,b)=>b.tier-a.tier||a.name.localeCompare(b.name)).map(t=>{const users=HEROES.filter(h=>h.troop===t.img).map(h=>h.name).join(', ');return '<div class="hcard"><span class="tier t'+t.rank+'">'+t.rank+'</span><img loading="lazy" src="'+t.img+'"><div class="hn">'+t.name+'</div><div class="hs">'+t.clsLabel+' · cấp '+t.tier+' · hạng <b>'+t.rank+'</b><br>Công '+t.atk+' · Thủ '+t.def+' · Tốc '+t.spd+'<br>Tướng dùng: '+(users||'—')+'</div></div>';}).join('');
+  $('tgrid').innerHTML=TROOPS.filter(t=>c==='all'||t.cls===c).slice().sort((a,b)=>b.tier-a.tier||a.name.localeCompare(b.name)).map(t=>{const users=HEROES.filter(h=>h.troop===t.img).map(h=>h.name).join(', ');return '<div class="hcard"><span class="tier t'+t.rank+'">'+t.rank+'</span><img loading="lazy" src="'+t.img+'"><div class="hn">'+t.name+'</div><div class="hs">'+t.clsLabel+' · cấp '+t.tier+' · hạng <b>'+t.rank+'</b><br>Công '+t.atk+' · Thủ '+t.def+' · Tốc '+t.spd+'<br>✦ Nội tại: <b>'+(t.passive?t.passive.name:'—')+'</b>'+(t.passive?' — '+t.passive.desc:'')+'<br>Tướng dùng: '+(users||'—')+'</div></div>';}).join('');
   document.querySelectorAll('#ctabs button').forEach(b=>b.classList.toggle('on',b.dataset.c===c));
 }
 $('ftabs').innerHTML='<button data-f="all" class="on">Tất cả</button>'+Object.keys(FACTIONS).map(f=>'<button data-f="'+f+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</button>').join('');
@@ -2065,7 +2146,7 @@ function renderTech(){
     return '<div style="display:flex;gap:10px;align-items:center;background:#171208;border:1px solid #54432a;border-radius:12px;padding:8px 10px">'
       +'<img src="'+h.img+'" style="width:46px;height:46px;object-fit:contain">'
       +'<div style="flex:1;min-width:0"><span class="tier t'+h.tier+'">'+h.tier+'</span> <b>'+n+'</b> <small style="color:#9a8a6a">· '+city+' · '+CLS_NAME[h.cls]+' binh</small><br>'
-      +'<span style="display:inline-flex;gap:3px;align-items:center;flex-wrap:wrap">'+lad.map((t,i)=>'<span style="display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:6px;'+(i===step?'background:#3a2f14;outline:1.5px solid #ffd94a':'opacity:.55')+'"><img src="'+t.img+'" style="width:22px;height:22px;object-fit:contain"><small>'+t.name+'</small><span class="tier t'+t.rank+'">'+t.rank+'</span></span>'+(i<4?'<span style="color:#9a8a6a">›</span>':'')).join('')+'</span></div>'
+      +'<span style="display:inline-flex;gap:3px;align-items:center;flex-wrap:wrap">'+lad.map((t,i)=>'<span style="display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:6px;'+(i===step?'background:#3a2f14;outline:1.5px solid #ffd94a':'opacity:.55')+'"><img src="'+t.img+'" style="width:22px;height:22px;object-fit:contain"><small>'+t.name+'</small><span class="tier t'+t.rank+'">'+t.rank+'</span></span>'+(i<4?'<span style="color:#9a8a6a">›</span>':'')).join('')+'</span><br><small style="color:#8fd0ff">✦ Nội tại lính ('+cur.name+'): '+(cur.passive?'<b>'+cur.passive.name+'</b> — '+cur.passive.desc:'—')+'</small></div>'
       +(nxt?'<button class="tbtn gold" data-up="'+n+'" '+(S.gold[S.player]<cost?'disabled':'')+'>⬆ '+cost+' vàng</button>':'<span style="color:#ffd94a;font-weight:800">MAX</span>')
       +'</div>';
   }).join('')||'<div class="info">Chưa có tướng nào đóng quân ở thành của ta.</div>';
