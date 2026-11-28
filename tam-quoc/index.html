@@ -240,7 +240,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 </div></div>
 <div id="heroModal" class="modal hidden"><div class="mbox">
   <button class="mclose" data-close="heroModal">✕ Đóng</button>
-  <h3>📜 Danh tướng lục — 160 danh tướng</h3>
+  <h3>📜 Danh tướng lục — 258 danh tướng</h3>
   <div class="ftabs" id="ftabs"></div>
   <div class="ftabs" id="ttabs"></div>
   <div class="hgrid" id="hgrid"></div>
@@ -626,6 +626,34 @@ function aiUseTalent(f){
   else if(t.target==='ownCity'){return;}
   else applyTalent(name);
 }
+const FREE_COST={SR:600,S:400,R:250,N:150};
+function FREE_NAMES(){return HEROES.filter(h=>h.free).map(h=>h.name);}
+function rollFreeVisits(){
+  if(!S)return;S.freeVisits={};
+  if(monthType()!=='noi'||!S.freePool||!S.freePool.length)return;
+  const taken=new Set();
+  for(const r of REGIONS){if(Math.random()>=0.4)continue;const pool=S.freePool.filter(n=>!taken.has(n));if(!pool.length)break;const nm=pool[Math.floor(Math.random()*pool.length)];taken.add(nm);(S.freeVisits[r.id]=S.freeVisits[r.id]||[]).push(nm);}
+  const mine=Object.keys(S.freeVisits).filter(c=>S.regions[c]&&S.regions[c].owner===S.player);
+  if(mine.length)toast('🎲 Có tướng tự do ghé '+mine.length+' thành của ba — mở tab 🏯 Nội chính của thành để chiêu mộ trước khi hết tháng!');
+}
+function recruitFree(name,cityId){
+  const st=S.regions[cityId];if(!st||st.owner!==S.player)return;
+  const h=HMAP[name];if(!h)return;const cost=FREE_COST[h.tier]||150;
+  if(!((S.freeVisits||{})[cityId]||[]).includes(name))return;
+  if(S.gold[S.player]<cost){toast('Không đủ vàng chiêu mộ '+name+' (cần '+cost+'💰).');return;}
+  if(st.garrison.length>=6){toast('Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác đã!');return;}
+  S.gold[S.player]-=cost;st.garrison.push(name);
+  S.freePool=S.freePool.filter(n=>n!==name);S.freeVisits[cityId]=S.freeVisits[cityId].filter(n=>n!==name);
+  log('🎲 Chiêu mộ thành công tướng tự do '+name+' (hạng '+h.tier+') tại '+RMAP[cityId].name+' với '+cost+' vàng.');
+  toast('🎉 '+name+' (hạng '+h.tier+') đã về dưới trướng ba!');save();
+}
+function aiFreeRecruit(f){
+  if(!S.freeVisits||!S.freePool)return;
+  for(const r of REGIONS){const st=S.regions[r.id];if(!st||st.owner!==f)continue;const vis=(S.freeVisits[r.id]||[]).slice();
+    for(const n of vis){const h=HMAP[n];if(!h)continue;const cost=FREE_COST[h.tier]||150;
+      if(st.garrison.length<6&&(S.gold[f]||0)>=cost&&Math.random()<0.3){S.gold[f]-=cost;st.garrison.push(n);S.freePool=S.freePool.filter(x=>x!==n);S.freeVisits[r.id]=S.freeVisits[r.id].filter(x=>x!==n);
+        if(h.tier==='SR'||h.tier==='S')log('🎲 '+FACTIONS[f].name+' chiêu mộ được tướng tự do '+n+' (hạng '+h.tier+') tại '+r.name+'!');}}}
+}
 function processTurnFlags(){
   const dec=(obj)=>{if(!obj)return;Object.keys(obj).forEach(k=>{obj[k]--;if(obj[k]<=0)delete obj[k];});};
   dec(S.talentCd);dec(S.truce);dec(S.blocked);dec(S.noRecruit);
@@ -637,14 +665,22 @@ function processTurnFlags(){
   if(S.tribute&&S.tribute.turns>0){const tb=S.tribute;const pay=Math.min(tb.amt,S.gold[tb.from]||0);S.gold[tb.from]-=pay;S.gold[tb.to]+=pay;tb.turns--;log('🐉 '+FACTIONS[tb.from].name+' cống nạp '+pay+' vàng cho '+FACTIONS[tb.to].name+'.');if(tb.turns<=0)S.tribute=null;}
   if(S.focus)Object.keys(S.focus).forEach(k=>{S.focus[k].turns--;if(S.focus[k].turns<=0)delete S.focus[k];});
   if(S.incomeBuff){S.incomeBuff.turns--;if(S.incomeBuff.turns<=0)S.incomeBuff=null;}
+  rollFreeVisits();
 }
 function nameHash(n){let x=5381;for(let i=0;i<n.length;i++)x=((x*33)^n.charCodeAt(i))>>>0;return x;}
+const FREE_SR_SKILL={'Tôn Vũ':'Nguyệt Lạc Thiên Khuynh','Phạm Lãi':'Thủy Long Cuồng Nộ','Quản Trọng':'Vương Giả Hiệu Triệu','Tề Hoàn Công':'Hạo Dương Thần Uy','Tấn Văn Công':'Nhật Luân Chiếu Thế','Sở Trang Vương':'Liên Hoa Tịnh Thế','Câu Tiễn':'Huyết Tế Chiến Kỳ'};
+function facOf(h){return FACTIONS[h.faction]||{name:'Tự do',color:'#cfd8dc',icon:'🕊️'};}
 function decorateHeroes(){
   const TALENT_OVERRIDE={'Đặng Ngải':'Khuyến Nông Tang','Lưu Chương':'Chiêu Mộ Lưu Dân','Quách Gia':'Đốt Lương Thảo','Giả Hủ':'Phản Gián Kế','Lỗ Túc':'Kết Minh Ước','Đặng Chi':'Thuyết Khách','Hạ Hầu Đôn':'Tu Sửa Thủy Lợi','Tôn Quyền':'Chiêu Mộ Công Tượng','Tào Tháo':'Giả Mệnh Lệnh','Trương Liêu':'Truyền Đơn Chiêu Hàng','Tào Phi':'Cống Nạp Xưng Thần','Chung Do':'Đổi Chác Quân Nhu','Chu Du':'Hỏa Công Doanh Trại','Gia Cát Lượng':'Nghi Binh'};
-  const scored=HEROES.map(h=>({h,s:Math.max(h.vo,h.tri)+(h.vo+h.tri+h.chi)/6})).sort((a,b)=>b.s-a.s||nameHash(a.h.name)-nameHash(b.h.name));
+  const scored=HEROES.filter(h=>!h.free).map(h=>({h,s:Math.max(h.vo,h.tri)+(h.vo+h.tri+h.chi)/6})).sort((a,b)=>b.s-a.s||nameHash(a.h.name)-nameHash(b.h.name));
   const rankOf={};scored.forEach((e,i)=>rankOf[e.h.name]=i);
   HEROES.forEach(h=>{
-    if(SR_SKILL[h.name]){h.tier='SR';h.skill=SR_SKILL[h.name];h.passive=SR_PASSIVE[h.name];}
+    if(h.free&&h.tier){const T=h.tier;
+      if(T==='SR'){h.skill=FREE_SR_SKILL[h.name]||S_SKILLS[h.role][nameHash(h.name+'fsk')%S_SKILLS[h.role].length];h.passive=S_PASSIVES[nameHash(h.name+'fps')%S_PASSIVES.length];}
+      else if(T==='S'){const pool=S_SKILLS[h.role];h.skill=pool[nameHash(h.name)%pool.length];h.passive=S_PASSIVES[nameHash(h.name)%S_PASSIVES.length];}
+      else if(T==='R'){const rp=R_SKILLS[h.role];h.skill=rp[nameHash(h.name+'rsk')%rp.length];h.passive=ROLE_PASSIVE[h.role];}
+      else{const np=N_SKILLS[h.role];h.skill=np[nameHash(h.name+'nsk')%np.length];h.passive=ROLE_PASSIVE_N[h.role];}}
+    else if(SR_SKILL[h.name]){h.tier='SR';h.skill=SR_SKILL[h.name];h.passive=SR_PASSIVE[h.name];}
     else if(rankOf[h.name]<48){h.tier='S';const pool=S_SKILLS[h.role];h.skill=pool[nameHash(h.name)%pool.length];h.passive=S_PASSIVES[nameHash(h.name)%S_PASSIVES.length];}
     else if(rankOf[h.name]<100){h.tier='R';const rp=R_SKILLS[h.role];h.skill=rp[nameHash(h.name+'rsk')%rp.length];h.passive=ROLE_PASSIVE[h.role];}
     else{h.tier='N';const np=N_SKILLS[h.role];h.skill=np[nameHash(h.name+'nsk')%np.length];h.passive=ROLE_PASSIVE_N[h.role];}
@@ -792,7 +828,7 @@ function newGame(fac,scen){
 /* ================= CALENDAR: months of the year, one kind of work per month ================= */
 const MONTH_TYPES={
   war:{icon:'⚔️',name:'Chiến tranh',desc:'chỉ được xuất binh đánh thành'},
-  noi:{icon:'🏯',name:'Nội chính',desc:'tuyển quân · phát triển · xây dựng · nâng binh kỹ · điều tướng · talent Nội chính'},
+  noi:{icon:'🏯',name:'Nội chính',desc:'tuyển quân · phát triển · xây dựng · nâng binh kỹ · điều tướng · chiêu mộ tướng tự do · talent Nội chính'},
   ke:{icon:'🎭',name:'Kế sách',desc:'chỉ dùng được talent mảng Kế sách'},
   ngoai:{icon:'🤝',name:'Ngoại giao',desc:'talent Ngoại giao · chiêu hàng tù binh'},
 };
@@ -942,6 +978,8 @@ function buildCity(id,k){
 }
 /* ================= MAP / UI ================= */
 function showGame(){
+  if(S&&!S.freePool)S.freePool=FREE_NAMES().filter(n=>!REGIONS.some(r=>S.regions[r.id]&&S.regions[r.id].garrison.includes(n)));
+  if(S&&!S.freeVisits)S.freeVisits={};
   $('startScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');
   buildMap();renderTop();renderPanel();renderLog();showMonthSplash();
 }
@@ -1028,6 +1066,8 @@ function openCityMenu(id){
         +Object.keys(BUILDINGS).map(k=>{const bd=BUILDINGS[k];const lv=bldLv(st,k);const cost=lv<3?BLD_COST[lv+1]:0;const slots=Object.keys(st.bld||{}).length;const dis=monthType()!=='noi'||lv>=3||acted.built||S.gold[S.player]<cost||(lv===0&&slots>=3);
           return '<button data-bld="'+k+'" '+(dis?'disabled':'')+' style="text-align:left;padding:5px 7px;font-size:12.5px">'+bd.icon+' <b>'+bd.name+'</b>'+(lv?' · cấp '+lv:'')+'<br><small>'+bd.desc+'</small>'+(lv<3?'<br><small>🏗️ '+(lv?'Nâng':'Xây')+': '+cost+'💰</small>':'<br><small>Đã tối đa</small>')+'</button>';}).join('')
         +'</div>';
+      const fv=(S.freeVisits&&S.freeVisits[id])||[];
+      if(fv.length){h+='<div class="cmInfo" style="margin-top:8px">🎲 <b>Tướng tự do đang ghé thành</b> — chiêu mộ ngay trong tháng Nội chính này, hết tháng họ sẽ rời đi:</div>'+fv.map(n=>{const hh=HMAP[n];const cost=FREE_COST[hh.tier]||150;const dis=S.gold[S.player]<cost||st.garrison.length>=6;return '<div style="display:flex;align-items:center;gap:7px;margin:5px 0;background:#241b0e;border:1px solid #6a5636;border-radius:9px;padding:5px 7px"><img src="'+hh.img+'" style="width:38px;height:38px;border-radius:7px;object-fit:cover"><span style="flex:1;font-size:12.5px"><span class="tier t'+hh.tier+'">'+hh.tier+'</span> <b>'+n+'</b> · '+hh.role+'<br><small>Võ '+hh.vo+' · Trí '+hh.tri+' · Chỉ '+hh.chi+' · ⚡ '+hh.skill+'</small></span><button data-freerec="'+n+'" '+(dis?'disabled':'')+'>Chiêu mộ<br>'+cost+'💰</button></div>';}).join('')+(st.garrison.length>=6?'<div class="cmInfo">Thành đã đủ 6 tướng — điều bớt tướng đi nơi khác mới chiêu mộ thêm được.</div>':'');}
     }else if(effTab==='mil'){
       const foes=r.nb.filter(n=>S.regions[n].owner!==S.player);
       if(foes.length){
@@ -1089,6 +1129,7 @@ function openCityMenu(id){
   const cp=$('cmPris');if(cp)cp.onclick=()=>openPrisoners();
   m.querySelectorAll('[data-dev]').forEach(b=>b.onclick=()=>devCity(id,b.dataset.dev));
   m.querySelectorAll('[data-bld]').forEach(b=>b.onclick=()=>buildCity(id,b.dataset.bld));
+  m.querySelectorAll('[data-freerec]').forEach(b=>b.onclick=()=>{recruitFree(b.dataset.freerec,id);renderTop();openCityMenu(id);});
   const rc=$('cmRecruit');if(rc)rc.onclick=()=>{if(monthType()!=='noi'){gateToast();return;}const amt=Math.min(recruitAmt(st),cityCap(st)-st.troops);if(amt<=0)return;S.gold[S.player]-=150;st.troops+=amt;(S.acted[id]=S.acted[id]||{}).recruit=true;log('Tuyển thêm '+amt+' quân ở '+r.name+'.');save();refreshNodes();renderPanel();openCityMenu(id);};
   const cw=$('cmWar');if(cw)cw.onclick=()=>startWar(id);
   const cwe=$('cmWarE');if(cwe)cwe.onclick=()=>{const origins=r.nb.filter(n=>S.regions[n].owner===S.player&&canAttackFrom(n));if(origins.length===1){closeCityMenu();askWar(origins[0],id);}else pickWarOrigin(id);};
@@ -2245,7 +2286,7 @@ function instantBattle(atkFac,fromId,toId){
   to.troops=Math.max(80,Math.round(to.troops*(1-pa/pd*0.5)));log(FACTIONS[atkFac].name+' đánh '+RMAP[toId].name+' thất bại.');return 'lose';
 }
 function aiFaction(f){
-  if(monthType()==='noi')aiTechStep(f);aiUseTalent(f);
+  if(monthType()==='noi'){aiTechStep(f);aiFreeRecruit(f);}aiUseTalent(f);
   // income + recruit weakest region
   const regs=REGIONS.filter(r=>S.regions[r.id].owner===f);
   if(!regs.length)return;
@@ -2295,7 +2336,7 @@ $('endTurnBtn').onclick=()=>{
 const GAL={f:'all',t:'all'};
 function renderGallery(){
   const f=GAL.f,t=GAL.t;
-  $('hgrid').innerHTML=HEROES.filter(h=>(f==='all'||h.faction===f)&&(t==='all'||h.tier===t)).map(h=>{const tr=troopOf(h.name);return '<div class="hcard" data-hero="'+h.name+'" style="cursor:pointer"><span class="tier t'+h.tier+'">'+h.tier+'</span><img loading="lazy" src="'+h.img+'"><div class="hn" style="color:'+FACTIONS[h.faction].color+'">'+h.name+'</div><div class="hs">'+FACTIONS[h.faction].name+' · '+h.role+' · hạng <b>'+h.tier+'</b><br>Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+'<br>⚡ Chủ động: '+h.skill+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): '+h.talent+'<br>Quân: '+(tr?tr.name+' ('+tr.clsLabel+', hạng '+tr.rank+')':'—')+'</div></div>';}).join('')||'<div class="info">Không có tướng nào khớp bộ lọc.</div>';
+  $('hgrid').innerHTML=HEROES.filter(h=>(f==='all'||h.faction===f)&&(t==='all'||h.tier===t)).map(h=>{const tr=troopOf(h.name);return '<div class="hcard" data-hero="'+h.name+'" style="cursor:pointer"><span class="tier t'+h.tier+'">'+h.tier+'</span><img loading="lazy" src="'+h.img+'"><div class="hn" style="color:'+facOf(h).color+'">'+h.name+'</div><div class="hs">'+facOf(h).name+' · '+h.role+' · hạng <b>'+h.tier+'</b><br>Võ '+h.vo+' · Trí '+h.tri+' · Chỉ '+h.chi+'<br>⚡ Chủ động: '+h.skill+'<br>🛡️ Bị động: '+h.passive.name+' — '+h.passive.desc+'<br>✦ Talent ('+TALENT_DOM[h.talentDom]+'): '+h.talent+'<br>Quân: '+(tr?tr.name+' ('+tr.clsLabel+', hạng '+tr.rank+')':'—')+'</div></div>';}).join('')||'<div class="info">Không có tướng nào khớp bộ lọc.</div>';
   document.querySelectorAll('#ftabs button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
   document.querySelectorAll('#ttabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $('hgrid').querySelectorAll('[data-hero]').forEach(c=>c.onclick=()=>showHeroDetail(c.dataset.hero));
@@ -2306,7 +2347,7 @@ function renderTroops(){
   $('tgrid').innerHTML=TROOPS.filter(t=>c==='all'||t.cls===c).slice().sort((a,b)=>b.tier-a.tier||a.name.localeCompare(b.name)).map(t=>{const users=HEROES.filter(h=>h.troop===t.img).map(h=>h.name).join(', ');return '<div class="hcard"><span class="tier t'+t.rank+'">'+t.rank+'</span><img loading="lazy" src="'+t.img+'"><div class="hn">'+t.name+'</div><div class="hs">'+t.clsLabel+' · cấp '+t.tier+' · hạng <b>'+t.rank+'</b><br>Công '+Math.round(t.atk*(1+0.22*(t.tier-1))*10)/10+' · Thủ '+Math.round(t.def*(1+0.25*(t.tier-1))*10)/10+' · Tốc '+t.spd+' · 💪 Sức mạnh ×'+troopPowIdx(t.cls,t.atk*(1+0.22*(t.tier-1)),t.def*(1+0.25*(t.tier-1)),t.tier)+'<br>✦ Nội tại: <b>'+(t.passive?t.passive.name:'—')+'</b>'+(t.passive?' — '+t.passive.desc:'')+'<br>Tướng dùng: '+(users||'—')+'</div></div>';}).join('');
   document.querySelectorAll('#ctabs button').forEach(b=>b.classList.toggle('on',b.dataset.c===c));
 }
-$('ftabs').innerHTML='<button data-f="all" class="on">Tất cả</button>'+Object.keys(FACTIONS).map(f=>'<button data-f="'+f+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</button>').join('');
+$('ftabs').innerHTML='<button data-f="all" class="on">Tất cả</button>'+Object.keys(FACTIONS).map(f=>'<button data-f="'+f+'">'+FACTIONS[f].icon+' '+FACTIONS[f].name+'</button>').join('')+'<button data-f="free">🕊️ Tự do</button>';
 document.querySelectorAll('#ftabs button').forEach(b=>b.onclick=()=>{GAL.f=b.dataset.f;renderGallery();});
 $('ttabs').innerHTML='<button data-t="all" class="on">Mọi hạng</button>'+['SR','S','R','N'].map(t=>'<button data-t="'+t+'">Hạng '+t+'</button>').join('');
 document.querySelectorAll('#ttabs button').forEach(b=>b.onclick=()=>{GAL.t=b.dataset.t;renderGallery();});
@@ -2340,8 +2381,8 @@ function showHeroDetail(name){
   const eff=homes.length?effTroop(name,S.regions[homes[0].id].owner):null;
   const bar=(v,c)=>'<span style="display:inline-block;width:130px;height:9px;background:#2a2013;border-radius:5px;vertical-align:middle;overflow:hidden"><span style="display:block;height:100%;width:'+Math.min(100,v)+'%;background:'+c+'"></span></span> '+v;
   $('hdBody').innerHTML='<div style="display:flex;gap:14px;align-items:flex-start"><img src="'+h.img+'" style="width:118px;height:118px;object-fit:contain;background:#171208;border:1px solid #54432a;border-radius:12px">'
-    +'<div><h3 style="color:'+FACTIONS[h.faction].color+';margin:0 0 4px"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+name+'</h3>'
-    +'<div class="info">'+FACTIONS[h.faction].icon+' '+FACTIONS[h.faction].name+' · '+h.role+'<br>'
+    +'<div><h3 style="color:'+facOf(h).color+';margin:0 0 4px"><span class="tier t'+h.tier+'">'+h.tier+'</span> '+name+'</h3>'
+    +'<div class="info">'+facOf(h).icon+' '+facOf(h).name+' · '+h.role+'<br>'
     +'⚔️ Võ lực '+bar(h.vo,'#e05c4a')+'<br>🧠 Trí lực '+bar(h.tri,'#5aa7e0')+'<br>🎖️ Chỉ huy '+bar(h.chi,'#e8c766')+'<br>❤️ Sinh lực gốc: '+h.hp+'</div></div></div>'
     +'<div class="info" style="margin-top:10px;line-height:1.65">⚡ <b>Chủ động — '+h.skill+'</b> · <i>'+skillTags(h.skill).join(' · ')+'</i><br>'+skillDesc(h.skill)+'<br>'
     +'🛡️ <b>Bị động — '+h.passive.name+'</b>: '+h.passive.desc+'<br>'
