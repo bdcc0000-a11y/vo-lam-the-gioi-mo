@@ -2331,8 +2331,14 @@ function finishBattle(){
   cancelAnimationFrame(B.raf);stopDrums();
   $('turnPrep').classList.add('hidden');
   const at=aliveTroops('atk'),df=aliveTroops('def');
-  const atkWin=B.winner==='atk';
-  const cityTaken=atkWin&&(df<=0||!B.genUnits.some(g=>g.side==='def'&&!g.dead));
+  const fAtk=B.atkMax?at/B.atkMax:1,fDef=B.defMax?df/B.defMax:1;
+  let twentyLoser=null;
+  if(!B.retreat){const a20=fAtk<=0.20,d20=fDef<=0.20;
+    if(a20&&d20)twentyLoser=fAtk<fDef?'atk':(fDef<fAtk?'def':null);
+    else if(a20)twentyLoser='atk';else if(d20)twentyLoser='def';}
+  const atkWin=twentyLoser?(twentyLoser==='def'):(B.winner==='atk');
+  const cityTaken=twentyLoser==='def'?true:(twentyLoser==='atk'?false:atkWin&&(df<=0||!B.genUnits.some(g=>g.side==='def'&&!g.dead)));
+  let ruleNote='';
   const playerWon=B.playerSide?(cityTaken?B.playerSide==='atk':B.playerSide==='def'):atkWin;
   if(playerWon){playSmp('boom',0.22,0.9);setTimeout(()=>{playSmp('clang',0.2,1.05);playSmp('buffs',0.22,1);},210);}else{playSmp('boom',0.3,0.7);setTimeout(()=>playSmp('fall',0.16,0.8),240);}
   const to=S.regions[B.toId],from=S.regions[B.fromId];
@@ -2344,10 +2350,29 @@ function finishBattle(){
   if(B.retreat&&B.retreatSide){for(const g of B.genUnits){if(!g.dead&&g.side===B.retreatSide&&Math.random()<0.20)captured.push(g.name);}}
   const gone=new Set([...captured,...deadForever]);
   if(cityTaken){
-    const surv=Math.max(60,at);
+    let surv=Math.max(60,at);
+    const defSurvGens=B.defGens.filter(n=>!gone.has(n));
+    if(twentyLoser==='def'&&df>0){
+      const adjDef=RMAP[B.toId].nb.filter(id=>S.regions[id].owner===B.defFac).sort((a,b)=>S.regions[b].troops-S.regions[a].troops);
+      if(adjDef.length){
+        const dest=S.regions[adjDef[0]];dest.troops+=df;
+        const placed=[];for(const n of defSurvGens){const spot=adjDef.map(id=>S.regions[id]).find(st=>st.garrison.length<6&&!st.garrison.includes(n));if(spot){spot.garrison.push(n);placed.push(n);}}
+        const left=defSurvGens.filter(n=>!placed.includes(n));if(left.length)retreatGenerals(left,B.defFac,B.toId);
+        ruleNote='<br>⚖️ Quân thủ chỉ còn '+Math.round(fDef*100)+'% — tự động thua, rút '+df+' lính cùng tướng về '+RMAP[adjDef[0]].name+'.';
+        log('⚖️ '+FACTIONS[B.defFac].name+' còn '+Math.round(fDef*100)+'% quân ở '+RMAP[B.toId].name+' — tự động thua, rút về '+RMAP[adjDef[0]].name+'.');
+      }else{
+        surv+=df;
+        const caught=[],escaped=[];
+        for(const n of defSurvGens){if(Math.random()<0.70||!REGIONS.some(r=>S.regions[r.id].owner===B.defFac&&r.id!==B.toId))caught.push(n);else escaped.push(n);}
+        for(const n of caught)if(!captured.includes(n))captured.push(n);
+        if(escaped.length)retreatGenerals(escaped,B.defFac,B.toId);
+        ruleNote='<br>⚖️ Quân thủ chỉ còn '+Math.round(fDef*100)+'% — tự động thua và KHÔNG còn thành kề để rút: '+df+' lính bị bắt, quy về phe thắng'+(caught.length?'; tướng bị bắt sống: '+caught.join(', '):'')+(escaped.length?'; trốn thoát: '+escaped.join(', '):'')+'.';
+        log('⚖️ '+FACTIONS[B.defFac].name+' mất '+RMAP[B.toId].name+' không đường rút — '+df+' lính bị bắt, '+caught.length+' tướng bị bắt sống.');
+      }
+    }
     to.owner=B.atkFac;to.troops=surv;to.garrison=B.atkGens.slice();handleCityPrisoners(B.toId,B.atkFac);
     if(from)from.garrison=from.garrison.filter(n=>!B.atkGens.includes(n));
-    retreatGenerals(B.defGens.filter(n=>!gone.has(n)),B.defFac,B.toId);
+    if(!(twentyLoser==='def'&&df>0))retreatGenerals(defSurvGens,B.defFac,B.toId);
     title='🎉 THẮNG TRẬN!';body='Quân '+FACTIONS[B.atkFac].name+' chiếm được <b>'+RMAP[B.toId].name+'</b>!';
     log(FACTIONS[B.atkFac].name+' chiếm '+RMAP[B.toId].name+' từ tay '+FACTIONS[B.defFac].name+'.');
   }else{
@@ -2359,6 +2384,8 @@ function finishBattle(){
     body=FACTIONS[B.defFac].name+' giữ vững <b>'+RMAP[B.toId].name+'</b>.'+(B.endReason==='turn'?' ⏱️ Giao tranh '+Math.min(20,Math.max(1,Math.ceil(B.turnT/60)))+' giây.':B.retreat?' 🏳️ Một bên đã rút quân.':'');
     log(FACTIONS[B.defFac].name+' giữ được '+RMAP[B.toId].name+' trước quân '+FACTIONS[B.atkFac].name+'.');
   }
+  if(twentyLoser==='atk')ruleNote='<br>⚖️ Quân công chỉ còn '+Math.round(fAtk*100)+'% — tự động thua, toàn quân rút về '+(from?RMAP[B.fromId].name:'thành nhà')+'.';
+  if(ruleNote)body+=ruleNote;
   if(B.playerSide){title=(B.retreat&&B.retreatSide===B.playerSide)?'🏳️ ĐÃ RÚT QUÂN':(playerWon?'🎉 THẮNG TRẬN!':'💀 THUA TRẬN');}
   {const fmtN=x=>Math.round(x).toLocaleString('vi-VN');
   const genDmgList=sd=>B.genUnits.filter(g=>g.side===sd).map(g=>'<div style="margin:2px 0"><span class="tier t'+(HMAP[g.name]?HMAP[g.name].tier:'N')+'">'+(HMAP[g.name]?HMAP[g.name].tier:'')+'</span> <b>'+g.name+'</b>'+(g.dead?' ☠️':'')+' — dame: <b>'+fmtN(g.dmgDealt||0)+'</b>'+(g.kills?' · hạ '+g.kills+' lính':'')+'</div>').join('');
