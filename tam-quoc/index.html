@@ -147,19 +147,22 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 .gchip img{width:32px;height:32px;object-fit:contain}
 .gchip.on{border-color:#ffd94a;background:rgba(255,217,74,.15)}
 .gchip.cd{opacity:.45;filter:grayscale(.7)}
+.gchip{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 5px;min-width:58px}
+.gchip img{width:34px;height:34px;border-radius:7px}
+.gchip span{font-size:8.5px;line-height:1.15;text-align:center;max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #rotateHint{display:none}
 @media (orientation:landscape) and (max-height:540px){
-  #bTop{margin-right:154px;padding:2px 6px 0;font-size:11px}
+  #bTop{margin-right:0;padding:2px 6px 0;font-size:11px}
   #bTop .bside .troops{font-size:19px}
   #bTop .bside .gname{font-size:11px}
   #bTop #vs{font-size:13px}
-  #cvWrap{margin-right:154px;margin-top:3px}
-  #bBottom{position:absolute;top:0;right:0;bottom:0;width:146px;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;align-items:stretch;background:#14100a;border-left:2px solid #57431f;padding:6px;gap:6px;z-index:55}
-  #bBottom button{width:100%;flex:none;padding:6px 3px;font-size:11.5px}
-  #bBottom #tug{width:100%;flex:none}
-  #bBottom #genChips{flex-wrap:wrap;gap:4px}
+  #cvWrap{margin-right:0;margin-top:3px}
+  #bBottom{position:static;width:auto;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:center;background:#14100a;border-top:2px solid #57431f;border-left:0;padding:5px 6px;gap:6px;z-index:55}
+  #bBottom button{width:auto;flex:none;padding:6px 8px;font-size:11.5px}
+  #bBottom #tug{flex:1;min-width:46px;width:auto}
+  #bBottom #genChips{flex-wrap:nowrap;gap:5px;flex:none}
   #bBottom .gchip{min-width:0;padding:3px 4px;font-size:9px}
-  #bBottom .gchip img{width:26px;height:26px}
+  #bBottom .gchip img{width:30px;height:30px}
 }
 @media (orientation:portrait) and (max-width:640px){
   #bBottom{gap:6px;padding:6px 8px 9px}
@@ -180,8 +183,8 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <h1>⚔️ HUYẾT MA TAM QUỐC ⚔️</h1>
   <div class="sub">Dàn trận tranh thiên hạ — 160 danh tướng, 4 thế lực, 32 vùng đất.<br>Vào trận, hai đạo quân ủi nhau như Spectral Force: tướng mạnh, quân đông, sĩ khí cao là đẩy được đối phương tới vỡ trận.</div>
   <div style="display:flex;gap:10px;justify-content:center;margin:10px 0 2px;flex-wrap:wrap">
-    <button id="scenClassic" class="tbtn gold" style="font-size:14px;padding:9px 16px">🏯 Tam Quốc tranh hùng · 183</button>
-    <button id="scenKV" class="tbtn" style="font-size:14px;padding:9px 16px">🟡 Chống giặc Khăn Vàng · 184</button>
+    <button id="scenClassic" class="tbtn gold" style="font-size:14px;padding:9px 16px">🏯 4 màu bem nhau · 183</button>
+    <button id="scenKV" class="tbtn" style="font-size:14px;padding:9px 16px">🟡 Móa mấy thằng màu vàng · 184</button>
   </div>
   <div class="sub" id="scenDesc" style="margin:4px 0 8px"></div>
   <div class="factions" id="factionCards"></div>
@@ -217,10 +220,9 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div id="turnPrep" class="hidden"><div id="turnPrepTitle">🏁 Kết thúc hiệp 1</div><div id="turnPrepBody"></div><button id="turnGo" class="btn gold">⚔️ Xung phong</button></div>
   <div id="cvWrap"><canvas id="cv"></canvas><div id="cutin"><div class="ci"><img id="ciImg"><img id="ciFx" style="width:92px;height:92px;object-fit:cover;border-radius:10px"><div><div class="cn" id="ciName"></div><div class="cs" id="ciSkill"></div></div></div></div></div>
   <div id="bBottom">
-    <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><button id="ordBtn1">🔥 Tổng công</button><button id="ordBtn2">🧱 Cố thủ</button><button id="ordBtn3">🎯 Săn tướng</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
     <div id="genChips" style="display:flex;gap:6px;align-items:center"></div>
-    <button id="skillBtn">⚡ Tung chiêu</button>
-    <div id="skillTip" class="hidden" style="position:absolute;right:158px;bottom:12px;max-width:300px;background:#141210ee;border:1.5px solid #c9a959;border-radius:10px;padding:9px 11px;color:#f2e3b6;font-size:13px;z-index:30;pointer-events:none"></div>
+    <button id="stanceBtn1">⚔️ Đột Phá</button><button id="stanceBtn2">🛡️ Phòng Thủ</button><button id="ordBtn1">🔥 Tổng công</button><button id="ordBtn2">🧱 Cố thủ</button><button id="ordBtn3">🎯 Săn tướng</button><div id="tug"><div id="tugL" style="width:50%"></div><div id="tugR"></div></div>
+    <div id="skillTip" class="hidden" style="position:absolute;left:8px;bottom:76px;max-width:300px;background:#141210ee;border:1.5px solid #c9a959;border-radius:10px;padding:9px 11px;color:#f2e3b6;font-size:13px;z-index:30;pointer-events:none"></div>
     <button id="spdBtn">⏩ Tốc độ x1</button>
     <button id="quitBtn">🏳️ Rút quân</button>
     <button id="sndBtn" style="background:#3a2d1a;color:#f0e6d2;border:1px solid #6a5636;padding:11px 12px;border-radius:10px">🔊</button>
@@ -1177,7 +1179,11 @@ function openBattle(cfg){
   R.innerHTML=mk(cfg.defGens,cfg.defFac,cfg.defTroops);
   resizeCanvas();spawnUnits();buildBattlefield();updateStanceBtns();spawnGenerals();startDrums();
   B.selGen=leadGen(B.playerSide);B.chipSig=null;renderGenChips();
-  $('genChips').onclick=e=>{const b=e.target.closest?e.target.closest('[data-gen]'):null;if(!b)return;const g=playerGens().find(x=>x.name===b.dataset.gen);if(g){B.selGen=g;renderGenChips();}};
+  $('genChips').onclick=e=>{const b=e.target.closest?e.target.closest('[data-gen]'):null;if(!b)return;const g=playerGens().find(x=>x.name===b.dataset.gen);if(!g)return;
+    if(_skHoldShown){_skHoldShown=false;hideSkillTip();B.selGen=g;renderGenChips();return;}
+    B.selGen=g;const sp=B.sp[B.playerSide]||0;const tier=sp>=100?3:sp>=67?2:sp>=34?1:0;
+    if(!g.dead&&g.skillCd<=0&&tier>=1&&!B.over){hideSkillTip();useSkill(B.playerSide,g);}else if(!g.dead){showSkillTipFor(g,false);}
+    renderGenChips();};
   $('cv').onclick=e=>{const cv=$('cv'),r=cv.getBoundingClientRect();
     const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
     const g=playerGens().find(g=>Math.hypot(g.x-x,g.y-40-y)<40);
@@ -2051,8 +2057,6 @@ function battleLoop(ts){
   $('tugL').style.width=(100-front*100)+'%';
   if(B.playerSide){const sp=B.sp[B.playerSide],tier=spTier(B.playerSide),sg=B.selGen;
     const cdOk=sg&&sg.skillCd<=0;
-    $('skillBtn').disabled=tier<1||B.over||!cdOk;
-    $('skillBtn').textContent=!sg?'⚡ Chiêu':(sg.skillCd>0?('⏳ '+sg.name+' hồi chiêu '+Math.ceil(sg.skillCd/60)+'s'):(tier>=1?('⚡ '+HMAP[sg.name].skill+' — '+sg.name+' Lv'+tier):('⚡ '+HMAP[sg.name].skill+' — cần SP 34+ ('+Math.floor(sp)+')')));
     }
   if(!B.over){
     if(at<=0||df<=0){B.over=true;B.winner=at>df?'atk':'def';B.endReason='wipe';B.endT=ts;setTimeout(finishBattle,900);}
@@ -2062,15 +2066,16 @@ function battleLoop(ts){
   }
   B.raf=requestAnimationFrame(battleLoop);
 }
-let _skHoldT=null,_skHoldShown=false;
-function showSkillTip(){if(!B||!B.selGen)return;const g=B.selGen;const h=HMAP[g.name];if(!h)return;const sk=SKILL_DB[h.skill]||{mult:1};const tip=$('skillTip');if(!tip)return;
+let _skHoldT=null,_skHoldShown=false,_skTipTimer=null;
+function showSkillTipFor(g,sticky){if(!B||!g)return;const h=HMAP[g.name];if(!h)return;const sk=SKILL_DB[h.skill]||{mult:1};const tip=$('skillTip');if(!tip)return;
   tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>'+(h.skillDesc||'Chiêu thức riêng của '+g.name)+'<br>💥 Hệ số sát thương: <b>×'+sk.mult+'</b> · SP cần: 34 (bậc 1) / 67 (bậc 2) / 100 (bậc 3) — bậc càng cao càng mạnh · Hồi chiêu 15 giây sau khi tung</small>';
-  tip.classList.remove('hidden');_skHoldShown=true;}
+  tip.classList.remove('hidden');if(sticky)_skHoldShown=true;
+  if(_skTipTimer)clearTimeout(_skTipTimer);if(!sticky)_skTipTimer=setTimeout(hideSkillTip,2600);}
+function showSkillTip(){showSkillTipFor(B?B.selGen:null,true);}
 function hideSkillTip(){const tip=$('skillTip');if(tip)tip.classList.add('hidden');}
-const _sb=$('skillBtn');
-_sb.addEventListener('pointerdown',()=>{_skHoldShown=false;if(_skHoldT)clearTimeout(_skHoldT);_skHoldT=setTimeout(showSkillTip,450);});
-['pointerup','pointerleave','pointercancel'].forEach(ev=>_sb.addEventListener(ev,()=>{if(_skHoldT){clearTimeout(_skHoldT);_skHoldT=null;}}));
-$('skillBtn').onclick=()=>{if(_skHoldShown){_skHoldShown=false;hideSkillTip();return;}hideSkillTip();if(!B||B.over)return;useSkill(B.playerSide,B.selGen);};
+const _gcEl=$('genChips');
+_gcEl.addEventListener('pointerdown',e=>{if(!B)return;const b=e.target.closest?e.target.closest('[data-gen]'):null;if(!b)return;const g=playerGens().find(x=>x.name===b.dataset.gen);if(!g)return;_skHoldShown=false;if(_skHoldT)clearTimeout(_skHoldT);_skHoldT=setTimeout(()=>showSkillTipFor(g,true),450);});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>_gcEl.addEventListener(ev,()=>{if(_skHoldT){clearTimeout(_skHoldT);_skHoldT=null;}}));
 $('spdBtn').onclick=()=>{if(!B)return;B.speed=B.speed>=3?1:B.speed+1;$('spdBtn').textContent='⏩ Tốc độ x'+B.speed;};
 $('quitBtn').onclick=()=>{if(!B||B.over)return;B.over=true;B.winner=B.playerSide==='atk'?'def':'atk';B.retreat=true;B.retreatSide=B.playerSide;setTimeout(finishBattle,300);};
 $('sndBtn').onclick=()=>{if(!B)return;const order=['nomusic','all','mute'];const nx=order[(order.indexOf(sndState())+1)%3];
@@ -2303,7 +2308,7 @@ $('newBtn').onclick=()=>{const b=$('newBtn');if(b.dataset.arm){localStorage.remo
   function renderStartCards(){
     applyScenario(PENDING_SCEN);
     $('scenClassic').className='tbtn'+(PENDING_SCEN==='classic'?' gold':'');$('scenKV').className='tbtn'+(PENDING_SCEN==='khanvang'?' gold':'');
-    $('scenDesc').innerHTML=PENDING_SCEN==='khanvang'?'🟡 <b>Khăn Vàng khởi nghĩa (184):</b> giặc Khăn Vàng chiếm sẵn <b>16 thành</b> khắp trung nguyên, các thế lực khác mỗi phe chỉ còn <b>4 thành</b> gốc — đúng thế cục năm 184, chư hầu còn yếu, giặc ở khắp nơi. Chọn một phe — kể cả phe Khăn Vàng — và thống nhất thiên hạ.':'🏯 <b>Tam Quốc tranh hùng (183):</b> 4 thế lực Ngụy · Thục · Ngô · Quần Hùng, mỗi phe 8 thành, ai chiếm đủ 32 thành là thắng.';
+    $('scenDesc').innerHTML=PENDING_SCEN==='khanvang'?'🟡 <b>Móa mấy thằng màu vàng (184):</b> giặc Khăn Vàng chiếm sẵn <b>16 thành</b> khắp trung nguyên, các thế lực khác mỗi phe chỉ còn <b>4 thành</b> gốc — đúng thế cục năm 184, chư hầu còn yếu, giặc ở khắp nơi. Chọn một phe — kể cả phe Khăn Vàng — và thống nhất thiên hạ.':'🏯 <b>4 màu bem nhau (183):</b> 4 thế lực Ngụy · Thục · Ngô · Quần Hùng, mỗi phe 8 thành, ai chiếm đủ 32 thành là thắng.';
     const cards=$('factionCards');
     cards.innerHTML=Object.keys(FACTIONS).map(f=>{const hs=facHeroes(f);const lord=hs.find(h=>['Tào Tháo','Lưu Bị','Tôn Quyền','Đổng Trác'].includes(h.name))||hs.slice().sort((a,b)=>(Math.max(b.vo,b.tri)-Math.max(a.vo,a.tri)))[0];
       const nCities=PENDING_SCEN==='khanvang'?REGIONS.filter(r=>KV_OWNERS[r.id]===f).length:REGIONS.filter(r=>r.owner===f).length;
