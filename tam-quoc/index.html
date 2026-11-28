@@ -273,6 +273,13 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
     <button id="warNo" class="tbtn" style="font-size:16px;padding:11px 22px">✖ Thôi</button>
   </div></div></div>
 
+<div id="challengeModal" class="modal hidden"><div class="mbox" style="max-width:430px;text-align:center">
+  <h3 id="chTitle" style="margin-top:0"></h3><div class="info" id="chBody" style="line-height:1.65;color:#d8cbae"></div>
+  <div style="margin-top:14px;display:flex;gap:10px;justify-content:center">
+    <button id="chYes" class="tbtn gold" style="font-size:16px;padding:11px 26px"></button>
+    <button id="chNo" class="tbtn" style="font-size:16px;padding:11px 20px">Từ chối (−4 sĩ khí)</button>
+  </div></div></div>
+
 <!-- RESULT MODAL -->
 <div id="resultModal" class="modal hidden"><div class="mbox" style="max-width:480px;text-align:center">
   <h3 id="resTitle"></h3><div class="info" id="resBody" style="line-height:1.6;color:#d8cbae"></div>
@@ -1433,6 +1440,68 @@ function runDuel(rawDt){
     playSmp('clang',0.25,0.8);playSmp('thud2',0.3,0.75);
   }
 }
+const DEBATE_LINES=['Luận điệu hồ đồ!','Đạo lý không ở miệng ngươi!','Nghe đây mà học hỏi!','Lời lẽ thật thiếu căn cứ!','Học vấn nông cạn thay!','Một câu phá tan vạn lời!','Ngươi hiểu gì về đại thế thiên hạ?','Lý cùn rồi còn cố cãi!','Tâm phục khẩu phục chưa?','Chữ nghĩa thánh hiền đâu hết rồi?'];
+function startDebate(a,d){
+  const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,ang=Math.atan2(d.y-a.y,d.x-a.x);
+  a.x=mx-Math.cos(ang)*40;a.y=my-Math.sin(ang)*40;d.x=mx+Math.cos(ang)*40;d.y=my+Math.sin(ang)*40;
+  const ta=HMAP[a.name].tri,tb=HMAP[d.name].tri;
+  B.debate={t:0,hit:0,a,d,done:false,first:ta>=tb?a:d,second:ta>=tb?d:a};
+  B.banner={txt:'🗣️ ĐẤU KHẨU: '+a.name+' — '+d.name,t:150};
+  for(const u of B.units){if(u.dead)continue;const dx=u.x-mx,dy=u.y-my,dd=Math.hypot(dx,dy);if(dd<95&&dd>1){u.x=mx+dx/dd*95;u.y=my+dy/dd*95;}}
+  playSmp('pop',0.3,1);
+}
+function runDebate(rawDt){
+  const D=B.debate;if(!D)return;D.t+=rawDt;
+  for(const g of [D.a,D.d]){g.atkAnim=Math.max(0,(g.atkAnim||0)-rawDt);g.flash=Math.max(0,(g.flash||0)-rawDt);}
+  const hitTimes=[46,100,154,208,262,316];
+  if(D.hit<hitTimes.length&&D.t>=hitTimes[D.hit]){
+    const atk=D.hit%2===0?D.first:D.second,def=atk===D.a?D.d:D.a;D.hit++;
+    const ta=HMAP[atk.name].tri,td=HMAP[def.name].tri;
+    const pct=Math.max(0.02,Math.min(0.10,0.055+(ta-td)*0.0016));
+    atk.atkAnim=16;def.flash=8;B.shake=Math.max(B.shake,3);
+    def.hp=Math.max(def.maxHp*0.12,def.hp-def.maxHp*pct);
+    B.sp[def.side]=Math.max(0,B.sp[def.side]-4);
+    B.texts.push({x:atk.x,y:atk.y-94,life:64,txt:'💬 '+DEBATE_LINES[Math.floor(Math.random()*DEBATE_LINES.length)],color:'#ffe9a8'});
+    B.texts.push({x:def.x,y:def.y-64,life:44,txt:'-'+Math.round(def.maxHp*pct*10),color:'#9ad1ff'});
+    playSmp('pop',0.24,0.9+Math.random()*0.25);
+  }
+  if(!D.done&&D.t>=380){D.done=true;
+    const wa=D.a.hp/D.a.maxHp>=D.d.hp/D.d.maxHp?D.a:D.d,lo=wa===D.a?D.d:D.a;
+    B.sp[wa.side]=Math.min(100,B.sp[wa.side]+30);
+    B.moraleBonus[wa.side]=Math.min(24,B.moraleBonus[wa.side]+6);
+    B.moraleBonus[lo.side]=Math.max(-30,B.moraleBonus[lo.side]-8);
+    lo.skillCd=Math.max(lo.skillCd||0,700);
+    B.banner={txt:'🏆 '+wa.name+' thắng đấu khẩu! '+lo.name+' á khẩu, một lúc lâu không tung được skill.',t:185};
+    playSmp('buffs',0.2,1);
+  }
+}
+function bestGenBy(side,fn){let best=null,bv=-1;for(const g of B.genUnits){if(g.side!==side||g.dead)continue;const v=fn(HMAP[g.name]);if(v>bv){bv=v;best=g;}}return best;}
+function startChallengeFight(ev,chal,resp){if(ev.type==='duel')startDuel(chal,resp);else startDebate(chal,resp);}
+function maybeChallenge(){
+  B.challengeDone=true;
+  const evs=[];
+  const da=bestGenBy('atk',h=>h.role==='Võ tướng'?h.vo:-1),dd=bestGenBy('def',h=>h.role==='Võ tướng'?h.vo:-1);
+  if(da&&dd){const mx=Math.max(HMAP[da.name].vo,HMAP[dd.name].vo);if(mx>=72&&Math.random()<0.30+(mx-72)*0.005)evs.push({type:'duel',a:da,d:dd});}
+  const ba=bestGenBy('atk',h=>h.role!=='Võ tướng'?h.tri:-1),bd=bestGenBy('def',h=>h.role!=='Võ tướng'?h.tri:-1);
+  if(ba&&bd){const mx=Math.max(HMAP[ba.name].tri,HMAP[bd.name].tri);if(mx>=75&&Math.random()<0.28+(mx-75)*0.005)evs.push({type:'debate',a:ba,d:bd});}
+  if(!evs.length)return;
+  const ev=evs[Math.floor(Math.random()*evs.length)];
+  const stat=g=>ev.type==='duel'?HMAP[g.name].vo:HMAP[g.name].tri;
+  const chal=stat(ev.a)>=stat(ev.d)?ev.a:ev.d,resp=chal===ev.a?ev.d:ev.a;
+  if(resp.side===B.playerSide){
+    B.challengePending=true;B.challengeEv={ev,chal,resp};
+    $('chTitle').textContent=ev.type==='duel'?'⚔️ THÁCH ĐẤU ĐƠN!':'🗣️ THÁCH ĐẤU KHẨU!';
+    $('chBody').innerHTML='<b style="color:#ffd94a">'+chal.name+'</b> ('+(ev.type==='duel'?'Võ '+stat(chal):'Trí '+stat(chal))+') lớn tiếng thách '+(ev.type==='duel'?'đấu đơn':'đấu khẩu')+'!<br>Tướng ta <b>'+resp.name+'</b> ('+(ev.type==='duel'?'Võ '+stat(resp):'Trí '+stat(resp))+') có ứng chiến?<br><small>Thắng: sĩ khí tăng, địch suy yếu. Thua: mất máu/sĩ khí. Từ chối: −4 sĩ khí.</small>';
+    $('chYes').textContent=ev.type==='duel'?'⚔️ Ứng chiến!':'🗣️ Ứng khẩu!';
+    $('challengeModal').classList.remove('hidden');
+  }else{
+    const p=Math.max(0.2,Math.min(0.9,0.5+(stat(resp)-stat(chal))*0.012));
+    if(Math.random()<p)startChallengeFight(ev,chal,resp);
+    else{B.moraleBonus[resp.side]=Math.max(-30,B.moraleBonus[resp.side]-4);B.banner={txt:(ev.type==='duel'?'⚔️ ':'🗣️ ')+resp.name+' từ chối '+(ev.type==='duel'?'đơn đấu':'đấu khẩu')+' — sĩ khí địch giảm!',t:170};}
+  }
+}
+$('chYes').onclick=()=>{$('challengeModal').classList.add('hidden');const c=B.challengeEv;B.challengePending=false;B.challengeEv=null;if(c)startChallengeFight(c.ev,c.chal,c.resp);};
+$('chNo').onclick=()=>{$('challengeModal').classList.add('hidden');const c=B.challengeEv;B.challengePending=false;B.challengeEv=null;if(c){B.moraleBonus[c.resp.side]=Math.max(-30,B.moraleBonus[c.resp.side]-4);B.banner={txt:'Phe ta né tránh thách đấu — sĩ khí giảm!',t:150};}};
 function killGeneral(g){
   g.dead=true;B.shake=Math.max(B.shake,9);B.freeze=Math.max(B.freeze||0,5);sfxBoom();playSmp('boom',0.42,0.9);playSmp('cannon',0.2,1.15);
   B.slowmo=Math.max(B.slowmo||0,36);B.banner={txt:'⚔️ '+g.name+' TỬ TRẬN!',t:170};
@@ -1611,9 +1680,12 @@ function battleLoop(ts){
   if(B.freeze>0){B.freeze-=rawDt;dt=0;}
   if(B.deployT>0){B.deployT-=rawDt;if(B.deployT<=0){B.banner={txt:'⚔️ XUNG PHONG!',t:110};playSmp('thud2',0.4,0.7);playSmp('gallop',0.10,1);}dt=0;}
   if(B.duel&&!B.duel.done){runDuel(rawDt);dt=0;}
+  if(B.debate&&!B.debate.done){runDebate(rawDt);dt=0;}
+  if(B.challengePending)dt=0;
   if(B.phase==='prep')dt=0;
-  const edt=((B.duel&&!B.duel.done)||B.phase==='prep')?rawDt:dt;
+  const edt=((B.duel&&!B.duel.done)||(B.debate&&!B.debate.done)||B.challengePending||B.phase==='prep')?rawDt:dt;
   B.t+=dt;
+  if(B.phase==='fight'&&!B.challengeDone&&B.t>80&&!B.over&&!(B.duel&&!B.duel.done)&&!(B.debate&&!B.debate.done))maybeChallenge();
   if(B.bg&&B.bg.width===W&&B.bg.height===H)ctx.drawImage(B.bg,0,0);else{ctx.fillStyle='#56743a';ctx.fillRect(0,0,W,H);}
   drawFlags(ctx,B.t*16);
   if(B.zones)for(const z of B.zones){ctx.save();ctx.globalAlpha=0.20+0.05*Math.sin(B.t*0.3+z.x);ctx.fillStyle=z.kind==='fire'?'#ff6a1e':'#6fc4ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.29);ctx.fill();ctx.globalAlpha=0.5;ctx.strokeStyle=z.kind==='fire'?'#ffb03a':'#bfe6ff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
