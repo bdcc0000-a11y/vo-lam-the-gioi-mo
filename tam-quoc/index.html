@@ -1610,6 +1610,14 @@ function endTurn(){
   const aiSide=B.playerSide==='atk'?'def':'atk';
   if(B.turn>=2&&aliveTroops(aiSide)>0&&aliveTroops(aiSide)<aliveTroops(B.playerSide)*0.3&&Math.random()<0.5){B.retreat=true;B.retreatSide=aiSide;B.winner=B.playerSide;B.over=true;B.endReason='retreat';toast('🏳️ Quân địch thế yếu đã rút lui để bảo toàn lực lượng!');setTimeout(finishBattle,700);}
 }
+function endSingleTurn(){
+  if(!B||B.over)return;
+  B.over=true;B.endReason='turn';
+  const at=aliveTroops('atk'),df=aliveTroops('def');
+  if(at!==df)B.winner=at>df?'atk':'def';
+  else{const gf=s2=>{const gs=B.genUnits.filter(g=>g.side===s2);const mx=gs.reduce((x,g)=>x+g.maxHp,0);return mx?gs.reduce((x,g)=>x+Math.max(0,g.hp),0)/mx:0;};B.winner=gf('atk')>=gf('def')?'atk':'def';}
+  B.endT=B.t;setTimeout(finishBattle,900);
+}
 function startTurn(){
   if(!B||B.over||B.phase!=='prep')return;
   $('turnPrep').classList.add('hidden');
@@ -2015,7 +2023,7 @@ function battleLoop(ts){
   if(B.phase==='fight'&&!B.over){
     B.turnT+=dt;
     const aliveSoldiers=B.units.filter(u=>!u.dead);
-    if((aliveSoldiers.length&&aliveSoldiers.every(u=>u.arrived||u.fleeing))||B.turnT>1600)endTurn();
+    if((aliveSoldiers.length&&aliveSoldiers.every(u=>u.arrived||u.fleeing))||B.turnT>900)endSingleTurn();
   }else if(B.phase==='prep'&&!B.over){
     B.prepT-=rawDt;
     const btn=$('turnGo');if(btn)btn.textContent='⚔️ Xung phong hiệp '+(B.turn+1)+' ('+Math.max(0,Math.ceil(B.prepT/60))+'s)';
@@ -2084,7 +2092,7 @@ function battleLoop(ts){
           if(u.cls==='ky'&&!u.chargeUsed){chM=2.2+(u.chargeB||0);u.chargeUsed=1;best.x+=u.passDir*22;best.y+=(Math.random()*10-5);best.cd=Math.max(best.cd,14);
             B.effects.push({x:best.x,y:best.y+4,life:14,type:'dust'});B.effects.push({x:best.x,y:best.y-4,life:11,type:'dust'});if(Math.random()<0.6)playSmp('thud2',0.2,1,(best.x/W)*1.3-0.65);
             if(!B.lastGallop||B.t-B.lastGallop>75){B.lastGallop=B.t;playSmp('gallop',0.17,1,(best.x/W)*1.3-0.65);}}
-          let _dmg=u.per*0.098*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM*(u.inFrost>0?0.8:1)
+          let _dmg=u.per*0.17*(0.6+myPow/90)*(0.9+Math.random()*0.3)*u.dmgF*counterMult(u.cls,best.cls)*fd*chM*(u.inFrost>0?0.8:1)
             *stanceMult(u.side).dealt*stanceMult(best.side).taken*B.rpsMult[u.side];
           if(u.crit&&Math.random()<u.crit){_dmg*=1.6;if(B.effects.length<90)B.effects.push({x:best.x,y:best.y-16,life:9,type:'spark'});}
           _dmg*=(best.defM||1);
