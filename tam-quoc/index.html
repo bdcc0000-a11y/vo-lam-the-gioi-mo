@@ -189,7 +189,7 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
   <div class="sub" id="scenDesc" style="margin:4px 0 8px"></div>
   <div class="factions" id="factionCards"></div>
   <button id="continueBtn" class="hidden">▶ Tiếp tục ván đang chơi (tháng <span id="contTurn"></span>)</button>
-  <div style="margin-top:16px;font-size:11px;color:#8a7c5f">🔊 Âm thanh trận là TIẾNG THU THẬT: nhạc trận Sacred Battle (MusicLFiles CC BY 4.0), tiếng ngựa phi (CC0 — Wikimedia Commons), binh khí (CC0 — spritepilot.com; Gravity Sound CC BY 4.0 — Wikimedia Commons), tiếng hô xung trận (chỉ huy hô lệnh — Freesound; đám đông chiến trận gầm thét — Google Sound Library)</div>
+  <div style="margin-top:16px;font-size:11px;color:#8a7c5f">🔊 Âm thanh trận là TIẾNG THU THẬT: nhạc trận Sacred Battle (MusicLFiles CC BY 4.0), tiếng ngựa phi (CC0 — Wikimedia Commons), binh khí (CC0 — spritepilot.com; Gravity Sound CC BY 4.0 — Wikimedia Commons), tiếng hô xung trận (đám đông chiến trận gầm thét — Google Sound Library)</div>
 </div>
 
 <!-- GAME -->
@@ -1683,6 +1683,8 @@ function startDuel(a,d){
   a.x=mx-Math.cos(ang)*34;a.y=my-Math.sin(ang)*34;d.x=mx+Math.cos(ang)*34;d.y=my+Math.sin(ang)*34;
   B.duel={t:0,hit:0,a,d,done:false,first:a.vo>=d.vo?a:d,second:a.vo>=d.vo?d:a};
   B.banner={txt:'⚔️ ĐƠN ĐẤU: '+a.name+' — '+d.name,t:150};
+  B.texts.push({x:a.x,y:a.y-104,life:125,txt:'💬 '+pk(DUEL_TAUNT),color:'#ffe9a8'});
+  B.texts.push({x:d.x,y:d.y-104,life:125,txt:'💬 '+pk(DUEL_TAUNT),color:'#ffd0a8'});
   for(const u of B.units){if(u.dead)continue;const dx=u.x-mx,dy=u.y-my,dd=Math.hypot(dx,dy);if(dd<95&&dd>1){u.x=mx+dx/dd*95;u.y=my+dy/dd*95;}}
   playSmp('clang',0.3,0.8);playSmp('thud2',0.35,0.7);
 }
@@ -1704,11 +1706,14 @@ function runDuel(rawDt){
     if(roll<dCh){mult=0;tag='dodge';}else if(roll<dCh+bCh){mult=0.4;tag='block';}else if(roll<dCh+bCh+cCh){mult=2;tag='crit';}
     const dmg=def.maxHp*pct*mult;
     atk.dmgDealt=(atk.dmgDealt||0)+dmg;def.hp-=dmg;
-    if(tag==='dodge'){B.texts.push({x:def.x,y:def.y-80,life:55,txt:'💨 NÉ!',color:'#9ad1ff',big:true});if(Math.random()<0.8)sfxWhoosh();}
+    if(tag==='dodge'){B.texts.push({x:def.x,y:def.y-80,life:58,txt:'💨 '+pk(DUEL_DODGE),color:'#9ad1ff',big:true});if(Math.random()<0.8)sfxWhoosh();}
     else{def.flash=8;B.effects.push({x:def.x,y:def.y-30,life:9,type:'spark'});B.effects.push({x:def.x,y:def.y-14,life:16,type:'boom'});
       B.texts.push({x:def.x,y:def.y-80,life:58,txt:(tag==='crit'?'💥 CRIT ×2 −':tag==='block'?'🛡️ BLOCK −':'−')+Math.round(dmg*10),color:tag==='crit'?'#ff7a5c':tag==='block'?'#c9d4ff':'#ffd94a',big:tag==='crit'});
+      if(tag==='crit'){if(Math.random()<0.75)B.texts.push({x:atk.x,y:atk.y-104,life:62,txt:'💬 '+pk(DUEL_CRIT),color:'#ffb199'});}
+      else if(tag==='block'){if(Math.random()<0.6)B.texts.push({x:def.x,y:def.y-104,life:62,txt:'💬 '+pk(DUEL_BLOCK),color:'#c9d4ff'});}
+      else{if(Math.random()<0.3)B.texts.push({x:atk.x,y:atk.y-104,life:62,txt:'💬 '+pk(DUEL_TAUNT),color:'#ffe9a8'});else if(Math.random()<0.25)B.texts.push({x:def.x,y:def.y-104,life:62,txt:'💬 '+pk(DUEL_HURT),color:'#ffd0a8'});}
       if(tag==='crit'){playSmp('clang',0.32,0.8);}else if(tag==='block'){playSmp('parry',0.25,1);}else sfxHit('kiem',(def.x/Math.max(1,$('cv').width))*1.3-0.65);}
-    if(def.hp<=0){killGeneral(def);D.done=true;B.banner={txt:'🏆 '+atk.name+' thắng đơn đấu!',t:150};return;}
+    if(def.hp<=0){killGeneral(def);D.done=true;B.banner={txt:'🏆 '+atk.name+' thắng đơn đấu!',t:150};B.texts.push({x:atk.x,y:atk.y-104,life:115,txt:'💬 '+pk(DUEL_WIN),color:'#ffd94a',big:true});return;}
   }
   if(!D.done&&D.t>=380){D.done=true;
     const wa=D.a.hp/D.a.maxHp>=D.d.hp/D.d.maxHp?D.a:D.d,lo=wa===D.a?D.d:D.a;
@@ -1716,16 +1721,31 @@ function runDuel(rawDt){
     B.moraleBonus[lo.side]=Math.max(-30,B.moraleBonus[lo.side]-12);
     lo.dmgCut=0.7;
     B.banner={txt:'🏆 '+wa.name+' thắng đơn đấu! '+lo.name+' bị giảm 30% dame tay cả trận.',t:185};
+    B.texts.push({x:wa.x,y:wa.y-104,life:115,txt:'💬 '+pk(DUEL_WIN),color:'#ffd94a',big:true});
     playSmp('clang',0.25,0.8);playSmp('thud2',0.3,0.75);
   }
 }
-const DEBATE_LINES=['Luận điệu hồ đồ!','Đạo lý không ở miệng ngươi!','Nghe đây mà học hỏi!','Lời lẽ thật thiếu căn cứ!','Học vấn nông cạn thay!','Một câu phá tan vạn lời!','Ngươi hiểu gì về đại thế thiên hạ?','Lý cùn rồi còn cố cãi!','Tâm phục khẩu phục chưa?','Chữ nghĩa thánh hiền đâu hết rồi?'];
+const pk=a=>a[Math.floor(Math.random()*a.length)];
+const DEBATE_LINES=['Luận điệu hồ đồ!','Đạo lý không ở miệng ngươi!','Nghe đây mà học hỏi!','Lời lẽ thật thiếu căn cứ!','Học vấn nông cạn thay!','Một câu phá tan vạn lời!','Ngươi hiểu gì về đại thế thiên hạ?','Lý cùn rồi còn cố cãi!','Tâm phục khẩu phục chưa?','Chữ nghĩa thánh hiền đâu hết rồi?','Ngươi đọc sách mà đầu toàn cỏ rác!','Miệng ngươi nói ra toàn mùi sách mốc!','Ta chưa nói xong, ngươi đã toát mồ hôi rồi kìa!','Học vấn của ngươi để quên ở nhà rồi à?','Ngươi biện luận hay đang đọc thực đơn đấy?','Trí tuệ thế này mà cũng đòi ra trận!','Nghe ngươi nói, ta buồn ngủ thay cho quân sĩ.','Ngươi cãi như gà mắc tóc, càng gỡ càng rối!','Sách ngươi đọc bị mối ăn mất phần quan trọng rồi.','Mưu của ngươi, ta đoán trúng từ hôm qua!','Nói thêm câu nữa là tự ngươi tự thua đấy.','Khẩu khí thì lớn, lý lẽ bé như hạt cát.','Ta đấu khẩu với ngươi như dạy trẻ đọc chữ.','Lời ngươi vừa nói, gió thổi còn phải quay đầu!','Đầu óc ngươi trống như kho lương phe ngươi!','Ngươi thua từ lúc mở miệng rồi!','Ta chưa tung chiêu, ngươi đã rối thế này.','Về học lại đi, mười năm nữa quay lại cũng chưa muộn!','Nói nữa đi, ta ghi lại làm truyện cười cho quân nghe.','Lý lẽ của ngươi mỏng như áo giáp giấy!','Ngươi hùng biện thế này, về làng tranh chức trưởng thôn thì hợp!','Câu sau của ngươi mà hay hơn câu trước, ta thua luôn.'];
+const DEBATE_DODGE=['Hừ, câu đó cũ rồi!','Ta nghe từ năm ngoái!','Lời ấy chạm được ta sao?','Nói thế mà cũng nói!','Trật lất! Thử câu khác đi.','Câu này trẻ con xóm ta cũng biết.'];
+const DEBATE_BLOCK=['Đỡ được! Ngươi còn non.','Câu này ta thuộc lòng rồi.','Hừ, cũng thường thôi.','Muốn hạ ta, phải sắc miệng hơn nữa!','Chặn đứng! Tới lượt ta phản pháo.'];
+const DEBATE_CRIT=['Câu này ngươi đỡ nổi không?!','Đòn này trúng tim đen rồi nhé!','Nghe cho rõ đây, câu này đau đấy!','Một câu chết người đây!','Câu này về nhà nghĩ ba ngày chưa ra!'];
+const DEBATE_HURT=['Ngươi... ngươi dám!','Đau... đau thật đấy!','Câu đó hơi quá đáng rồi!','Không ngờ ngươi sắc miệng thế!','Hừ... coi như ngươi may mắn!'];
+const DEBATE_WIN=['Về đọc thêm sách đi!','Khẩu phục tâm phục chưa?','Đấu khẩu với ta, ngươi còn xanh lắm.','Thua rồi thì im lặng là vàng.','Miệng ngươi đã thua, tâm ngươi phục chưa?'];
+const DUEL_TAUNT=['Xuống ngựa nhận thua đi, đỡ mất công!','Kiếm ta hôm nay đang khát máu!','Tay ngươi run rồi kìa!','Ba chiêu! Ta chỉ cần ba chiêu!','Đánh với ngươi, ta nhường một tay cũng thắng.','Ngựa của ngươi cũng biết sợ thay ngươi đấy.','Hôm nay ngày lành, hợp để ngươi bại trận.','Võ công thế này mà cũng xưng danh tướng?','Lui đi! Đừng để ta ra tay nặng.','Nhìn khí thế ta đây, còn muốn đánh nữa không?','Ta đợi ngày này lâu rồi!','Tên ngươi sẽ nằm trong sổ bại tướng của ta.'];
+const DUEL_DODGE=['Chậm như rùa bò!','Trượt! Mắt ngươi để đâu?','Né dễ như chơi!','Đòn đó đánh gió à?','Ta còn chưa thèm né hết sức.','Hụt rồi, tiếc chưa!'];
+const DUEL_BLOCK=['Hừ! Đỡ được!','Vũ khí ta chưa sứt mẻ đâu!','Cũng khá, nhưng chưa đủ!','Đòn này ta nhận, trả lại gấp đôi!','Chặn đứng! Tới lượt ta!'];
+const DUEL_CRIT=['Đòn này thì đỡ làm sao!','Ăn trọn rồi nhé!','Đây mới là thực lực!','Một đòn định càn khôn!','Thấy chênh lệch chưa?'];
+const DUEL_HURT=['Đau... khá lắm!','Ngươi cũng có nghề đấy!','Hừ, mới xước da thôi!','Được, ta bắt đầu nghiêm túc đây.'];
+const DUEL_WIN=['Về luyện thêm trăm năm nữa!','Kết thúc nhanh gọn!','Đó là cái giá của ngông cuồng.','Ta đã nương tay rồi đấy.','Kiếm pháp của ngươi, về dạy trẻ con thì hợp.'];
 function startDebate(a,d){
   const mx=(a.x+d.x)/2,my=(a.y+d.y)/2,ang=Math.atan2(d.y-a.y,d.x-a.x);
   a.x=mx-Math.cos(ang)*40;a.y=my-Math.sin(ang)*40;d.x=mx+Math.cos(ang)*40;d.y=my+Math.sin(ang)*40;
   const ta=HMAP[a.name].tri,tb=HMAP[d.name].tri;
   B.debate={t:0,hit:0,a,d,done:false,first:ta>=tb?a:d,second:ta>=tb?d:a};
   B.banner={txt:'🗣️ ĐẤU KHẨU: '+a.name+' — '+d.name,t:150};
+  B.texts.push({x:a.x,y:a.y-104,life:125,txt:'💬 '+pk(DEBATE_LINES),color:'#ffe9a8'});
+  B.texts.push({x:d.x,y:d.y-104,life:125,txt:'💬 '+pk(DEBATE_BLOCK),color:'#ffd0a8'});
   for(const u of B.units){if(u.dead)continue;const dx=u.x-mx,dy=u.y-my,dd=Math.hypot(dx,dy);if(dd<95&&dd>1){u.x=mx+dx/dd*95;u.y=my+dy/dd*95;}}
   playSmp('pop',0.3,1);
 }
@@ -1743,10 +1763,12 @@ function runDebate(rawDt){
     if(roll<dCh){mult=0;tag='dodge';}else if(roll<dCh+bCh){mult=0.4;tag='block';}else if(roll<dCh+bCh+cCh){mult=2;tag='crit';}
     const dmg=def.maxHp*pct*mult;
     atk.dmgDealt=(atk.dmgDealt||0)+dmg;
-    B.texts.push({x:atk.x,y:atk.y-94,life:64,txt:'💬 '+DEBATE_LINES[Math.floor(Math.random()*DEBATE_LINES.length)],color:'#ffe9a8'});
-    if(tag==='dodge'){B.texts.push({x:def.x,y:def.y-64,life:50,txt:'💨 NÉ LỜI!',color:'#9ad1ff',big:true});}
+    B.texts.push({x:atk.x,y:atk.y-94,life:64,txt:'💬 '+(tag==='crit'?pk(DEBATE_CRIT):pk(DEBATE_LINES)),color:'#ffe9a8'});
+    if(tag==='dodge'){B.texts.push({x:def.x,y:def.y-64,life:52,txt:'💨 '+pk(DEBATE_DODGE),color:'#9ad1ff',big:true});}
     else{def.flash=8;def.hp=Math.max(def.maxHp*0.12,def.hp-dmg);B.sp[def.side]=Math.max(0,B.sp[def.side]-4);
-      B.texts.push({x:def.x,y:def.y-64,life:50,txt:(tag==='crit'?'💥 BẠO KÍCH ×2 −':tag==='block'?'🛡️ CHẶN LỜI −':'−')+Math.round(dmg*10),color:tag==='crit'?'#ff7a5c':tag==='block'?'#c9d4ff':'#9ad1ff',big:tag==='crit'});}
+      B.texts.push({x:def.x,y:def.y-64,life:50,txt:(tag==='crit'?'💥 BẠO KÍCH ×2 −':tag==='block'?'🛡️ CHẶN LỜI −':'−')+Math.round(dmg*10),color:tag==='crit'?'#ff7a5c':tag==='block'?'#c9d4ff':'#9ad1ff',big:tag==='crit'});
+      if(tag==='block'&&Math.random()<0.55)B.texts.push({x:def.x,y:def.y-88,life:56,txt:'💬 '+pk(DEBATE_BLOCK),color:'#c9d4ff'});
+      else if(tag!=='crit'&&Math.random()<0.3)B.texts.push({x:def.x,y:def.y-88,life:56,txt:'💬 '+pk(DEBATE_HURT),color:'#ffd0a8'});}
     playSmp('pop',0.24,0.9+Math.random()*0.25);
   }
   if(!D.done&&D.t>=380){D.done=true;
@@ -1756,6 +1778,7 @@ function runDebate(rawDt){
     B.moraleBonus[lo.side]=Math.max(-30,B.moraleBonus[lo.side]-8);
     lo.silenceT=420;lo.hitCount=0;
     B.banner={txt:'🏆 '+wa.name+' thắng đấu khẩu! '+lo.name+' á khẩu — 7 giây không tung được chiêu, số đòn đếm lại từ đầu!',t:185};
+    B.texts.push({x:wa.x,y:wa.y-104,life:115,txt:'💬 '+pk(DEBATE_WIN),color:'#ffd94a',big:true});
     playSmp('buffs',0.2,1);
   }
 }
