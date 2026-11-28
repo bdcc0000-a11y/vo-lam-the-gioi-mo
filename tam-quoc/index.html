@@ -1362,7 +1362,7 @@ function openBattle(cfg){
   $('genChips').onclick=e=>{const b=e.target.closest?e.target.closest('[data-gen]'):null;if(!b)return;const g=playerGens().find(x=>x.name===b.dataset.gen);if(!g)return;
     if(_skHoldShown){_skHoldShown=false;hideSkillTip();B.selGen=g;renderGenChips();return;}
     B.selGen=g;
-    if(!g.dead&&!g.skillUsed&&!B.over){hideSkillTip();useSkill(B.playerSide,g);}else if(!g.dead){showSkillTipFor(g,false);}
+    if(!g.dead)showSkillTipFor(g,false);
     renderGenChips();};
   $('cv').onclick=e=>{const cv=$('cv'),r=cv.getBoundingClientRect();
     const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
@@ -1497,13 +1497,14 @@ function drawFlags(ctx,t){
 }
 /* ================= SKILLS (Spectral Force style: SP tiers, formation-depth targeting, cut-in) ================= */
 const SKILL_FX={'Võ tướng':'assets/fx/fx-thunder.png','Mưu sĩ':'assets/fx/fx-fire.png','Quân chủ':'assets/fx/fx-sun.png'};
+function castEveryFor(h){const skk=SKILL_DB[h.skill]||{mult:1,kind:'front'};let ce=h.tier==='SR'?5:h.tier==='S'?4:h.tier==='R'?4:3;if((skk.mult||1)>=1.7)ce=Math.min(5,ce+1);if(skk.kind==='buff')ce=Math.max(3,ce-1);return ce;}
 function spTier(side){const sp=B.sp[side];return sp>=100?3:sp>=67?2:sp>=34?1:0;}
 function playerGens(){return (B.genUnits||[]).filter(g=>g.side===B.playerSide&&!g.dead);}
 function renderGenChips(){
   const box=$('genChips');if(!box||!B)return;
-  const sig=playerGens().map(g=>g.name+(g.skillUsed?'U':'')).join('|')+'#'+(B.selGen?B.selGen.name:'');
+  const sig=playerGens().map(g=>g.name+(g.hitCount||0)).join('|')+'#'+(B.selGen?B.selGen.name:'');
   if(B.chipSig===sig)return;B.chipSig=sig;
-  box.innerHTML=playerGens().map(g=>'<button class="gchip'+(B.selGen===g?' on':'')+(g.skillUsed?' cd':'')+'" data-gen="'+g.name+'"><img src="'+g.img+'"><span>'+'<span class="tier t'+g.tier+'">'+g.tier+'</span> '+g.name+'</span><span>'+(g.skillUsed?'✔ Đã tung chiêu':'⚡ '+HMAP[g.name].skill)+'</span></button>').join('');
+  box.innerHTML=playerGens().map(g=>'<button class="gchip'+(B.selGen===g?' on':'')+'" data-gen="'+g.name+'"><img src="'+g.img+'"><span>'+'<span class="tier t'+g.tier+'">'+g.tier+'</span> '+g.name+'</span><span>'+('⚡ '+HMAP[g.name].skill+' · '+(g.hitCount||0)+'/'+(g.castEvery||4)+' đòn')+'</span></button>').join('');
 }
 function genDmgM(g){return ((g.passive&&g.passive.dmg)||1)*(g.dmgBuffT>0?(g.dmgBuffMult||1.25):1)*1.3;}
 const SKILL_FX_STYLE={};
@@ -1526,7 +1527,7 @@ function pushSkillAnim(o){
 function useSkill(side,gen){
   const tier=2;if(B.over)return false;
   if(!gen)gen=side===B.playerSide?B.selGen:leadGen(side);
-  if(!gen||gen.dead||gen.skillUsed)return false;
+  if(!gen||gen.dead||gen.silenceT>0)return false;
   const sk=SKILL_DB[gen.skill]||SKILL_DB['Lôi Đình Trảm'];
   gen.skillUsed=true;gen.skillCd=900;gen.casting=42;gen.atkAnim=16;
   const foe=side==='atk'?'def':'atk';
@@ -1615,7 +1616,7 @@ function spawnGenerals(){
       const h=HMAP[n],tr=troopOf(n);
       const isBow=tr&&tr.name.includes('Cung');
       const range=h.role==='Mưu sĩ'?168:(isBow?150:(tr&&tr.cls==='giao'?52:38));
-      B.genUnits.push({side,name:n,img:h.img,vo:h.vo,role:h.role,lead:i===0,dead:false,fleeing:false,dmgDealt:0,skillUsed:false,
+      B.genUnits.push({side,name:n,img:h.img,vo:h.vo,role:h.role,lead:i===0,dead:false,fleeing:false,dmgDealt:0,skillUsed:false,castEvery:castEveryFor(h),hitCount:0,silenceT:0,
         range,projType:h.role==='Mưu sĩ'?'magic':(isBow?'arrow':null),skillCd:0,face:side==='atk'?1:-1,tier:h.tier,skill:h.skill,passive:h.passive,talent:h.talent,talentCd:0,shieldT:0,dmgBuffT:0,dmgBuffMult:1,slowT:0,
         x:side==='atk'?W*0.075:W*0.925,y:H*(0.34+0.20*i),hx:side==='atk'?W*0.075:W*0.925,hy:H*(0.34+0.20*i),hp,maxHp:hp,cd:20+i*9,flash:0,ph:Math.random()*6.28});
     });
@@ -1742,8 +1743,8 @@ function runDebate(rawDt){
     B.sp[wa.side]=Math.min(100,B.sp[wa.side]+30);
     B.moraleBonus[wa.side]=Math.min(24,B.moraleBonus[wa.side]+6);
     B.moraleBonus[lo.side]=Math.max(-30,B.moraleBonus[lo.side]-8);
-    lo.skillUsed=true;
-    B.banner={txt:'🏆 '+wa.name+' thắng đấu khẩu! '+lo.name+' á khẩu — mất luôn chiêu duy nhất của trận này!',t:185};
+    lo.silenceT=420;lo.hitCount=0;
+    B.banner={txt:'🏆 '+wa.name+' thắng đấu khẩu! '+lo.name+' á khẩu — 7 giây không tung được chiêu, số đòn đếm lại từ đầu!',t:185};
     playSmp('buffs',0.2,1);
   }
 }
@@ -1987,7 +1988,6 @@ function battleLoop(ts){
   B.aiT+=dt;
   for(const sd of ['atk','def']){
     if(sd===B.playerSide||B.over)continue;
-    if(B.turnT>180&&Math.random()<0.004*dt){const gs=(B.genUnits||[]).filter(g=>g.side===sd&&!g.dead&&!g.skillUsed);if(gs.length){try{useSkill(sd,gs.sort((a,b)=>(b.lead-a.lead)||(b.vo-a.vo))[0]);}catch(e){}}}
     if(B.aiT>560){const myF=aliveTroops(sd)/(sd==='atk'?B.atkMax:B.defMax),foF=aliveTroops(sd==='atk'?'def':'atk')/(sd==='atk'?B.defMax:B.atkMax);
       B.stance[sd]=myF<foF-0.10?'def':(myF>foF+0.12?'break':'normal');
       if(B.orderCd[sd]<=0&&Math.random()<0.6){const foeGen=sd==='atk'?B.genDef:B.genAtk;
@@ -2000,7 +2000,7 @@ function battleLoop(ts){
     if(g.dead)continue;
     g.flash=Math.max(0,(g.flash||0)-dt);g.moving=false;
     g.atkAnim=Math.max(0,(g.atkAnim||0)-dt);g.skillCd=Math.max(0,(g.skillCd||0)-dt);g.casting=Math.max(0,(g.casting||0)-dt);
-    g.talentCd=Math.max(0,(g.talentCd||0)-dt);g.shieldT=Math.max(0,(g.shieldT||0)-dt);g.dmgBuffT=Math.max(0,(g.dmgBuffT||0)-dt);g.slowT=Math.max(0,(g.slowT||0)-dt);
+    g.talentCd=Math.max(0,(g.talentCd||0)-dt);g.shieldT=Math.max(0,(g.shieldT||0)-dt);g.dmgBuffT=Math.max(0,(g.dmgBuffT||0)-dt);g.slowT=Math.max(0,(g.slowT||0)-dt);g.silenceT=Math.max(0,(g.silenceT||0)-dt);
     if(!g.fleeing&&morNow[g.side]<22&&Math.random()<0.008*dt)g.fleeing=true;
     const dirG=g.side==='atk'?1:-1;
     if(g.fleeing){g.x-=dirG*1.5*dt;g.moving=true;g.x=Math.max(16,Math.min(W-16,g.x));continue;}
@@ -2018,7 +2018,7 @@ function battleLoop(ts){
       if(fd>reach){
         const step=Math.min(1.32*dt*(g.slowT>0?0.4:1),fd-reach*0.8);
         g.x+=(foe.x-g.x)/fd*step;g.y+=(foe.y-g.y)/fd*step*0.8;g.moving=step>0.15;
-      }else if((g.cd-=dt)<=0){
+      }else if(dt>0&&(g.cd-=dt)<=0){
         g.cd=27+Math.random()*8;g.atkAnim=16;
         if(g.projType&&fd>44){ // ranged attack: arrow / magic bolt flies to the target
           if(g.projType==='bow')playSmp('bow',0.09,0.95+Math.random()*0.1);
@@ -2036,6 +2036,7 @@ function battleLoop(ts){
               const ms=[25,50,100,150,200].find(m=>g.kills>=m&&(g.killNote||0)<m);
               if(ms){g.killNote=ms;B.texts.push({x:g.x,y:g.y-92,life:95,txt:'⚔️ '+g.name+' chém '+ms+' quân!',color:'#ffd94a',big:true});playSmp('clang',0.2,0.9,(g.x/W)*1.3-0.65);}}}}
         }
+        if(!(g.silenceT>0)){g.hitCount=(g.hitCount||0)+1;if(g.hitCount>=(g.castEvery||4)){g.hitCount=0;try{useSkill(g.side,g);}catch(e){}}}
       }
     }else{
       g.x+=dirG*1.3*dt*(g.slowT>0?0.4:1);g.moving=true; // no enemies in reach — march with the army
@@ -2119,7 +2120,7 @@ function battleLoop(ts){
       // ===== UI XUYEN (Spectral Force style): charge to the FAR EDGE, strike while passing, turn at the edge and charge back — never stops to grind mid-field =====
       if(u.passDir===undefined)u.passDir=dir;
       const contact=bestDist<36;
-      if((u.cd-=dt)<=0){
+      if(dt>0&&(u.cd-=dt)<=0){
         if(egu&&genDist<52){
           u.cd=30+Math.random()*14;u.atkAnim=6;
           const myPow=u.side==='atk'?atkPow:defPow;
@@ -2273,7 +2274,7 @@ function battleLoop(ts){
 }
 let _skHoldT=null,_skHoldShown=false,_skTipTimer=null;
 function showSkillTipFor(g,sticky){if(!B||!g)return;const h=HMAP[g.name];if(!h)return;const sk=SKILL_DB[h.skill]||{mult:1};const tip=$('skillTip');if(!tip)return;
-  tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>🏷️ '+skillTags(h.skill).join(' · ')+'<br>'+skillDesc(h.skill)+'<br>Mỗi tướng chỉ tung chiêu <b>1 lần duy nhất</b> trong cả trận — chọn đúng thời điểm!</small>';
+  tip.innerHTML='<b>⚡ '+h.skill+'</b> — '+g.name+'<br><small>🏷️ '+skillTags(h.skill).join(' · ')+'<br>'+skillDesc(h.skill)+'<br>Chiêu tự tung sau mỗi <b>'+(g.castEvery||4)+' đòn đánh thường</b> của tướng này — tự động, không cần bấm.</small>';
   tip.classList.remove('hidden');if(sticky)_skHoldShown=true;
   if(_skTipTimer)clearTimeout(_skTipTimer);if(!sticky)_skTipTimer=setTimeout(hideSkillTip,2600);}
 function showSkillTip(){showSkillTipFor(B?B.selGen:null,true);}
@@ -2318,7 +2319,7 @@ function finishBattle(){
     if(from)from.troops+=at;
     if(B.atkFac!==S.player&&B.defFac===S.player){to.garrison=B.defGens.slice();}
     title=B.retreat?'🏳️ ĐÃ RÚT QUÂN':'🛡️ THÀNH VẪN ĐỨNG VỮNG';
-    body=FACTIONS[B.defFac].name+' giữ vững <b>'+RMAP[B.toId].name+'</b>.'+(B.endReason==='turn'?' ⏱️ Hết 20 giây giao tranh.':B.retreat?' 🏳️ Một bên đã rút quân.':'');
+    body=FACTIONS[B.defFac].name+' giữ vững <b>'+RMAP[B.toId].name+'</b>.'+(B.endReason==='turn'?' ⏱️ Giao tranh '+Math.min(20,Math.max(1,Math.ceil(B.turnT/60)))+' giây.':B.retreat?' 🏳️ Một bên đã rút quân.':'');
     log(FACTIONS[B.defFac].name+' giữ được '+RMAP[B.toId].name+' trước quân '+FACTIONS[B.atkFac].name+'.');
   }
   if(B.playerSide){title=(B.retreat&&B.retreatSide===B.playerSide)?'🏳️ ĐÃ RÚT QUÂN':(playerWon?'🎉 THẮNG TRẬN!':'💀 THUA TRẬN');}
@@ -2445,9 +2446,9 @@ $('ctabs').innerHTML='<button data-c="all" class="on">Tất cả</button>'+[['gi
 document.querySelectorAll('#ctabs button').forEach(b=>b.onclick=()=>{TROOPF.c=b.dataset.c;renderTroops();});
 $('troopsBtn').onclick=()=>{renderTroops();$('troopModal').classList.remove('hidden');};
 function skillDesc(n){const sk=SKILL_DB[n];if(!sk)return '';const F=SKILL_FX2[n]||{};const p=[];
-  p.push(sk.kind==='front'?('Sát thương diện rộng vào hàng quân phía trước — tổng hệ số ×'+(sk.mult*2)+', trúng khoảng '+(sk.targets+4)+' lính · mỗi tướng chỉ tung 1 lần mỗi trận')
-    :sk.kind==='deep'?('Sát thương đánh sâu vào hậu quân địch — tổng hệ số ×'+(sk.mult*2)+', trúng khoảng '+(sk.targets+4)+' lính · mỗi tướng chỉ tung 1 lần mỗi trận')
-    :('Hiệu lệnh hỗ trợ — gọi viện binh bằng '+Math.round(10*sk.mult)+'% quân số tối đa, +14 sĩ khí, hồi 10% máu cho các tướng phe ta · mỗi tướng chỉ tung 1 lần mỗi trận'));
+  p.push(sk.kind==='front'?('Sát thương diện rộng vào hàng quân phía trước — tổng hệ số ×'+(sk.mult*2)+', trúng khoảng '+(sk.targets+4)+' lính · tự tung theo số đòn đánh thường của từng tướng')
+    :sk.kind==='deep'?('Sát thương đánh sâu vào hậu quân địch — tổng hệ số ×'+(sk.mult*2)+', trúng khoảng '+(sk.targets+4)+' lính · tự tung theo số đòn đánh thường của từng tướng')
+    :('Hiệu lệnh hỗ trợ — gọi viện binh bằng '+Math.round(10*sk.mult)+'% quân số tối đa, +14 sĩ khí, hồi 10% máu cho các tướng phe ta · tự tung theo số đòn đánh thường của từng tướng'));
   if(FIRE_FX.includes(sk.fx))p.push('để lại VÙNG LỬA thiêu đốt địch đứng trong ~8 giây');
   if(FROST_FX.includes(sk.fx))p.push('để lại VÙNG BĂNG: địch trong vùng bị làm chậm và đánh yếu đi ~8 giây');
   if((sk.mult||1)>=1.4)p.push('sóng xung kích hất văng địch quanh điểm nổ');
