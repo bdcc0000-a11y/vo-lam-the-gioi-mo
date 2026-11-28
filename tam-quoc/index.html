@@ -299,6 +299,36 @@ canvas#cv{position:absolute;inset:0;width:100%;height:100%}
 <script src="troops.js"></script>
 <script>
 'use strict';
+/* ================= TUNING — sổ thông số (P1) =================
+   Mọi hằng số gameplay MỚI từ Giai đoạn 1 trở đi khai báo tại đây, code đọc qua TUNING.xxx.
+   Mỗi mục: giá trị mặc định, khoảng [min,max] trong comment, 1 dòng về cảm giác nó chi phối.
+   Hằng số cũ giữ nguyên vị trí trong code. Các mục dưới đây là KHUNG cho các giai đoạn sau,
+   chưa được code nào đọc cho tới đúng giai đoạn của chúng. */
+const TUNING={
+  // Giai đoạn 1.1 — hành động trái tháng
+  offMonthAtkPower:0.80,   // [0.70,0.90] hệ số sức mạnh khi xuất binh trái tháng — càng thấp càng đau, càng ít ai dám phá lịch
+  offMonthFoodCost:0.10,   // [0.05,0.20] lương tốn thêm khi xuất binh trái tháng = tỉ lệ này × quân mang theo
+  offMonthRecruitCost:225, // [150,300] giá tuyển quân trái tháng (đúng tháng 150) — đắt để tháng Nội chính vẫn là mùa tuyển quân
+  offMonthRecruitYield:0.7,// [0.50,0.90] hệ số số quân nhận được khi tuyển trái tháng
+  offMonthBuildCost:1.5,   // [1.25,2.00] hệ số giá phát triển + xây dựng trái tháng
+  aiOffMonthAtkRatio:1.35, // [1.20,1.50] AI chỉ xuất binh trái tháng khi mạnh hơn địch ít nhất mức này (đúng tháng: 1.12)
+  // Giai đoạn 2.1 — trần mềm sát thương tướng
+  dmgSoftCap:1.6,          // [1.40,1.80] tổng hệ số nhân dmg vượt mức này chỉ tính 50% hiệu lực
+  ghCapPct:0.12,           // [0.08,0.16] đòn săn tướng mỗi lần tung chiêu lấy tối đa chừng này × HP tối đa của tướng địch
+  duelLoseDmgCut:0.8,      // [0.70,0.90] thua đơn đấu: sát thương tay × hệ số này cả trận (code hiện tại đang cứng 0.7)
+  // Giai đoạn 4.1 — hộp "Tháng sau đáng chờ"
+  nextMonthScoreMin:3,     // [2,5] ngưỡng điểm khẩn × tác động × liên quan để một mục được hiện
+  // Giai đoạn 4.2 — bảo hiểm sưu tầm tướng tự do
+  pityFreeMonths:5,        // [3,8] tháng Nội chính liên tiếp không có S/SR ghé thành mình thì ép xuất hiện 1 tướng S/SR chưa sở hữu
+  // Giai đoạn 4.3 — điểm kịch tính của trận
+  dramaComeback:40,        // thắng ngược khi bị dẫn quân ≥20%
+  dramaSRKill:25,          // tướng địch SR tử trận
+  dramaClose:20,           // kết thúc sát nút, chênh quân còn lại <10%
+  dramaLowHp:15,           // tướng ta sống sót dưới 10% máu
+  dramaDuel:15,            // có đơn đấu / đấu khẩu xảy ra
+  dramaStreak:10,          // đang giữ chuỗi thắng ≥5
+  dramaChronicleMin:50,    // [30,80] drama score tối thiểu để trận ghi vào sử sách của ván
+};
 /* ================= DATA ================= */
 const FACTIONS={
   nguy:{name:'Ngụy',color:'#4a7ebb',icon:'🐉'},
