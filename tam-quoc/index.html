@@ -2055,9 +2055,6 @@ function loadSamples(){if(SMP_TRIED||typeof fetch!=='function'||!AC)return;SMP_T
   });
 }
 function playSmp(nm,vol,rate,pan){if(!sfxOn()||!SMP[nm])return false;
-  // GĐ4.6: tối đa TUNING.sfxMaxLayers lớp tiếng chồng nhau; tiếng ưu tiên cao nhất (tướng chết) luôn xuyên qua
-  const _prio=(nm==='boom'||nm==='cannon')?3:(vol>=0.34?2:1);const _nw=performance.now();window._sfxL=(window._sfxL||[]).filter(x=>_nw-x.t<420);
-  if(_prio<3&&window._sfxL.length>=TUNING.sfxMaxLayers)return false;window._sfxL.push({t:_nw,p:_prio});
   try{const src=AC.createBufferSource();src.buffer=SMP[nm];src.playbackRate.value=rate||1;if((rate||1)===1&&src.buffer.duration<1.5)src.playbackRate.value=0.94+Math.random()*0.12;const g=AC.createGain();g.gain.value=vol;src.connect(g);let out=g;
   if(pan&&AC.createStereoPanner){const pn=AC.createStereoPanner();pn.pan.value=Math.max(-0.85,Math.min(0.85,pan));g.connect(pn);out=pn;}
   out.connect(MG);if(RVS)out.connect(RVS);const off=(nm!=='drum-loop'&&src.buffer.duration>0.3)?Math.random()*0.03:0;src.start(0,off);window.SFXHITS=(window.SFXHITS||0)+1;return true;}catch(e){return false;}}
@@ -3006,7 +3003,7 @@ $('endTurnBtn').onclick=()=>{
   if(curYear()!==yb){ensureYearPlan();log('📅 Sang năm '+curYear()+'! Lịch 12 tháng năm nay: '+S.yearPlan.map((t,i)=>(i+1)+MONTH_TYPES[t].icon).join(' '));}
   log('— Tháng '+curMonth()+' · Năm '+curYear()+': '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+' —');
   renderTop();showMonthSplash();
-  for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();return;}}
+  for(const f of Object.keys(FACTIONS)){if(f===S.player)continue;if(aiFaction(f)==='visual'){save();refreshNodes();renderNextBox(prevMonth);telemetry('month_end',{turn:S.turn});achCheck();return;}}
   save();refreshNodes();renderPanel();renderLog();checkEnd();renderNextBox(prevMonth);maybeEvent();telemetry('month_end',{turn:S.turn});achCheck();
   toast('Đã sang Tháng '+curMonth()+' · Năm '+curYear()+' — tháng '+MONTH_TYPES[monthType()].icon+' '+MONTH_TYPES[monthType()].name+'. Xem nhật ký bên dưới.');
 };
